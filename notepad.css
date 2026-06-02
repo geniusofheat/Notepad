@@ -142,6 +142,10 @@ main::before {
   z-index: 1;
 }
 
+main.hide-line::before {
+  display: none;
+}
+
 /* =====================
    TOOLBAR ROW
 ===================== */
@@ -343,6 +347,7 @@ textarea {
 	width: 100%;
 	box-sizing: border-box;
 	margin: 0px;
+	z-index: 3;
 
 }
 

@@ -148,6 +148,7 @@ function open_note(id) {
   if (!note) return;
 
   current_note_id = id;
+  document.querySelector('main').classList.add('hide-line');
 
   document.getElementById('notes-list-view').style.display = 'none';
   document.getElementById('note-editor-view').style.display = 'block';
@@ -163,6 +164,7 @@ window.open_note = open_note;
 function back_to_list() {
   auto_save_current_note();
   current_note_id = null;
+  document.querySelector('main').classList.remove('hide-line');
 
   document.getElementById('note-editor-view').style.display = 'none';
   document.getElementById('notes-list-view').style.display = 'block';
