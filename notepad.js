@@ -54,7 +54,7 @@ function save_notes() {
 
 function render_notes_list() {
   const list = document.getElementById('notes-list');
-  const blank_count = Math.max(0, 9 - notes.length);
+  const blank_count = Math.max(0, 12 - notes.length);
   const blanks = Array(blank_count)
     .fill('<li class="notepad-row blank"></li>')
     .join('');
