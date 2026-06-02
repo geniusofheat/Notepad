@@ -2,7 +2,7 @@
   "name": "Notepad",
   "short_name": "Notepad",
   "description": "A simple multi-note notepad",
-  "start_url": "notepad.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#0a0a14",
   "theme_color": "#c8a96e",
