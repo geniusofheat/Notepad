@@ -18,16 +18,26 @@ body {
   
 }
 
+h2 {
+	margin: 0px;
+	padding: 10px;
+	color: var(--gold);
+}
+
 h3 {
 	margin: 0px;
 	padding: 10px;
+	color: var(--gold);
 }
 main .gold-block  {
 	border-radius: 16px;
+	color: var(--gold);
 }
 main h3.gold-block {
 	padding: 10px 20px;
 	margin-bottom: 20px;
+	color: var(--gold);
+	
 }
 
 /* =====================
@@ -79,13 +89,14 @@ header {
   margin: 5px 5px;
 }
 
-.orange-back-btn {
-  padding: 4px;
+.gold-block .orange-btn{
+  padding: 5px;
   font-family: 'Playfair Display', serif;
   background: orange;
-  border: 2px solid gold;
+  border: 2px double gold;
   text-decoration: none;
   margin-right: 10px;
+  text-align: center;
   
 }
 
@@ -123,7 +134,7 @@ main {
 main::before {
   content: '';
   position: absolute;
-  top: 100px; left: 50px; 
+  top: 70px; left: 50px; 
   width: 1px;
   height: 460px;
   background: rgba(220, 80, 80, 0.4);
@@ -227,6 +238,7 @@ main::before {
 
 .text-input {
   height: 44px;
+  border-radius: 10px;
   background: black;
   color: white;
   text-align: center;
@@ -275,8 +287,6 @@ main::before {
   text-decoration: none;
   color:;
   text-align: center;
- 
-  background: orange;
   font-size: 16px;
   cursor: pointer;
 }
@@ -334,4 +344,8 @@ textarea {
 	box-sizing: border-box;
 	margin: 0px;
 
+}
+
+.gold-block button {
+	border-radius: 10px;
 }
