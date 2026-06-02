@@ -54,30 +54,25 @@ function save_notes() {
 
 function render_notes_list() {
   const list = document.getElementById('notes-list');
-  const blank_count = Math.max(0, 6 - notes.length);
+  const blank_count = Math.max(0, 9 - notes.length);
   const blanks = Array(blank_count)
-    .fill('<div class="notepad-row blank"></div>')
+    .fill('<li class="notepad-row blank"></li>')
     .join('');
 
   if (notes.length === 0) {
-    list.innerHTML = '<div class="note-empty">No notes yet. Type the title of the new note in the box below and press the plus(＋) button to add it to the list.</div>' + blanks;
+    list.innerHTML = '<div class="notepad-placeholder">No notes yet. Add a note by typing the title into the box below, then press the plus(＋) button.</div>' + '<ol class="notes-ol">' + blanks + '</ol>';
     return;
   }
 
-  list.innerHTML = notes.map(note => {
-    const preview = note.content
-      ? note.content.substring(0, 70).replace(/\n/g, ' ') + (note.content.length > 70 ? '…' : '')
-      : 'Empty note';
-    return `
-      <div class="note-card">
-        <div class="note-card-content" onclick="open_note('${note.id}')">
-          <div class="note-card-title">${note.title}</div>
-          <div class="note-card-preview">${preview}</div>
-        </div>
-        <button class="note-delete-btn" onclick="deleteNote('${note.id}')">✕</button>
-      </div>
-    `;
-  }).join('') + blanks;
+  list.innerHTML = '<ol class="notes-ol">' +
+    notes.map((note, index) => `
+      <li class="notepad-row note-list-item">
+        <span class="note-list-title" onclick="open_note('${note.id}')">${note.title}</span>
+        <button class="orange-btn" onclick="deleteNote('${note.id}')">✕</button>
+      </li>
+    `).join('') +
+    blanks +
+    '</ol>';
 }
 
 
