@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,73 +16,65 @@
 
 <body>
 
-<header class="gold-block">
-  	
-  <h3 id="header-title">📋  Notes List:</h3>
-  	
-  <div class="notepad-date" id="dateDisplay">
+<header>
+  <div class="header-left">
+    <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
   </div>
-
+  <div class="header-right">
+    <div class="notepad-date" id="dateDisplay"></div>
+  </div>
+  <div class="card flex-row"></div>
 </header>
 
 <main class="main">
-	
+
+  <!-- NOTES LIST VIEW -->
   <div id="notes-list-view">
 
-      <!-- NOTEPAD BODY -->
-<div class="notepad-body">
-	
-
-  <div id="notes-list"></div>
-
-</div>
-      <!-- END NOTEPAD BODY -->
-
-
-</div>
-  <!-- END NOTES LIST -->
-  
-
-
- 
-  <div id="note-editor-view" style="display:none;">
-
-    <!-- ADD NOTE TOOLBAR -->
- <div class="gold-block">
-
-      <h3 class="notepad-title" id="note-title-display"></h3>
-      
-      <button class="orange-btn " id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button> 	
-
- </div>
-   <!-- END ADD NOTE TOOLBAR -->
-   
-    
-<!--=========================================
-	DYNAMIC NOTEPAD
-	=================================== -->
-  
+    <!-- TITLE ROW -->
+    <div class="toolbar-row">
+      <div class="notepad-title">Notes :</div>
+    </div>
+    <!-- END TITLE ROW -->
 
     <div class="notepad-body">
-    	
-      <textarea id="note-textarea" placeholder="Your note goes here."></textarea>
+
+      <!-- RENDERED NOTE CARDS -->
+      <div id="notes-list"></div>
+      <!-- END RENDERED NOTE CARDS -->
+
+      <!-- ADD NOTE ROW — input hidden until + is tapped -->
+      <div class="note-card note-add-row" id="noteAddRow">
+        <div class="note-add-content">
+          <input id="newNoteInput" class="note-add-input" placeholder="Add a new note...">
+        </div>
+        <button class="orange-btn-44" id="addNoteBtn" onclick="handleAddNoteBtn()">＋</button>
+      </div>
+      <!-- END ADD NOTE ROW -->
 
     </div>
-<!--====================================
-	END DYNAMIC NOTEPAD
-	=================================== -->
 
   </div>
-           <!-- ADD NOTE INPUT ROW -->
-<div class="gold-block" id="noteAddRow">
+  <!-- END NOTES LIST VIEW -->
 
-        <input class="text-input" id="newNoteInput" placeholder="Add a new note...">
 
-        <button class="orange-btn-44" id="addNoteBtn" onclick="handleAddNoteBtn()">＋</button>
+  <!-- NOTE EDITOR VIEW -->
+  <div id="note-editor-view" style="display:none;">
 
-</div>
-  <!-- END ADD NOTE INPUT ROW -->
+    <!-- EDITOR TITLE ROW -->
+    <div class="toolbar-row">
+      <div class="notepad-title" id="note-title-display"></div>
+      <button class="orange-btn-44" onclick="voiceInputToNote()">🎤</button>
+      <button class="orange-btn" onclick="deleteCurrentNote()">🗑</button>
+    </div>
+    <!-- END EDITOR TITLE ROW -->
 
+    <div class="notepad-body">
+      <textarea id="note-textarea" placeholder="Now you can begin typing your note into this area."></textarea>
+    </div>
+
+  </div>
+  <!-- END NOTE EDITOR VIEW -->
 
 </main>
 
@@ -92,6 +85,9 @@
     navigator.serviceWorker.register('notepad_service_worker.js');
   }
 </script>
+
+<script src="//cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
 
 </body>
 </html>
