@@ -3,7 +3,7 @@
 const CACHE_NAME = 'notepad-v1';
 
 const ASSETS = [
-  'notepad.html',
+  'index.html',
   'notepad.js',
   'notepad.css',
   'notepad_manifest.json'
