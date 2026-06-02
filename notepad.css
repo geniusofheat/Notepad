@@ -139,7 +139,7 @@ main::before {
   height: 460px;
   background: rgba(220, 80, 80, 0.4);
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
 main.hide-line::before {
@@ -339,6 +339,7 @@ textarea {
 	text-indent: 20px;
 }
 .gold-block {
+	position: relative;
 	border: 2px solid var(--gold);
 	display: flex;
 	align-items: center;
@@ -347,7 +348,7 @@ textarea {
 	width: 100%;
 	box-sizing: border-box;
 	margin: 0px;
-	z-index: 3;
+	z-index: 1;
 
 }
 
