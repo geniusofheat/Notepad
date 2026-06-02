@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSS Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Lato:wght@400;700&family=Playfair+Display:wght@400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css_guide.css" />
+  <link rel="manifest" href="css_guide_manifest.json">
+</head>
+<body>
+
+  <!-- BREADCRUMB -->
+  <div id="css-guide-breadcrumb" class="css-guide-breadcrumb">
+    <span class="breadcrumb-active">CSS Guide</span>
+  </div>
+
+  <!-- BACK BUTTON (visible only in detail view) -->
+  <div id="css-back-btn" class="hidden">
+    <button class="blue-btn" onclick="show_topic_list()"></button>
+  </div>
+
+  <!-- TOGGLE LIST VIEW -->
+  <div id="css-toggle-list" class="content-block"></div>
+
+  <!-- LESSON DETAIL VIEW -->
+  <div id="css-lesson-detail" class="content-block hidden"></div>
+  
+
+  <!-- DATA FILES -->
+  
+  <script src="css_1_lessons.js"></script>
+  <script src="css_2_lessons.js"></script>
+  <script src="css_3_lessons.js"></script>
+  <script src="css_4_lessons.js"></script>
+  <script src="at_rules.js"></script>
+
+  <script src="css_guide_engine.js"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/CSS-Guide/css_guide_service_worker.js');
+  }
+</script>
+
+
+</body>
+</html>
