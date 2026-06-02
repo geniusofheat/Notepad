@@ -153,6 +153,7 @@ function open_note(id) {
   document.getElementById('notes-list-view').style.display = 'none';
   document.getElementById('note-editor-view').style.display = 'block';
   document.getElementById('note-title-display').textContent = note.title;
+  document.getElementById('header-title').textContent = '📝 Notepad:';
   document.getElementById('note-textarea').value = note.content;
 
   const back_btn = document.getElementById('headerBackBtn');
@@ -174,6 +175,7 @@ function back_to_list() {
   back_btn.setAttribute('onclick', 'handleBack()');
 
   render_notes_list();
+  document.getElementById('header-title').textContent = '📋 Notes List:';
 }
 window.back_to_list = back_to_list;
 
