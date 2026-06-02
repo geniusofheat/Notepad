@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notepad</title>
+
+  <link rel="manifest" href="notepad_manifest.json">
+  <meta name="theme-color" content="#c8a96e">
+
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Playfair+Display:wght@400;600&family=Space+Mono&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="notepad.css">
+</head>
+
+<body>
+
+<header class="gold-block">
+  	
+  <h3 id="header-title">📋  Notes List:</h3>
+  	
+  <div class="notepad-date" id="dateDisplay">
+  </div>
+
+</header>
+
+<main class="main">
+	
+  <div id="notes-list-view">
+
+      <!-- NOTEPAD BODY -->
+<div class="notepad-body">
+	
+
+  <div id="notes-list"></div>
+
+</div>
+      <!-- END NOTEPAD BODY -->
+
+
+</div>
+  <!-- END NOTES LIST -->
+  
+
+
+ 
+  <div id="note-editor-view" style="display:none;">
+
+    <!-- ADD NOTE TOOLBAR -->
+ <div class="gold-block">
+
+      <h3 class="notepad-title" id="note-title-display"></h3>
+      
+      <button class="orange-btn " id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button> 	
+
+ </div>
+   <!-- END ADD NOTE TOOLBAR -->
+   
+    
+<!--=========================================
+	DYNAMIC NOTEPAD
+	=================================== -->
+  
+
+    <div class="notepad-body">
+    	
+      <textarea id="note-textarea" placeholder="Your note goes here."></textarea>
+
+    </div>
+<!--====================================
+	END DYNAMIC NOTEPAD
+	=================================== -->
+
+  </div>
+           <!-- ADD NOTE INPUT ROW -->
+<div class="gold-block" id="noteAddRow">
+
+        <input class="text-input" id="newNoteInput" placeholder="Add a new note...">
+
+        <button class="orange-btn-44" id="addNoteBtn" onclick="handleAddNoteBtn()">＋</button>
+
+</div>
+  <!-- END ADD NOTE INPUT ROW -->
+
+
+</main>
+
+<script src="notepad.js"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('notepad_sw.js');
+  }
+</script>
+
+<script src="//cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+
+</body>
+</html>
