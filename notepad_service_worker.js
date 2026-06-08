@@ -6,7 +6,9 @@ const ASSETS = [
   'index.html',
   'notepad.js',
   'notepad.css',
-  'notepad_manifest.json'
+  'notepad_manifest.json',
+  'icon-192.png',
+  'icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
