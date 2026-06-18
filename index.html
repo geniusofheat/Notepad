@@ -11,19 +11,28 @@
   <link rel="manifest" href="notepad_manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Playfair+Display:wght@400;600&family=Space+Mono&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="notepad.css">
+  <link rel="stylesheet" href="notepad_stylesheet.css">
 </head>
 
 <body>
 
 <header class="gold-block">
   	
-  <h3 id="header-title">📋  Notes List:</h3>
+  <h3>📋  Notes List:</h3>
   	
   <div class="notepad-date" id="dateDisplay">
   </div>
 
 </header>
+<!-- ADD NOTE INPUT ROW -->
+<div class="gold-block" id="noteAddRow">
+
+        <input class="text-input" id="newNoteInput" placeholder="Add a new note...">
+
+        <button class="orange-btn-44" id="addNoteBtn" onclick="handleAddNoteBtn()">＋</button>
+
+</div>
+  <!-- END ADD NOTE INPUT ROW -->
 
 <main class="main">
 	
@@ -73,15 +82,8 @@
 	=================================== -->
 
   </div>
-           <!-- ADD NOTE INPUT ROW -->
-<div class="gold-block" id="noteAddRow">
+  
 
-        <input class="text-input" id="newNoteInput" placeholder="Add a new note...">
-
-        <button class="orange-btn-44" id="addNoteBtn" onclick="handleAddNoteBtn()">＋</button>
-
-</div>
-  <!-- END ADD NOTE INPUT ROW -->
 
 
 </main>
