@@ -231,7 +231,6 @@ main.hide-line::before {
 .text-input {
   height: 44px;
   border-radius: 10px;
-  background: black;
   color: white;
   text-align: center;
   font-size: 14px;
@@ -330,7 +329,7 @@ textarea {
 }
 .gold-block {
 	position: relative;
-	border: 2px solid var(--gold);
+	border: 0px solid var(--gold);
 	display: flex;
 	align-items: center;
 	align-content: space-around;
