@@ -21,13 +21,11 @@ body {
 h2 {
 	margin: 0px;
 	padding: 10px;
-	color: var(--gold);
 }
 
 h3 {
 	margin: 0px;
 	padding: 10px;
-	color: var(--gold);
 }
 
 /* =====================
@@ -73,7 +71,6 @@ header {
   background: orange;
   border: 2px solid gold;
   text-decoration: none;
-  color: white;
   text-align: center;
   margin: 5px 5px;
 }
@@ -97,7 +94,6 @@ header {
   background: orange;
   border: 2px solid gold;
   text-decoration: none;
-  color: white;
   text-align: center;
   margin: 0px 5px;
 }
@@ -150,7 +146,6 @@ main.hide-line::before {
   border-radius: 6px;
   padding: 8px;
   z-index: 2;
-  color: var(--gold);
 }
 
 .toolbar-row input {
@@ -158,7 +153,6 @@ main.hide-line::before {
   min-width: 120px;
   background: transparent;
   border: none;
-  color: white;
   font-family: 'Crimson Pro', serif;
   font-size: 16px;
   outline: none;
@@ -182,7 +176,6 @@ main.hide-line::before {
   font-family: 'Playfair Display', serif;
   font-size: 20px;
   font-weight: 700;
-  color: var(--gold);
   flex: 1;
   margin: 0;
   padding-left: 20px;
@@ -253,7 +246,6 @@ main.hide-line::before {
   min-height: 44px;
   border-bottom: 1px solid var(--rule-blue);
   gap: 10px;
-  background: #ffffff;
   text-indent: 50px;
   margin-right: 15px;
   z-index: 0;
@@ -263,7 +255,6 @@ main.hide-line::before {
   flex: 1;
   font-family: 'Playfair Display', serif;
   font-size: 18px;
-  color: var(--ink);
   cursor: pointer;
 }
 
@@ -276,7 +267,7 @@ main.hide-line::before {
   background: orange;
   border: 2px double gold;
   text-decoration: none;
-  color:;
+  color: black;
   text-align: center;
   font-size: 16px;
   cursor: pointer;
@@ -285,7 +276,6 @@ main.hide-line::before {
 .notepad-placeholder {
   font-family: 'Space Mono', monospace;
   font-size: 0.8rem;
-  color: rgba(26, 26, 46, 0.4);
   text-align: center;
   padding: 40px 20px;
   margin-left: 40px;
@@ -303,7 +293,6 @@ main.hide-line::before {
   padding: 16px 20px;
   font-family: 'Crimson Pro', serif;
   font-size: 18px;
-  color: var(--gold);
   line-height: 1.8;
   resize: none;
   outline: none;
@@ -311,7 +300,6 @@ main.hide-line::before {
 }
 
 #note-textarea::placeholder {
-  color: var(--gold);
   font-style: italic;
 }
 
