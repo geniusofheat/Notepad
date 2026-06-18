@@ -231,7 +231,6 @@ main.hide-line::before {
 .text-input {
   height: 44px;
   border-radius: 10px;
-  color: white;
   text-align: center;
   font-size: 14px;
   width: 100%;
