@@ -71,8 +71,8 @@ header {
   background: orange;
   border: 2px solid gold;
   text-decoration: none;
-  text-align: center;
-  margin: 5px 5px;
+  text-align: right;
+  margin: 5px 10px;
 }
 
 .gold-block .orange-btn{
@@ -110,8 +110,6 @@ main {
   overflow: hidden;
   position: relative;
   width: 100%;
-}
-	
 }
 
 main::before {
@@ -205,6 +203,8 @@ main.hide-line::before {
 .notepad-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 30px
   padding: 0 16px 0 20px;
   min-height: 44px;
   border-bottom: 1px solid var(--rule-blue);
@@ -233,26 +233,23 @@ main.hide-line::before {
 ===================== */
 
 .notes-ol {
-  list-style: decimal;
-  padding: 0px;
+  list-style-type: decimal;
+  padding-left: 40px;
+  margin: 0;
   width: 100%;
-  z-index: ;
+}
+
+.notes-ol li {
+  display: list-item;
 }
 
 .note-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   min-height: 44px;
   border-bottom: 1px solid var(--rule-blue);
-  gap: 10px;
-  text-indent: 50px;
-  margin-right: 15px;
   z-index: 0;
 }
 
 .note-list-title {
-  flex: 1;
   font-family: 'Playfair Display', serif;
   font-size: 18px;
   cursor: pointer;

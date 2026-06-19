@@ -18,12 +18,23 @@
 
 <header class="gold-block">
   	
-  <h3>📋  Notes List:</h3>
+  <h3 id="pageTitle">📋 Notes List :</h3>
   	
   <div class="notepad-date" id="dateDisplay">
   </div>
 
 </header>
+
+
+        <button class="orange-btn " id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button> 	
+
+<main class="main">
+	
+	
+  <div id="notes-list-view">
+
+      <!-- NOTEPAD BODY -->
+<div class="notepad-body">
 <!-- ADD NOTE INPUT ROW -->
 <div class="gold-block" id="noteAddRow">
 
@@ -34,14 +45,6 @@
 </div>
   <!-- END ADD NOTE INPUT ROW -->
 
-<main class="main">
-	
-  <div id="notes-list-view">
-
-      <!-- NOTEPAD BODY -->
-<div class="notepad-body">
-	
-
   <div id="notes-list"></div>
 
 </div>
@@ -50,9 +53,6 @@
 
 </div>
   <!-- END NOTES LIST -->
-  
-
-
  
   <div id="note-editor-view" style="display:none;">
 
@@ -60,8 +60,6 @@
  <div class="gold-block">
 
       <h3 class="notepad-title" id="note-title-display"></h3>
-      
-      <button class="orange-btn " id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button> 	
 
  </div>
    <!-- END ADD NOTE TOOLBAR -->
