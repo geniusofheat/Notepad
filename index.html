@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notepad</title>
 
-
   <meta name="theme-color" content="#c8a96e">
 
   <link rel="manifest" href="notepad_manifest.json">
@@ -15,76 +14,56 @@
 </head>
 
 <body>
-	
+
 <div id="breadcrumb"></div>
 
 <header class="gold-block">
-
-  <h3 id="pageTitle">📋 Notes List :</h3>
-  	
-  <div class="notepad-date" id="dateDisplay">
-  </div>
-
+  <h3 id="pageTitle">📋  Notepad :</h3>
+  <div class="notepad-date" id="dateDisplay"></div>
 </header>
 
+<!-- TOOLBAR ROW — always visible, [ new list + ] reveals input -->
+<div class="toolbar-row" id="listToolbarRow">
+  <span class="bracket-action" id="newListBtn" onclick="show_list_toolbar()">[ new list + ]</span>
 
-        <button class="orange-btn " id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button> 	
+  <div id="listAddFields" style="display:none; flex:1; align-items:center; gap:8px;">
+    <input class="text-input" id="newListInput" placeholder="Enter list name...">
+    <button class="orange-btn-44" onclick="add_category()">＋</button>
+  </div>
+
+  <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
+</div>
+<!-- END TOOLBAR ROW -->
 
 <main class="main">
-	
-	
+
   <div id="notes-list-view">
 
-      <!-- NOTEPAD BODY -->
-<div class="notepad-body">
-<!-- ADD NOTE INPUT ROW -->
-<div class="gold-block" id="noteAddRow">
-
-        <input class="text-input" id="newNoteInput" placeholder="Add a new note...">
-
-        <button class="orange-btn-44" id="addNoteBtn" onclick="handleAddNoteBtn()">＋</button>
-
-</div>
-  <!-- END ADD NOTE INPUT ROW -->
-
-  <div id="notes-list"></div>
-
-</div>
-      <!-- END NOTEPAD BODY -->
-
-
-</div>
-  <!-- END NOTES LIST -->
- 
-  <div id="note-editor-view" style="display:none;">
-
-    <!-- ADD NOTE TOOLBAR -->
- <div class="gold-block">
-
-      <h3 class="notepad-title" id="note-title-display"></h3>
-
- </div>
-   <!-- END ADD NOTE TOOLBAR -->
-   
-    
-<!--=========================================
-	DYNAMIC NOTEPAD
-	=================================== -->
-  
-
     <div class="notepad-body">
-    	
-      <textarea id="note-textarea" placeholder="Your note goes here."></textarea>
+
+      <p id="description-paragraph" class="notepad-placeholder" style="display:none;">
+        Tap the list title to create your first note.
+      </p>
+
+      <div id="notes-list"></div>
 
     </div>
-<!--====================================
-	END DYNAMIC NOTEPAD
-	=================================== -->
 
   </div>
-  
+  <!-- END NOTES LIST VIEW -->
 
+  <div id="note-editor-view" style="display:none;">
 
+    <div class="gold-block">
+      <h3 class="notepad-title" id="note-title-display"></h3>
+    </div>
+
+    <div class="notepad-body">
+      <textarea id="note-textarea" placeholder="Your note goes here."></textarea>
+    </div>
+
+  </div>
+  <!-- END NOTE EDITOR VIEW -->
 
 </main>
 
@@ -95,7 +74,6 @@
     navigator.serviceWorker.register('notepad_service_worker.js');
   }
 </script>
-
 
 </body>
 </html>
