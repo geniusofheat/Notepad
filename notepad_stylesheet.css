@@ -221,7 +221,6 @@ p {
 
 .text-input {
   height: 44px;
-  border-radius: 10px;
   text-align: center;
   font-size: 14px;
   margin-right: 10px;
@@ -447,22 +446,7 @@ p {
   box-sizing: border-box;
 }
 
-.note-area-textarea {
-  width: 100%;
-  min-height: 200px;
-  background: #ffffff;
-  border: 1px solid var(--rule-blue);
-  border-radius: 4px;
-  padding: 16px;
-  font-family: 'Crimson Pro', serif;
-  font-size: 16px;
-  line-height: 1.8;
-  resize: vertical;
-  outline: none;
-  caret-color: var(--gold);
-}
-
-.note-area-textarea::placeholder {
+.note-textarea::placeholder {
   font-style: italic;
 }
 
@@ -472,10 +456,6 @@ p {
 
 .hidden { display: none !important; }
 
-textarea {
-	color: var(--gold);
-	text-indent: 20px;
-}
 .gold-block {
 	position: relative;
 	border: 0px solid var(--gold);
@@ -492,4 +472,16 @@ textarea {
 
 .gold-block button {
 	border-radius: 10px;
+}
+
+#note-textarea {
+  width: 100%;
+  min-height: 100vh;
+  background: #ffffff;
+  padding: 16px 20px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 18px;
+  line-height: 1.8;
+  resize: none;
+  outline: none;
 }
