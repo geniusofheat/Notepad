@@ -20,12 +20,12 @@ body {
 
 h2 {
 	margin: 0px;
-	padding: 10px;
+	padding: 5px;
 }
 
 h3 {
-	margin: 0px;
-	padding: 10px;
+	margin: 5px;
+	padding: 5px;
 }
 
 /* =====================
@@ -33,16 +33,41 @@ h3 {
 ===================== */
   
 header {
-  border-top: 2px solid var(--gold);
-  border-bottom: 2px solid var(--gold);
-  height: 64px;
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   width: 95vw;
-  padding-left: 20px;
+  padding-left: 10px;
+}
+
+main {
+  background-color: #ffffff;
+  margin: 16px auto 0;
+  border-radius: 2px;
+  box-shadow: 2px 4px 24px rgba(0,0,0,0.3);
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  padding: 16px;
+}
+
+p {
+	text-indent: 10px;
+	padding: 5px 10px 20px 10px;
+}
+
+.gold-block-flex-row {
+	position: relative;
+	display: flex;
+	justify-content: space-around;
+	padding: 5px;
+	width: 100%;
+	background: beige;
+	border: 1px solid;
+	box-sizing: border-box;
+	margin-bottom: 5px;
+	z-index: 3;
 }
 
 .header-row {
@@ -50,7 +75,7 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  min-height: 56px;
+  height: 44px;
 }
 
 .header-left {
@@ -74,26 +99,13 @@ header {
 ===================== */
 
 .orange-btn {
-  padding: 2px;
+  padding: 2px 5px;
   font-family: 'Playfair Display', serif;
   background: orange;
-  border: 2px solid gold;
-  margin-right: 0px;
-  margin-left: 10px;
+  border: 2px outset gold;
+  margin: 10px;
   text-decoration: none;
-  text-align: right;
-  
-}
-
-.gold-block .orange-btn{
-  padding: 5px;
-  font-family: 'Playfair Display', serif;
-  background: orange;
-  border: 2px double gold;
-  text-decoration: none;
-
-  text-align: right;
-  
+  text-align: center;
 }
 
 .orange-btn-44 {
@@ -108,63 +120,6 @@ header {
   margin: 0px 5px;
 }
 
-/* =====================
-   MAIN
-===================== */
-
-main {
-  background-color: #ffffff;
-  margin: 16px auto 0;
-  border-radius: 2px;
-  box-shadow: 2px 4px 24px rgba(0,0,0,0.3);
-  overflow: hidden;
-  position: relative;
-  width: 100%;
-  padding: 16px;
-}
-
-p {
-	text-indent: 10px;
-	padding: 5px 5px 5px 10px;
-}
-
-/* =====================
-   TOOLBAR ROW
-===================== */
-
-.toolbar-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  max-width: 100%;
-  margin: 10px 5px;
-  background: beige;
-  border: 1px solid;
-  padding: 8px;
-  z-index: 2;
-}
-
-.toolbar-row input {
-  flex: 1 1 auto;
-  min-width: 120px;
-  background: transparent;
-  border: none;
-  font-family: 'Crimson Pro', serif;
-  font-size: 16px;
-  outline: none;
-}
-
-.toolbar-row button {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* =====================
    NOTEPAD TITLE
@@ -176,7 +131,7 @@ p {
   font-weight: 700;
   flex: 1;
   margin: 0;
-  padding-left: 20px;
+  padding-left: 10px;
 }
 
 /* =====================
@@ -220,11 +175,12 @@ p {
 ===================== */
 
 .text-input {
-  height: 44px;
   text-align: center;
   font-size: 14px;
-  margin-right: 10px;
+  margin: 5px 5px;
   width: 100%;
+  height: 35px;
+  border: none;
 }
 
 /* =====================
@@ -234,7 +190,7 @@ p {
 .notes-ol {
   list-style: decimal;
   width: 100%;
-  padding: 0px 0px 0px 24px;
+  padding: 0px 0px 0px 20px;
   margin: 0px;
 }
 
@@ -248,21 +204,11 @@ p {
   font-family: 'Playfair Display', serif;
   font-size: 18px;
   cursor: pointer;
+  padding-left: 2px;
 }
 
 .note-list-title:active {
   opacity: 0.6;
-}
-
-.note-delete-btn {
-  padding: 2px;
-  background: orange;
-  border: 2px double gold;
-  text-decoration: none;
-  color: black;
-  text-align: right;
-  font-size: 16px;
-  cursor: pointer;
 }
 
 .notepad-placeholder {
@@ -279,7 +225,6 @@ p {
    bracket label + buttons group on the right)
 ===================== */
 
-.note-list-item,
 .sub-list-item {
   display: list-item;
   align-items: center;
@@ -327,7 +272,7 @@ p {
 
 .note-items-list {
   list-style: circle;
-  padding-left: 24px;
+  padding-left: 20px;
   width: 100%;
   margin: 0;
 }
@@ -355,7 +300,6 @@ p {
   cursor: pointer;
   color: var(--ink);
   white-space: nowrap;
-  flex: 0 0 auto;
 }
 
 .bracket-action:active {
@@ -387,24 +331,6 @@ p {
 .sub-list.level-3 {
   list-style: none;
   padding-left: 20px;
-}
-
-/* =====================
-   INLINE ADD ROW
-===================== */
-
-.add-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #fdfaf4;
-  padding: 8px 0;
-  width: 100%;
-}
-
-.add-row .text-input {
-  margin: 0;
-  flex: 1 1 auto;
 }
 
 /* =====================
@@ -456,32 +382,15 @@ p {
 
 .hidden { display: none !important; }
 
-.gold-block {
-	position: relative;
-	border: 0px solid var(--gold);
-	display: flex;
-	align-items: center;
-	align-content: space-around;
-	padding: 5px;
-	width: 100%;
-	box-sizing: border-box;
-	margin-bottom: 5px;
-	z-index: 3;
 
-}
-
-.gold-block button {
-	border-radius: 10px;
-}
 
 #note-textarea {
   width: 100%;
-  min-height: 100vh;
-  background: #ffffff;
-  padding: 16px 20px;
+  min-height: 400px;
+  padding: 10px 10px;
   font-family: 'Crimson Pro', serif;
   font-size: 18px;
-  line-height: 1.8;
   resize: none;
   outline: none;
+  border-left: 4px solid #2f6fa3;
 }

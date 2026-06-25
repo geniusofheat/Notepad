@@ -17,33 +17,31 @@
 
 <div id="breadcrumb"></div>
 
-<header class="gold-block">
-  <h3 id="pageTitle">📋  Notepad :</h3>
+<header>
+  <h3 id="pageTitle">📋  &nbsp;&nbsp;Notepad :</h3>
   <div class="notepad-date" id="dateDisplay"></div>
 </header>
 
+      <p id="description-paragraph">Tap the [ new list + ] button and type a name for the list where your notes will be kept. Then press the [ add note + ] button and name the note. Press the note title to type a note.
+      </p>
+
 <!-- TOOLBAR ROW — always visible, [ new list + ] reveals input -->
-<div class="toolbar-row" id="listToolbarRow">
+<div class="gold-block-flex-row" id="listToolbarRow">
   <span class="bracket-action" id="newListBtn" onclick="show_list_toolbar()">[ new list + ]</span>
 
-  <div id="listAddFields" style="display:none; flex:1; align-items:center; gap:8px;">
+  <div id="listAddFields" style="display:none;">
     <input class="text-input" id="newListInput" placeholder="Enter list name...">
-    <button class="orange-btn-44" onclick="add_category()">＋</button>
+    <button class="orange-btn" style="margin: 0px;" onclick="add_category()">＋</button>
   </div>
-
-  <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
 </div>
 <!-- END TOOLBAR ROW -->
 
 <main class="main">
 
+
   <div id="notes-list-view">
 
     <div class="notepad-body">
-
-      <p id="description-paragraph" class="notepad-placeholder" style="display:none;">
-        Tap the list title to create your first note.
-      </p>
 
       <div id="notes-list"></div>
 
@@ -54,8 +52,9 @@
 
   <div id="note-editor-view" style="display:none;">
 
-    <div class="gold-block">
-      <h3 class="notepad-title" id="note-title-display"></h3>
+    <div class="gold-block-flex-row">
+      <h3 id="note-title-display"></h3>
+      <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
     </div>
 
     <div class="notepad-body">
