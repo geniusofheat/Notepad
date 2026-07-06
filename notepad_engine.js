@@ -4,6 +4,11 @@
 // Level 2 — Note titles (tap opens note writing view)
 // Toolbar row: [ new list + ] always visible, reveals input on tap
 // Add note row: hidden, shown only when [ add note + ] is tapped
+//
+// CHANGES IN THIS VERSION:
+// - Storage is plain localStorage again (no Firebase — this app has none).
+// - New EXPORT / IMPORT section added at the bottom: lets you manually move
+//   notes between devices via a downloaded .json backup file.
 
 
 // ── SECTION 1: STATE ────────────────────────────────────────────────────────
@@ -497,3 +502,105 @@ function voiceInputToNote() {
   };
 }
 window.voiceInputToNote = voiceInputToNote;
+
+
+// ── SECTION 13: EXPORT / IMPORT (MANUAL CROSS-DEVICE BACKUP) ────────────────
+
+// Downloads the current notes array as a .json file the user can transfer
+// to another device (email, Drive, USB, etc.) and load with import_notes().
+function export_notes() {
+  const data_str = JSON.stringify(notes, null, 2);
+  const blob = new Blob([data_str], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  const filename = `notepad_backup_${stamp}.json`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.export_notes = export_notes;
+
+// Opens the hidden file picker. Wire this to your "Import" button's onclick.
+function trigger_import() {
+  const input = document.getElementById('importFileInput');
+  if (input) input.click();
+}
+window.trigger_import = trigger_import;
+
+// Reads the picked .json file, validates it, then asks whether to replace
+// everything or merge with what's already on this device.
+function import_notes(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let imported;
+    try {
+      imported = JSON.parse(e.target.result);
+    } catch (err) {
+      alert('That file could not be read as valid backup data.');
+      event.target.value = '';
+      return;
+    }
+
+    if (!Array.isArray(imported)) {
+      alert('That file does not look like a Notepad backup.');
+      event.target.value = '';
+      return;
+    }
+
+    const replace = confirm(
+      'Tap OK to REPLACE all current lists with this backup.\nTap Cancel to MERGE instead (keeps what\'s here and adds anything new from the backup).'
+    );
+
+    if (replace) {
+      notes = imported;
+    } else {
+      merge_notes(imported);
+    }
+
+    save_notes();
+    expanded.clear();
+    redraw_list();
+    alert('Import complete.');
+
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+window.import_notes = import_notes;
+
+// Merge logic: lists are matched by title (case-insensitive). Existing lists
+// keep their notes; any note titles not already present get added in.
+function merge_notes(imported) {
+  imported.forEach((incoming_cat) => {
+    const existing_cat = notes.find(
+      c => c.title.trim().toLowerCase() === incoming_cat.title.trim().toLowerCase()
+    );
+
+    if (!existing_cat) {
+      const idx = alpha_insert_index(notes, incoming_cat.title);
+      notes.splice(idx, 0, incoming_cat);
+      return;
+    }
+
+    if (!existing_cat.items) existing_cat.items = [];
+
+    (incoming_cat.items || []).forEach((incoming_item) => {
+      const dup = existing_cat.items.find(
+        i => i.title.trim().toLowerCase() === incoming_item.title.trim().toLowerCase()
+      );
+      if (!dup) {
+        const idx = alpha_insert_index(existing_cat.items, incoming_item.title);
+        existing_cat.items.splice(idx, 0, incoming_item);
+      }
+    });
+  });
+}

@@ -25,16 +25,30 @@
       <p id="description-paragraph">Tap the [ new list + ] button and type a name for the list where your notes will be kept. Then tap the [ add note + ] button beside the list title to add a note title. Then tap the note title to type a note.
       </p>
 
-<!-- TOOLBAR ROW — always visible, [ new list + ] reveals input -->
+<!-- TOOLBAR ROW — always visible, [ new list + ] reveals input below -->
 <div class="toolbar-row" id="listToolbarRow">
   <div class="orange-btn" style="margin: 0px;" id="newListBtn" onclick="show_list_toolbar()">new list +</div>
-
-  <div id="listAddFields" style="display:none;">
-    <input class="text-input" id="newListInput" placeholder="Enter list name...">
-    <button class="orange-btn" style="margin: 0px;" onclick="add_category()">＋</button>
-  </div>
+  <div class="orange-btn" style="margin: 0px;" id="exportBtn" onclick="export_notes()">export +</div>
+  <div class="orange-btn" style="margin: 0px;" id="importBtn" onclick="trigger_import()">import +</div>
 </div>
 <!-- END TOOLBAR ROW -->
+
+<!-- SHARED INPUT DIVIDER — new list input row, plus hidden import file picker -->
+<div id="listAddFields" style="display:none;">
+
+  <input class="text-input" id="newListInput" placeholder="Enter list name...">
+  <button class="orange-btn" style="margin: 0px;" onclick="add_category()">＋</button>
+</div>
+
+<input
+  type="file"
+  id="importFileInput"
+  accept="application/json"
+  style="display:none"
+  onchange="import_notes(event)"
+>
+<!-- END SHARED INPUT DIVIDER -->
+
 
 <main class="main">
 
