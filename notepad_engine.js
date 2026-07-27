@@ -65,9 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Track the user's text selection so toolbar buttons can restore it
-  // after the click moves focus away from the editor.
+  // after the click moves focus away from the editor. selectionchange
+  // catches touchscreen selection (drag handles) that mouseup/keyup miss.
   editor.addEventListener('mouseup', save_editor_selection);
   editor.addEventListener('keyup', save_editor_selection);
+  document.addEventListener('selectionchange', save_editor_selection);
 });
 
 function set_date_display() {
@@ -833,3 +835,4 @@ function handle_fontcolor_select(selectEl) {
   selectEl.value = '';
 }
 window.handle_fontcolor_select = handle_fontcolor_select;
+
