@@ -72,14 +72,14 @@
 
     <!-- SINGLE FORMAT TOOLBAR -->
     <div class="format-toolbar-single" id="formatToolbarSingle">
-      <div class="fmt-btn" data-cmd="bold" data-label="Bold" onclick="handle_fmt_click(this)">B</div>
-      <div class="fmt-btn" data-cmd="italic" data-label="Italic" onclick="handle_fmt_click(this)">I</div>
-      <div class="fmt-btn" data-cmd="underline" data-label="Underline" onclick="handle_fmt_click(this)">U</div>
-      <div class="fmt-btn" id="alignBtn" data-label="Align" onclick="handle_align_click(this)">L</div>
-      <div class="fmt-btn" data-cmd="indent" data-label="Indent" onclick="handle_fmt_click(this)">I</div>
+      <div class="fmt-btn" data-cmd="bold" data-label="Bold" onclick="handle_fmt_click(this)">-B-</div>
+      <div class="fmt-btn" data-cmd="italic" data-label="Italic" onclick="handle_fmt_click(this)">-Ita-</div>
+      <div class="fmt-btn" data-cmd="underline" data-label="Underline" onclick="handle_fmt_click(this)">-Un-</div>
+      <div class="fmt-btn" id="alignBtn" data-label="Align" onclick="handle_align_click(this)">-Ali-</div>
+      <div class="fmt-btn" data-cmd="indent" data-label="Indent" onclick="handle_fmt_click(this)">-Ind-</Ind></div>
 
       <select class="fmt-select" id="fontSelect" data-label="Font" onchange="handle_font_select(this)">
-        <option value="">Font</option>
+        <option value="">Font Style :</option>
         <optgroup label="Font Color">
           <option value="color:black">Black</option>
           <option value="color:red">Red</option>
@@ -96,7 +96,7 @@
       </select>
 
       <select class="fmt-select" id="highlightSelect" data-label="Highlight" onchange="handle_highlight_select(this)">
-        <option value="">HL</option>
+        <option value="">HiLi</option>
         <optgroup label="Text Color">
           <option value="text:red">Red</option>
           <option value="text:blue">Blue</option>
@@ -114,7 +114,7 @@
       </select>
 
       <select class="fmt-select" id="listSelect" data-label="List" onchange="handle_list_select(this)">
-        <option value="">List</option>
+        <option value="">List Style :</option>
         <optgroup label="Unordered List">
           <option value="ul:disc">Bulleted</option>
           <option value="ul:circle">Circle</option>
