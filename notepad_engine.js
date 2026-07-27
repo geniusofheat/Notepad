@@ -660,10 +660,8 @@ function highlight_fmt_btn(el) {
   const cmd = el.dataset.cmd;
 
   if (TOGGLE_COMMANDS.includes(cmd)) {
-    setTimeout(() => {
-      const active = document.queryCommandState(cmd);
-      el.classList.toggle('active', active);
-    }, 0);
+    const active = document.queryCommandState(cmd);
+    el.classList.toggle('active', active);
   } else {
     el.classList.add('active');
     setTimeout(() => el.classList.remove('active'), 2000);
