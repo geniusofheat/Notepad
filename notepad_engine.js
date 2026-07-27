@@ -638,6 +638,12 @@ function save_editor_selection() {
     const range = sel.getRangeAt(0);
     if (editor.contains(range.commonAncestorContainer)) {
       saved_range = range.cloneRange();
+
+      // Selecting actual text (not just moving the cursor) is what
+      // triggers the browser's native scroll-into-view on touch devices.
+      if (!sel.isCollapsed) {
+        lock_scroll_position();
+      }
     }
   }
 }
@@ -835,4 +841,3 @@ function handle_fontcolor_select(selectEl) {
   selectEl.value = '';
 }
 window.handle_fontcolor_select = handle_fontcolor_select;
-
