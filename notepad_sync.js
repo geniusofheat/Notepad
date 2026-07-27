@@ -4,13 +4,13 @@
 
 // ---- 1. CONFIG ----
 // Replace with your Firebase project config (Project Settings > General > Your apps > SDK setup).
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  const firebaseConfig = {
+  apiKey: "AIzaSyCGvpWKfkSQapFEwx6lMr6kAMFQ7Ir-sNQ",
+  authDomain: "notepad-fba.firebaseapp.com",
+  projectId: "notepad-fba",
+  storageBucket: "notepad-fba.firebasestorage.app",
+  messagingSenderId: "570988410605",
+  appId: "1:570988410605:web:a70688966f8c6035cc3ee4"
 };
 
 firebase.initializeApp(firebaseConfig);
