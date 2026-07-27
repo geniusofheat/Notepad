@@ -710,7 +710,7 @@ function handle_fmt_click(el) {
   const label = el.dataset.label;
 
   const editor = document.getElementById('note-textarea');
-  editor.focus();
+  editor.focus({ preventScroll: true });
   restore_editor_selection();
 
   switch (cmd) {
@@ -753,7 +753,7 @@ function handle_heading_select(selectEl) {
   if (!value) return;
 
   const editor = document.getElementById('note-textarea');
-  editor.focus();
+  editor.focus({ preventScroll: true });
   restore_editor_selection();
 
   document.execCommand('formatBlock', false, value);
@@ -771,7 +771,7 @@ function handle_fontsize_select(selectEl) {
   if (!value) return;
 
   const editor = document.getElementById('note-textarea');
-  editor.focus();
+  editor.focus({ preventScroll: true });
   restore_editor_selection();
 
   document.execCommand('fontSize', false, value);
@@ -789,7 +789,7 @@ function handle_fontcolor_select(selectEl) {
   if (!value) return;
 
   const editor = document.getElementById('note-textarea');
-  editor.focus();
+  editor.focus({ preventScroll: true });
   restore_editor_selection();
 
   document.execCommand('foreColor', false, value);
@@ -800,7 +800,3 @@ function handle_fontcolor_select(selectEl) {
   selectEl.value = '';
 }
 window.handle_fontcolor_select = handle_fontcolor_select;
-
-
-
-
