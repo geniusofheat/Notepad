@@ -421,6 +421,11 @@ function open_note(cat_id, item_id) {
   render_breadcrumb();
   document.getElementById('note-textarea').innerHTML = item.content || '';
 
+  // Makes the Enter key create a real new block (a <div>) instead of just
+  // a line break, so formatting commands like ordered/unordered list
+  // attach to the correct line rather than the whole note from the start.
+  document.execCommand('defaultParagraphSeparator', false, 'div');
+
   show_back_btn();
 }
 window.open_note = open_note;
