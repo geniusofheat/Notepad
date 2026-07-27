@@ -70,56 +70,70 @@
       <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
     </div>
 
-    <!-- TOP FORMAT TOOLBAR — structure/block tools -->
-    <div class="format-toolbar-top" id="formatToolbarTop">
-      <div class="fmt-btn" data-cmd="insertUnorderedList" data-label="Unordered List" onclick="handle_fmt_click(this)">UL</div>
-      <div class="fmt-btn" data-cmd="insertOrderedList" data-label="Ordered List" onclick="handle_fmt_click(this)">OL</div>
+    <!-- SINGLE FORMAT TOOLBAR -->
+    <div class="format-toolbar-single" id="formatToolbarSingle">
+      <div class="fmt-btn" data-cmd="bold" data-label="Bold" onclick="handle_fmt_click(this)">B</div>
+      <div class="fmt-btn" data-cmd="italic" data-label="Italic" onclick="handle_fmt_click(this)">I</div>
+      <div class="fmt-btn" data-cmd="underline" data-label="Underline" onclick="handle_fmt_click(this)">U</div>
+      <div class="fmt-btn" id="alignBtn" data-label="Align" onclick="handle_align_click(this)">L</div>
       <div class="fmt-btn" data-cmd="indent" data-label="Indent" onclick="handle_fmt_click(this)">I</div>
-      <div class="fmt-btn" data-cmd="margin" data-label="Margin" onclick="handle_fmt_click(this)">M</div>
-      <select class="fmt-select" id="headingSelect" data-label="Heading" onchange="handle_heading_select(this)">
-        <option value="">H</option>
-        <option value="H1">H1</option>
-        <option value="H2">H2</option>
-        <option value="H3">H3</option>
-        <option value="H4">H4</option>
-        <option value="H5">H5</option>
-        <option value="H6">H6</option>
+
+      <select class="fmt-select" id="fontSelect" data-label="Font" onchange="handle_font_select(this)">
+        <option value="">Font</option>
+        <optgroup label="Font Color">
+          <option value="color:black">Black</option>
+          <option value="color:red">Red</option>
+          <option value="color:blue">Blue</option>
+          <option value="color:green">Green</option>
+          <option value="color:orange">Orange</option>
+        </optgroup>
+        <optgroup label="Font Size">
+          <option value="size:1">Small</option>
+          <option value="size:3">Medium</option>
+          <option value="size:5">Large</option>
+          <option value="size:7">X-Large</option>
+        </optgroup>
       </select>
+
+      <select class="fmt-select" id="highlightSelect" data-label="Highlight" onchange="handle_highlight_select(this)">
+        <option value="">HL</option>
+        <optgroup label="Text Color">
+          <option value="text:red">Red</option>
+          <option value="text:blue">Blue</option>
+          <option value="text:green">Green</option>
+          <option value="text:yellow">Yellow</option>
+          <option value="text:orange">Orange</option>
+        </optgroup>
+        <optgroup label="Background Color">
+          <option value="bg:red">Red</option>
+          <option value="bg:blue">Blue</option>
+          <option value="bg:green">Green</option>
+          <option value="bg:yellow">Yellow</option>
+          <option value="bg:orange">Orange</option>
+        </optgroup>
+      </select>
+
+      <select class="fmt-select" id="listSelect" data-label="List" onchange="handle_list_select(this)">
+        <option value="">List</option>
+        <optgroup label="Unordered List">
+          <option value="ul:disc">Bulleted</option>
+          <option value="ul:circle">Circle</option>
+          <option value="ul:square">Square</option>
+        </optgroup>
+        <optgroup label="Ordered List">
+          <option value="ol:decimal">Numbered</option>
+          <option value="ol:lower-alpha">Lettered</option>
+          <option value="ol:upper-roman">Roman</option>
+        </optgroup>
+      </select>
+
       <div class="fmt-btn" data-cmd="checkbox" data-label="Checkbox" onclick="handle_fmt_click(this)">C</div>
     </div>
-    <!-- END TOP FORMAT TOOLBAR -->
+    <!-- END SINGLE FORMAT TOOLBAR -->
 
-    <div class="notepad-editor-wrap">
-
-      <!-- LEFT SIDE FORMAT TOOLBAR — inline style tools -->
-      <div class="format-toolbar-side" id="formatToolbarSide">
-        <div class="fmt-btn" data-cmd="bold" data-label="Bold" onclick="handle_fmt_click(this)">B</div>
-        <div class="fmt-btn" data-cmd="italic" data-label="Italic" onclick="handle_fmt_click(this)">I</div>
-        <div class="fmt-btn" data-cmd="hiliteColor" data-label="Highlight" onclick="handle_fmt_click(this)">HF</div>
-        <select class="fmt-select" id="fontSizeSelect" data-label="Font Size" onchange="handle_fontsize_select(this)">
-          <option value="">FS</option>
-          <option value="1">S</option>
-          <option value="3">M</option>
-          <option value="5">L</option>
-          <option value="7">XL</option>
-        </select>
-        <select class="fmt-select" id="fontColorSelect" data-label="Font Color" onchange="handle_fontcolor_select(this)">
-          <option value="">FC</option>
-          <option value="black">Black</option>
-          <option value="red">Red</option>
-          <option value="blue">Blue</option>
-          <option value="green">Green</option>
-          <option value="orange">Orange</option>
-        </select>
-      </div>
-      <!-- END LEFT SIDE FORMAT TOOLBAR -->
-
-      <div class="notepad-body">
-        <div id="note-textarea" contenteditable="true" data-placeholder="Your note goes here."></div>
-      </div>
-
+    <div class="notepad-body">
+      <div id="note-textarea" contenteditable="true" data-placeholder="Your note goes here."></div>
     </div>
-    <!-- END editor wrap -->
 
     <div id="fmtTooltip" class="fmt-tooltip" style="display:none;"></div>
 

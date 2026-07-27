@@ -75,7 +75,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  height: 40px;
+  height: 44px;
 }
 
 .header-left {
@@ -109,8 +109,8 @@ p {
 }
 
 .orange-btn-44 {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 4px;
   font-family: 'Playfair Display', serif;
   background: orange;
@@ -147,7 +147,7 @@ p {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 10px;
+  padding: 0px;
   max-width: 100vw;
 }
 
@@ -160,14 +160,14 @@ p {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px 0 20px;
-  min-height: 40px;
+  min-height: 44px;
   border-bottom: 1px solid var(--rule-blue);
   background: #ffffff;
   position: relative;
 }
 
 .notepad-row.blank {
-  min-height: 40px;
+  min-height: 44px;
 }
 
 /* =====================
@@ -195,7 +195,7 @@ p {
 }
 
 .note-list-item {
-  min-height: 40px;
+  min-height: 44px;
   border-bottom: 1px solid var(--rule-blue);
   z-index: 0;
 }
@@ -278,7 +278,7 @@ p {
 }
 
 .note-item-row {
-  min-height: 40px;
+  min-height: 44px;
   border-bottom: 1px solid var(--rule-blue);
   padding: 0 20px 0 4px;
 }
@@ -403,6 +403,15 @@ p {
   pointer-events: none;
 }
 
+/* The global reset at the top of this file zeroes out ol/ul padding,
+   which pushes list markers (numbers/bullets) off to the left where
+   they get clipped by the scroll container. This restores room for them. */
+#note-textarea ol,
+#note-textarea ul {
+  padding-left: 28px;
+  margin-left: 0;
+}
+
 /* =====================
    FORMATTING TOOLBARS
 ===================== */
@@ -413,7 +422,7 @@ p {
   width: 100%;
 }
 
-.format-toolbar-top {
+.format-toolbar-single {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
@@ -424,20 +433,9 @@ p {
   margin-bottom: 5px;
 }
 
-.format-toolbar-side {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 5px;
-  background: #2f6fa3;
-  border: 1px solid;
-  box-sizing: border-box;
-  flex: 0 0 auto;
-}
-
 .fmt-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -458,8 +456,8 @@ p {
 }
 
 .fmt-select {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: #000000;
   border: 2px solid #ffffff;
   color: #ffffff;

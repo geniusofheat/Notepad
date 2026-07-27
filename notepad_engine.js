@@ -627,10 +627,14 @@ function merge_notes(imported) {
 
 // ── SECTION 14: RICH TEXT FORMATTING TOOLBAR ────────────────────────────────
 
-const TOGGLE_COMMANDS = ['bold', 'italic', 'insertUnorderedList', 'insertOrderedList'];
+const TOGGLE_COMMANDS = ['bold', 'italic', 'underline'];
+
+let align_state = 'left'; // tracks the single cycling align button
 
 // Remembers the last text selection made inside the editor, since clicking
 // a toolbar button/select moves focus away and the browser forgets it.
+// selectionchange catches touchscreen selection (drag handles) that
+// mouseup/keyup alone can miss.
 function save_editor_selection() {
   const editor = document.getElementById('note-textarea');
   const sel = window.getSelection();
@@ -655,7 +659,7 @@ function restore_editor_selection() {
   sel.addRange(saved_range);
 }
 
-// Shows the white/black info box above the clicked button for ~2 seconds.
+// Shows the white/black info box above the clicked control for ~2 seconds.
 function show_fmt_tooltip(el, label) {
   const tooltip = document.getElementById('fmtTooltip');
   if (!tooltip) return;
@@ -673,9 +677,9 @@ function show_fmt_tooltip(el, label) {
   }, 2000);
 }
 
-// Blue-highlights the button. Toggle commands stay highlighted while
-// active (e.g. bold stays blue while the cursor is in bold text); other
-// commands just flash blue for ~2 seconds.
+// Blue-highlights the button. Bold/italic/underline stay highlighted while
+// active (cursor is inside that formatting); other buttons just flash blue
+// for ~2 seconds.
 function highlight_fmt_btn(el) {
   const cmd = el.dataset.cmd;
 
@@ -693,34 +697,23 @@ function insert_checkbox() {
   document.execCommand('insertHTML', false, '<input type="checkbox"> ');
 }
 
-// Increases the left margin of the current block each time it's tapped.
-function apply_margin() {
-  const editor = document.getElementById('note-textarea');
+// Finds the list element that was just created/toggled around the cursor
+// and applies the chosen bullet/number style to it.
+function apply_list_style(tag, style) {
   const sel = window.getSelection();
   if (sel.rangeCount === 0) return;
 
   let node = sel.getRangeAt(0).commonAncestorContainer;
   if (node.nodeType === 3) node = node.parentElement;
 
-  let block = node.closest('div, p, li, blockquote');
-
-  if (!block || block === editor) {
-    document.execCommand('formatBlock', false, 'div');
-    node = window.getSelection().getRangeAt(0).commonAncestorContainer;
-    if (node.nodeType === 3) node = node.parentElement;
-    block = node.closest('div, p, li, blockquote');
-  }
-
-  if (!block) return;
-
-  const current = parseInt(block.style.marginLeft) || 0;
-  block.style.marginLeft = (current + 20) + 'px';
+  const list = node.closest(tag);
+  if (list) list.style.listStyleType = style;
 }
 
 // Locks the current scroll position (both the page and the scrollable note
 // body) and restores it a few times over the next moment, since mobile
-// browsers auto-scroll focused elements into view asynchronously — a single
-// restore right after focusing isn't always enough to catch it.
+// browsers auto-scroll focused/selected elements into view asynchronously —
+// a single restore right after focusing isn't always enough to catch it.
 function lock_scroll_position() {
   const container = document.querySelector('.notepad-body');
   const winY = window.scrollY;
@@ -737,7 +730,7 @@ function lock_scroll_position() {
   setTimeout(restore, 150);
 }
 
-// Handles every square toolbar button (B, I, UL, OL, indent, margin, checkbox).
+// Handles the simple square buttons: Bold, Italic, Underline, Indent, Checkbox.
 function handle_fmt_click(el) {
   const cmd = el.dataset.cmd;
   const label = el.dataset.label;
@@ -755,20 +748,11 @@ function handle_fmt_click(el) {
     case 'italic':
       document.execCommand('italic');
       break;
-    case 'insertUnorderedList':
-      document.execCommand('insertUnorderedList');
-      break;
-    case 'insertOrderedList':
-      document.execCommand('insertOrderedList');
+    case 'underline':
+      document.execCommand('underline');
       break;
     case 'indent':
       document.execCommand('indent');
-      break;
-    case 'margin':
-      apply_margin();
-      break;
-    case 'hiliteColor':
-      document.execCommand('hiliteColor', false, 'yellow');
       break;
     case 'checkbox':
       insert_checkbox();
@@ -782,8 +766,36 @@ function handle_fmt_click(el) {
 }
 window.handle_fmt_click = handle_fmt_click;
 
-// Handles the H (heading) dropdown.
-function handle_heading_select(selectEl) {
+// Handles the single Align button — cycles left -> center -> right -> left.
+function handle_align_click(el) {
+  lock_scroll_position();
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus({ preventScroll: true });
+  restore_editor_selection();
+
+  if (align_state === 'left') {
+    document.execCommand('justifyCenter');
+    align_state = 'center';
+    el.textContent = 'C';
+  } else if (align_state === 'center') {
+    document.execCommand('justifyRight');
+    align_state = 'right';
+    el.textContent = 'R';
+  } else {
+    document.execCommand('justifyLeft');
+    align_state = 'left';
+    el.textContent = 'L';
+  }
+
+  show_fmt_tooltip(el, 'Align ' + align_state.charAt(0).toUpperCase() + align_state.slice(1));
+  save_editor_selection();
+  auto_save_current_note();
+}
+window.handle_align_click = handle_align_click;
+
+// Handles the Font select (Font Color / Font Size grouped options).
+function handle_font_select(selectEl) {
   const value = selectEl.value;
   if (!value) return;
 
@@ -793,17 +805,24 @@ function handle_heading_select(selectEl) {
   editor.focus({ preventScroll: true });
   restore_editor_selection();
 
-  document.execCommand('formatBlock', false, value);
+  const [type, val] = value.split(':');
 
-  show_fmt_tooltip(selectEl, 'Heading ' + value);
+  if (type === 'color') {
+    document.execCommand('foreColor', false, val);
+    show_fmt_tooltip(selectEl, 'Font Color');
+  } else if (type === 'size') {
+    document.execCommand('fontSize', false, val);
+    show_fmt_tooltip(selectEl, 'Font Size');
+  }
+
   save_editor_selection();
   auto_save_current_note();
   selectEl.value = '';
 }
-window.handle_heading_select = handle_heading_select;
+window.handle_font_select = handle_font_select;
 
-// Handles the FS (font size) dropdown. Uses execCommand's 1-7 scale.
-function handle_fontsize_select(selectEl) {
+// Handles the Highlight select (Text Color / Background Color grouped options).
+function handle_highlight_select(selectEl) {
   const value = selectEl.value;
   if (!value) return;
 
@@ -813,17 +832,24 @@ function handle_fontsize_select(selectEl) {
   editor.focus({ preventScroll: true });
   restore_editor_selection();
 
-  document.execCommand('fontSize', false, value);
+  const [type, val] = value.split(':');
 
-  show_fmt_tooltip(selectEl, 'Font Size');
+  if (type === 'text') {
+    document.execCommand('foreColor', false, val);
+    show_fmt_tooltip(selectEl, 'Text Color');
+  } else if (type === 'bg') {
+    document.execCommand('hiliteColor', false, val);
+    show_fmt_tooltip(selectEl, 'Background Color');
+  }
+
   save_editor_selection();
   auto_save_current_note();
   selectEl.value = '';
 }
-window.handle_fontsize_select = handle_fontsize_select;
+window.handle_highlight_select = handle_highlight_select;
 
-// Handles the FC (font color) dropdown.
-function handle_fontcolor_select(selectEl) {
+// Handles the List select (Unordered List / Ordered List grouped style options).
+function handle_list_select(selectEl) {
   const value = selectEl.value;
   if (!value) return;
 
@@ -833,11 +859,20 @@ function handle_fontcolor_select(selectEl) {
   editor.focus({ preventScroll: true });
   restore_editor_selection();
 
-  document.execCommand('foreColor', false, value);
+  const [type, style] = value.split(':');
 
-  show_fmt_tooltip(selectEl, 'Font Color');
+  if (type === 'ul') {
+    document.execCommand('insertUnorderedList');
+    apply_list_style('ul', style);
+    show_fmt_tooltip(selectEl, 'Unordered List');
+  } else if (type === 'ol') {
+    document.execCommand('insertOrderedList');
+    apply_list_style('ol', style);
+    show_fmt_tooltip(selectEl, 'Ordered List');
+  }
+
   save_editor_selection();
   auto_save_current_note();
   selectEl.value = '';
 }
-window.handle_fontcolor_select = handle_fontcolor_select;
+window.handle_list_select = handle_list_select;
