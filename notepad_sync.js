@@ -114,3 +114,42 @@ async function pullNotesOnce() {
   const doc = await db.collection("notepads").doc(code).get();
   return doc.exists ? doc.data().notes : null;
 }
+function handle_sync_click() {
+  const existingCode = getSyncCode();
+
+  if (existingCode) {
+    alert("This device's sync code:\n\n" + existingCode + "\n\nEnter this same code on your other device to link it.");
+    return;
+  }
+
+  const choice = confirm("Tap OK to create a NEW sync code for this device.\nTap Cancel to enter a code from another device instead.");
+
+  if (choice) {
+    const code = createNewSyncCode();
+    alert("Your sync code is:\n\n" + code + "\n\nEnter this on your other device to link it.");
+    subscribeToNotes((cloud_notes) => {
+      notes = cloud_notes || [];
+      localStorage.setItem('notepad_notes', JSON.stringify(notes));
+      redraw_list();
+    });
+    saveNotesToCloud(notes);
+  } else {
+    const entered = prompt("Enter the sync code from your other device:");
+    if (entered) {
+      linkExistingSyncCode(entered);
+      pullNotesOnce().then((cloud_notes) => {
+        if (cloud_notes) {
+          notes = cloud_notes;
+          localStorage.setItem('notepad_notes', JSON.stringify(notes));
+          redraw_list();
+        }
+        subscribeToNotes((updated_notes) => {
+          notes = updated_notes || [];
+          localStorage.setItem('notepad_notes', JSON.stringify(notes));
+          redraw_list();
+        });
+      });
+    }
+  }
+}
+window.handle_sync_click = handle_sync_click;
