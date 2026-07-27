@@ -434,7 +434,6 @@ p {
 }
 
 .fmt-btn {
-  width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
@@ -456,7 +455,6 @@ p {
 }
 
 .fmt-select {
-  width: 20px;
   height: 20px;
   background: #000000;
   border: 2px solid #ffffff;
