@@ -7,9 +7,9 @@
 //
 // CHANGES IN THIS VERSION:
 // - Storage is localStorage PLUS Firebase cloud sync (via notepad_sync.js).
-// - load_notes() now also subscribes to cloud changes on startup.
-// - save_notes() now also pushes to the cloud after every local save.
-// - EXPORT / IMPORT section kept at the bottom as a manual backup fallback.
+// - Note editor switched from <textarea> to contenteditable <div> so notes
+//   can now store formatted HTML (bold, italic, lists, headings, etc).
+// - New SECTION 14 at the bottom: formatting toolbar button handlers.
 
 
 // ── SECTION 1: STATE ────────────────────────────────────────────────────────
@@ -29,6 +29,8 @@ let nav = {
 };
 
 let auto_save_timer = null;
+
+let saved_range = null; // last known text selection inside the note editor
 
 
 // ── SECTION 2: INIT ─────────────────────────────────────────────────────────
@@ -55,10 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') add_note_item();
   });
 
-  document.getElementById('note-textarea').addEventListener('input', () => {
+  const editor = document.getElementById('note-textarea');
+
+  editor.addEventListener('input', () => {
     clearTimeout(auto_save_timer);
     auto_save_timer = setTimeout(auto_save_current_note, 800);
   });
+
+  // Track the user's text selection so toolbar buttons can restore it
+  // after the click moves focus away from the editor.
+  editor.addEventListener('mouseup', save_editor_selection);
+  editor.addEventListener('keyup', save_editor_selection);
 });
 
 function set_date_display() {
@@ -407,7 +416,7 @@ function open_note(cat_id, item_id) {
   document.getElementById('note-title-display').textContent = item.title;
   set_header_title('📝  Note :');
   render_breadcrumb();
-  document.getElementById('note-textarea').value = item.content || '';
+  document.getElementById('note-textarea').innerHTML = item.content || '';
 
   show_back_btn();
 }
@@ -475,7 +484,7 @@ function auto_save_current_note() {
   const item = find_item(nav.item_id);
   if (!item) return;
 
-  item.content = document.getElementById('note-textarea').value;
+  item.content = document.getElementById('note-textarea').innerHTML;
   item.updated = new Date().toISOString();
   save_notes();
 }
@@ -498,25 +507,6 @@ function voiceInput() {
   };
 }
 window.voiceInput = voiceInput;
-
-function voiceInputToNote() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) { alert('Voice input not supported.'); return; }
-
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.start();
-
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    const ta = document.getElementById('note-textarea');
-    const pos = ta.selectionStart;
-    ta.value = ta.value.slice(0, pos) + transcript + ta.value.slice(pos);
-    ta.selectionStart = ta.selectionEnd = pos + transcript.length;
-    auto_save_current_note();
-  };
-}
-window.voiceInputToNote = voiceInputToNote;
 
 
 // ── SECTION 13: EXPORT / IMPORT (MANUAL CROSS-DEVICE BACKUP) ────────────────
@@ -619,3 +609,189 @@ function merge_notes(imported) {
     });
   });
 }
+
+
+// ── SECTION 14: RICH TEXT FORMATTING TOOLBAR ────────────────────────────────
+
+const TOGGLE_COMMANDS = ['bold', 'italic', 'insertUnorderedList', 'insertOrderedList'];
+
+// Remembers the last text selection made inside the editor, since clicking
+// a toolbar button/select moves focus away and the browser forgets it.
+function save_editor_selection() {
+  const editor = document.getElementById('note-textarea');
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    if (editor.contains(range.commonAncestorContainer)) {
+      saved_range = range.cloneRange();
+    }
+  }
+}
+
+function restore_editor_selection() {
+  if (!saved_range) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(saved_range);
+}
+
+// Shows the white/black info box above the clicked button for ~2 seconds.
+function show_fmt_tooltip(el, label) {
+  const tooltip = document.getElementById('fmtTooltip');
+  if (!tooltip) return;
+
+  tooltip.textContent = label;
+  tooltip.style.display = 'block';
+
+  const rect = el.getBoundingClientRect();
+  tooltip.style.top = (rect.top + window.scrollY - tooltip.offsetHeight - 8) + 'px';
+  tooltip.style.left = (rect.left + window.scrollX) + 'px';
+
+  clearTimeout(window._fmtTooltipTimer);
+  window._fmtTooltipTimer = setTimeout(() => {
+    tooltip.style.display = 'none';
+  }, 2000);
+}
+
+// Blue-highlights the button. Toggle commands stay highlighted while
+// active (e.g. bold stays blue while the cursor is in bold text); other
+// commands just flash blue for ~2 seconds.
+function highlight_fmt_btn(el) {
+  const cmd = el.dataset.cmd;
+
+  if (TOGGLE_COMMANDS.includes(cmd)) {
+    setTimeout(() => {
+      const active = document.queryCommandState(cmd);
+      el.classList.toggle('active', active);
+    }, 0);
+  } else {
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 2000);
+  }
+}
+
+// Inserts an unchecked checkbox at the cursor.
+function insert_checkbox() {
+  document.execCommand('insertHTML', false, '<input type="checkbox"> ');
+}
+
+// Increases the left margin of the current block each time it's tapped.
+function apply_margin() {
+  const editor = document.getElementById('note-textarea');
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  let node = sel.getRangeAt(0).commonAncestorContainer;
+  if (node.nodeType === 3) node = node.parentElement;
+
+  let block = node.closest('div, p, li, blockquote');
+
+  if (!block || block === editor) {
+    document.execCommand('formatBlock', false, 'div');
+    node = window.getSelection().getRangeAt(0).commonAncestorContainer;
+    if (node.nodeType === 3) node = node.parentElement;
+    block = node.closest('div, p, li, blockquote');
+  }
+
+  if (!block) return;
+
+  const current = parseInt(block.style.marginLeft) || 0;
+  block.style.marginLeft = (current + 20) + 'px';
+}
+
+// Handles every square toolbar button (B, I, UL, OL, indent, margin, checkbox).
+function handle_fmt_click(el) {
+  const cmd = el.dataset.cmd;
+  const label = el.dataset.label;
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus();
+  restore_editor_selection();
+
+  switch (cmd) {
+    case 'bold':
+      document.execCommand('bold');
+      break;
+    case 'italic':
+      document.execCommand('italic');
+      break;
+    case 'insertUnorderedList':
+      document.execCommand('insertUnorderedList');
+      break;
+    case 'insertOrderedList':
+      document.execCommand('insertOrderedList');
+      break;
+    case 'indent':
+      document.execCommand('indent');
+      break;
+    case 'margin':
+      apply_margin();
+      break;
+    case 'hiliteColor':
+      document.execCommand('hiliteColor', false, 'yellow');
+      break;
+    case 'checkbox':
+      insert_checkbox();
+      break;
+  }
+
+  highlight_fmt_btn(el);
+  show_fmt_tooltip(el, label);
+  save_editor_selection();
+  auto_save_current_note();
+}
+window.handle_fmt_click = handle_fmt_click;
+
+// Handles the H (heading) dropdown.
+function handle_heading_select(selectEl) {
+  const value = selectEl.value;
+  if (!value) return;
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus();
+  restore_editor_selection();
+
+  document.execCommand('formatBlock', false, value);
+
+  show_fmt_tooltip(selectEl, 'Heading ' + value);
+  save_editor_selection();
+  auto_save_current_note();
+  selectEl.value = '';
+}
+window.handle_heading_select = handle_heading_select;
+
+// Handles the FS (font size) dropdown. Uses execCommand's 1-7 scale.
+function handle_fontsize_select(selectEl) {
+  const value = selectEl.value;
+  if (!value) return;
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus();
+  restore_editor_selection();
+
+  document.execCommand('fontSize', false, value);
+
+  show_fmt_tooltip(selectEl, 'Font Size');
+  save_editor_selection();
+  auto_save_current_note();
+  selectEl.value = '';
+}
+window.handle_fontsize_select = handle_fontsize_select;
+
+// Handles the FC (font color) dropdown.
+function handle_fontcolor_select(selectEl) {
+  const value = selectEl.value;
+  if (!value) return;
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus();
+  restore_editor_selection();
+
+  document.execCommand('foreColor', false, value);
+
+  show_fmt_tooltip(selectEl, 'Font Color');
+  save_editor_selection();
+  auto_save_current_note();
+  selectEl.value = '';
+}
+window.handle_fontcolor_select = handle_fontcolor_select;

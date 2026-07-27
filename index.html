@@ -28,8 +28,6 @@
 <!-- TOOLBAR ROW — always visible, [ new list + ] reveals input below -->
 <div class="toolbar-row" id="listToolbarRow">
   <div class="orange-btn" style="margin: 0px;" id="newListBtn" onclick="show_list_toolbar()">new list +</div>
-  <div class="orange-btn" style="margin: 0px;" id="exportBtn" onclick="export_notes()">export +</div>
-  <div class="orange-btn" style="margin: 0px;" id="importBtn" onclick="trigger_import()">import +</div>
   <div class="orange-btn" style="margin: 0px;" id="syncBtn" onclick="handle_sync_click()">sync +</div>
 </div>
 <!-- END TOOLBAR ROW -->
@@ -72,9 +70,58 @@
       <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
     </div>
 
-    <div class="notepad-body">
-      <textarea id="note-textarea" placeholder="Your note goes here."></textarea>
+    <!-- TOP FORMAT TOOLBAR — structure/block tools -->
+    <div class="format-toolbar-top" id="formatToolbarTop">
+      <div class="fmt-btn" data-cmd="insertUnorderedList" data-label="Unordered List" onclick="handle_fmt_click(this)">UL</div>
+      <div class="fmt-btn" data-cmd="insertOrderedList" data-label="Ordered List" onclick="handle_fmt_click(this)">OL</div>
+      <div class="fmt-btn" data-cmd="indent" data-label="Indent" onclick="handle_fmt_click(this)">I</div>
+      <div class="fmt-btn" data-cmd="margin" data-label="Margin" onclick="handle_fmt_click(this)">M</div>
+      <select class="fmt-select" id="headingSelect" data-label="Heading" onchange="handle_heading_select(this)">
+        <option value="">H</option>
+        <option value="H1">H1</option>
+        <option value="H2">H2</option>
+        <option value="H3">H3</option>
+        <option value="H4">H4</option>
+        <option value="H5">H5</option>
+        <option value="H6">H6</option>
+      </select>
+      <div class="fmt-btn" data-cmd="checkbox" data-label="Checkbox" onclick="handle_fmt_click(this)">C</div>
     </div>
+    <!-- END TOP FORMAT TOOLBAR -->
+
+    <div class="notepad-editor-wrap">
+
+      <!-- LEFT SIDE FORMAT TOOLBAR — inline style tools -->
+      <div class="format-toolbar-side" id="formatToolbarSide">
+        <div class="fmt-btn" data-cmd="bold" data-label="Bold" onclick="handle_fmt_click(this)">B</div>
+        <div class="fmt-btn" data-cmd="italic" data-label="Italic" onclick="handle_fmt_click(this)">I</div>
+        <div class="fmt-btn" data-cmd="hiliteColor" data-label="Highlight" onclick="handle_fmt_click(this)">HF</div>
+        <select class="fmt-select" id="fontSizeSelect" data-label="Font Size" onchange="handle_fontsize_select(this)">
+          <option value="">FS</option>
+          <option value="1">S</option>
+          <option value="3">M</option>
+          <option value="5">L</option>
+          <option value="7">XL</option>
+        </select>
+        <select class="fmt-select" id="fontColorSelect" data-label="Font Color" onchange="handle_fontcolor_select(this)">
+          <option value="">FC</option>
+          <option value="black">Black</option>
+          <option value="red">Red</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+          <option value="orange">Orange</option>
+        </select>
+      </div>
+      <!-- END LEFT SIDE FORMAT TOOLBAR -->
+
+      <div class="notepad-body">
+        <div id="note-textarea" contenteditable="true" data-placeholder="Your note goes here."></div>
+      </div>
+
+    </div>
+    <!-- END editor wrap -->
+
+    <div id="fmtTooltip" class="fmt-tooltip" style="display:none;"></div>
 
   </div>
   <!-- END NOTE EDITOR VIEW -->

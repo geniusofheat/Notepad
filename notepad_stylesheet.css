@@ -390,7 +390,96 @@ p {
   padding: 10px 10px;
   font-family: 'Crimson Pro', serif;
   font-size: 18px;
-  resize: none;
   outline: none;
   border-left: 4px solid #2f6fa3;
+  overflow-y: auto;
+}
+
+/* contenteditable placeholder (textarea placeholder doesn't work on divs) */
+#note-textarea:empty:before {
+  content: attr(data-placeholder);
+  font-style: italic;
+  color: #888;
+  pointer-events: none;
+}
+
+/* =====================
+   FORMATTING TOOLBARS
+===================== */
+
+.notepad-editor-wrap {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.format-toolbar-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 5px;
+  background: #2f6fa3;
+  border: 1px solid;
+  box-sizing: border-box;
+  margin-bottom: 5px;
+}
+
+.format-toolbar-side {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  background: #2f6fa3;
+  border: 1px solid;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.fmt-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 15px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fmt-btn.active {
+  background: #a8d4f5;
+  color: #000000;
+}
+
+.fmt-select {
+  width: 44px;
+  height: 44px;
+  background: #000000;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 12px;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+}
+
+.fmt-tooltip {
+  position: absolute;
+  background: #ffffff;
+  color: #000000;
+  padding: 10px;
+  border: 1px solid #000000;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+  z-index: 10;
+  white-space: nowrap;
 }
