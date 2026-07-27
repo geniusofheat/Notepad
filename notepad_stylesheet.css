@@ -75,7 +75,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  height: 44px;
+  height: 40px;
 }
 
 .header-left {
@@ -109,8 +109,8 @@ p {
 }
 
 .orange-btn-44 {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   padding: 4px;
   font-family: 'Playfair Display', serif;
   background: orange;
@@ -160,14 +160,14 @@ p {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px 0 20px;
-  min-height: 44px;
+  min-height: 40px;
   border-bottom: 1px solid var(--rule-blue);
   background: #ffffff;
   position: relative;
 }
 
 .notepad-row.blank {
-  min-height: 44px;
+  min-height: 40px;
 }
 
 /* =====================
@@ -195,7 +195,7 @@ p {
 }
 
 .note-list-item {
-  min-height: 44px;
+  min-height: 40px;
   border-bottom: 1px solid var(--rule-blue);
   z-index: 0;
 }
@@ -278,7 +278,7 @@ p {
 }
 
 .note-item-row {
-  min-height: 44px;
+  min-height: 40px;
   border-bottom: 1px solid var(--rule-blue);
   padding: 0 20px 0 4px;
 }
@@ -436,8 +436,8 @@ p {
 }
 
 .fmt-btn {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -458,8 +458,8 @@ p {
 }
 
 .fmt-select {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: #000000;
   border: 2px solid #ffffff;
   color: #ffffff;
