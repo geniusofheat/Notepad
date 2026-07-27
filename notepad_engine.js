@@ -704,10 +704,32 @@ function apply_margin() {
   block.style.marginLeft = (current + 20) + 'px';
 }
 
+// Locks the current scroll position (both the page and the scrollable note
+// body) and restores it a few times over the next moment, since mobile
+// browsers auto-scroll focused elements into view asynchronously — a single
+// restore right after focusing isn't always enough to catch it.
+function lock_scroll_position() {
+  const container = document.querySelector('.notepad-body');
+  const winY = window.scrollY;
+  const contY = container ? container.scrollTop : 0;
+
+  const restore = () => {
+    window.scrollTo(0, winY);
+    if (container) container.scrollTop = contY;
+  };
+
+  restore();
+  requestAnimationFrame(restore);
+  setTimeout(restore, 50);
+  setTimeout(restore, 150);
+}
+
 // Handles every square toolbar button (B, I, UL, OL, indent, margin, checkbox).
 function handle_fmt_click(el) {
   const cmd = el.dataset.cmd;
   const label = el.dataset.label;
+
+  lock_scroll_position();
 
   const editor = document.getElementById('note-textarea');
   editor.focus({ preventScroll: true });
@@ -752,6 +774,8 @@ function handle_heading_select(selectEl) {
   const value = selectEl.value;
   if (!value) return;
 
+  lock_scroll_position();
+
   const editor = document.getElementById('note-textarea');
   editor.focus({ preventScroll: true });
   restore_editor_selection();
@@ -770,6 +794,8 @@ function handle_fontsize_select(selectEl) {
   const value = selectEl.value;
   if (!value) return;
 
+  lock_scroll_position();
+
   const editor = document.getElementById('note-textarea');
   editor.focus({ preventScroll: true });
   restore_editor_selection();
@@ -787,6 +813,8 @@ window.handle_fontsize_select = handle_fontsize_select;
 function handle_fontcolor_select(selectEl) {
   const value = selectEl.value;
   if (!value) return;
+
+  lock_scroll_position();
 
   const editor = document.getElementById('note-textarea');
   editor.focus({ preventScroll: true });
