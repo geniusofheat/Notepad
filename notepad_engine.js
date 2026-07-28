@@ -491,6 +491,9 @@ function open_note(cat_id, item_id) {
   const toolbar = document.getElementById('listToolbarRow');
   if (toolbar) toolbar.style.display = 'none';
 
+  const mainDesc = document.getElementById('mainPageDescription');
+  if (mainDesc) mainDesc.style.display = 'none';
+
   document.getElementById('note-title-display').textContent = item.title;
   set_header_title('📝  Note :');
   render_breadcrumb();
@@ -523,6 +526,9 @@ function back_one_level() {
 
     const toolbar = document.getElementById('listToolbarRow');
     if (toolbar) toolbar.style.display = 'flex';
+
+    const mainDesc = document.getElementById('mainPageDescription');
+    if (mainDesc) mainDesc.style.display = 'block';
 
     nav.level = 1;
     nav.item_id = null;
@@ -1228,3 +1234,6 @@ function hide_help_modal(event) {
   if (overlay) overlay.style.display = 'none';
 }
 window.hide_help_modal = hide_help_modal;
+
+
+
