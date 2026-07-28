@@ -46,7 +46,7 @@ main {
   margin: 16px auto 0;
   border-radius: 2px;
   box-shadow: 2px 4px 24px rgba(0,0,0,0.3);
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   width: 100%;
   padding: 5px;
@@ -109,8 +109,8 @@ p {
 }
 
 .orange-btn-44 {
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   padding: 4px;
   font-family: 'Playfair Display', serif;
   background: orange;
@@ -389,7 +389,7 @@ p {
   min-height: 400px;
   padding: 10px 10px;
   font-family: 'Crimson Pro', serif;
-  font-size: 14px;
+  font-size: 18px;
   outline: none;
   border-left: 4px solid #2f6fa3;
   overflow-y: auto;
@@ -433,8 +433,16 @@ p {
   margin-bottom: 5px;
 }
 
+.note-editor-sticky-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #ffffff;
+}
+
 .fmt-btn {
-  height: 20px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -455,7 +463,8 @@ p {
 }
 
 .fmt-select {
-  height: 20px;
+  width: 44px;
+  height: 44px;
   background: #000000;
   border: 2px solid #ffffff;
   color: #ffffff;
