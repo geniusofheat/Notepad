@@ -442,6 +442,8 @@ p {
 
 .fmt-btn {
   height: 20px;
+  flex-shrink: 0;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -461,9 +463,83 @@ p {
   color: #000000;
 }
 
+/* Bold/Italic/Underline buttons styled like a real word processor */
+.fmt-btn[data-cmd="bold"] {
+  font-weight: 900;
+}
+
+.fmt-btn[data-cmd="italic"] {
+  font-style: italic;
+}
+
+.fmt-btn[data-cmd="underline"] {
+  text-decoration: underline;
+}
+
+/* Align button — three lines that shift to show left/center/right */
+.align-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 3px 6px;
+}
+
+.align-btn.align-center {
+  align-items: center;
+}
+
+.align-btn.align-right {
+  align-items: flex-end;
+}
+
+.align-line {
+  height: 2px;
+  background: #ffffff;
+  display: block;
+}
+
+.align-line.line1 { width: 14px; }
+.align-line.line2 { width: 10px; }
+.align-line.line3 { width: 12px; }
+
+.fmt-btn.active .align-line {
+  background: #000000;
+}
+
+/* Indent button — short first line (indented) over two full-width lines */
+.indent-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 3px 6px;
+}
+
+.indent-line {
+  height: 2px;
+  background: #ffffff;
+  display: block;
+}
+
+.indent-line.short {
+  width: 8px;
+  margin-left: 6px;
+}
+
+.indent-line.long {
+  width: 14px;
+}
+
+.fmt-btn.active .indent-line {
+  background: #000000;
+}
+
 .fmt-select {
   height: 20px;
-  background: #000000;
+  flex-shrink: 0;
+  padding: 0 4px;
+  background: #a8d4f5;
   border: 2px solid #ffffff;
   color: #ffffff;
   font-family: 'Playfair Display', serif;
@@ -472,7 +548,6 @@ p {
   text-align: center;
   text-align-last: center;
   cursor: pointer;
-  padding: 5px;
 }
 
 .fmt-tooltip {
@@ -487,6 +562,3 @@ p {
   z-index: 10;
   white-space: nowrap;
 }
-
-
-

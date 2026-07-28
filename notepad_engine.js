@@ -555,11 +555,17 @@ function find_item(item_id) {
 function show_back_btn() {
   const btn = document.getElementById('headerBackBtn');
   if (btn) btn.style.display = 'inline-flex';
+
+  const mic = document.getElementById('micBtn');
+  if (mic) mic.style.display = 'inline-flex';
 }
 
 function hide_back_btn() {
   const btn = document.getElementById('headerBackBtn');
   if (btn) btn.style.display = 'none';
+
+  const mic = document.getElementById('micBtn');
+  if (mic) mic.style.display = 'none';
 }
 
 
@@ -594,6 +600,42 @@ function voiceInput() {
   };
 }
 window.voiceInput = voiceInput;
+
+// Inserts recognized speech at the cursor position inside the note editor.
+function voiceInputToNote() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { alert('Voice input not supported.'); return; }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.start();
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+
+    const editor = document.getElementById('note-textarea');
+    editor.focus({ preventScroll: true });
+    restore_editor_selection();
+
+    const sel = window.getSelection();
+    if (sel.rangeCount === 0) return;
+
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const textNode = document.createTextNode(transcript);
+    range.insertNode(textNode);
+
+    const newRange = document.createRange();
+    newRange.setStartAfter(textNode);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+
+    save_editor_selection();
+    auto_save_current_note();
+  };
+}
+window.voiceInputToNote = voiceInputToNote;
 
 
 // ── SECTION 13: EXPORT / IMPORT (MANUAL CROSS-DEVICE BACKUP) ────────────────
@@ -899,16 +941,16 @@ function handle_align_click(el) {
   if (align_state === 'left') {
     document.execCommand('justifyCenter');
     align_state = 'center';
-    el.textContent = 'C';
   } else if (align_state === 'center') {
     document.execCommand('justifyRight');
     align_state = 'right';
-    el.textContent = 'R';
   } else {
     document.execCommand('justifyLeft');
     align_state = 'left';
-    el.textContent = 'L';
   }
+
+  el.classList.remove('align-left', 'align-center', 'align-right');
+  el.classList.add('align-' + align_state);
 
   show_fmt_tooltip(el, 'Align ' + align_state.charAt(0).toUpperCase() + align_state.slice(1));
   save_editor_selection();
@@ -1012,7 +1054,7 @@ function handle_list_select(selectEl) {
 
   const btn = document.getElementById('listToggleBtn');
   selectEl.style.display = 'none';
-  btn.textContent = type.toUpperCase();
+  btn.textContent = '-' + type.toUpperCase() + '-';
   btn.classList.add('active');
   btn.style.display = 'flex';
 }

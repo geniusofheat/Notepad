@@ -69,6 +69,7 @@
 
       <div class="toolbar-row">
         <h3 id="note-title-display"></h3>
+        <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
         <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
       </div>
 
@@ -76,9 +77,17 @@
       <div class="format-toolbar-single" id="formatToolbarSingle">
         <div class="fmt-btn" data-cmd="bold" data-label="Bold" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-B-</div>
         <div class="fmt-btn" data-cmd="italic" data-label="Italic" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-ITA-</div>
-        <div class="fmt-btn" data-cmd="underline" data-label="Underline" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-Un-</div>
-        <div class="fmt-btn" id="alignBtn" data-label="Align" onmousedown="event.preventDefault()" onclick="handle_align_click(this)">-ALI-</div>
-        <div class="fmt-btn" data-cmd="indent" data-label="Indent" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-IND-</div>
+        <div class="fmt-btn" data-cmd="underline" data-label="Underline" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">U</div>
+        <div class="fmt-btn align-btn align-left" id="alignBtn" data-label="Align" onmousedown="event.preventDefault()" onclick="handle_align_click(this)">
+          <span class="align-line line1"></span>
+          <span class="align-line line2"></span>
+          <span class="align-line line3"></span>
+        </div>
+        <div class="fmt-btn indent-btn" data-cmd="indent" data-label="Indent" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">
+          <span class="indent-line short"></span>
+          <span class="indent-line long"></span>
+          <span class="indent-line long"></span>
+        </div>
 
         <select class="fmt-select" id="fontSelect" data-label="Font" onchange="handle_font_select(this)">
           <option value="">Font:</option>
@@ -115,7 +124,7 @@
           </optgroup>
         </select>
 
-        <select class="fmt-select" id="listSelect" data-label="Lis :" onchange="handle_list_select(this)">
+        <select class="fmt-select" id="listSelect" data-label="List" onchange="handle_list_select(this)">
           <option value="">List :</option>
           <optgroup label="UL">
             <option value="ul:disc">Bulleted</option>
