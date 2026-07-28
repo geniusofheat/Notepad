@@ -463,7 +463,7 @@ p {
 
 .fmt-select {
   height: 20px;
-  background: #a8d4f5;
+  background: #000000;
   border: 2px solid #ffffff;
   color: #ffffff;
   font-family: 'Playfair Display', serif;
@@ -472,6 +472,7 @@ p {
   text-align: center;
   text-align-last: center;
   cursor: pointer;
+  padding: 5px;
 }
 
 .fmt-tooltip {
