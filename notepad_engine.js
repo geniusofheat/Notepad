@@ -653,8 +653,20 @@ function save_editor_selection() {
 }
 
 function restore_editor_selection() {
-  if (!saved_range) return;
+  const editor = document.getElementById('note-textarea');
   const sel = window.getSelection();
+
+  // If the live selection is still inside the editor, trust it — the
+  // square buttons no longer steal focus, so this is almost always the
+  // freshest, most correct cursor position. Only fall back to the saved
+  // range when focus genuinely left the editor (the Font/Highlight/List
+  // dropdowns do this, since native <select> elements must take focus
+  // to open).
+  if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+    return;
+  }
+
+  if (!saved_range) return;
   sel.removeAllRanges();
   sel.addRange(saved_range);
 }
