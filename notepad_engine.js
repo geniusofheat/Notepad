@@ -120,12 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let node = sel.getRangeAt(0).startContainer;
     if (node.nodeType === 3) node = node.parentElement;
 
-    const block = node.closest('div');
+    const block = node.closest('div, li, p');
     if (!block || block === editor) return;
 
-    const firstCheckbox = block.querySelector('input[type="checkbox"]');
-    const is_checkbox_line = firstCheckbox && block.firstElementChild === firstCheckbox;
-    if (!is_checkbox_line) return; // let the browser handle Enter normally
+    if (!line_starts_with_checkbox(block)) return; // let the browser handle Enter normally
 
     e.preventDefault();
 
@@ -777,6 +775,23 @@ function highlight_fmt_btn(el) {
     el.classList.add('active');
     setTimeout(() => el.classList.remove('active'), 2000);
   }
+}
+
+// Checks whether a line's content starts with a checkbox, tolerating
+// leading whitespace/non-breaking-space text nodes — which is what you
+// get after backspacing two lines together, since the merge can leave a
+// stray empty or whitespace-only text node in front of the checkbox.
+function line_starts_with_checkbox(block) {
+  for (const child of block.childNodes) {
+    if (child.nodeType === 3) {
+      if (child.textContent.trim() !== '') return false; // real text first
+      continue; // whitespace-only, keep looking
+    }
+    if (child.nodeType === 1) {
+      return child.tagName === 'INPUT' && child.type === 'checkbox';
+    }
+  }
+  return false;
 }
 
 // Inserts an unchecked checkbox at the cursor. Uses a manual Range
