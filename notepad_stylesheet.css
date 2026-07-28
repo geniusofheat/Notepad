@@ -109,8 +109,8 @@ p {
 }
 
 .orange-btn-44 {
-  width: 44px;
-  height: 44px;
+  width: 30px;
+  height: 30px;
   padding: 4px;
   font-family: 'Playfair Display', serif;
   background: orange;
@@ -389,7 +389,7 @@ p {
   min-height: 400px;
   padding: 10px 10px;
   font-family: 'Crimson Pro', serif;
-  font-size: 18px;
+  font-size: 14px;
   outline: none;
   border-left: 4px solid #2f6fa3;
   overflow-y: auto;
@@ -430,7 +430,7 @@ p {
   background: #2f6fa3;
   border: 1px solid;
   box-sizing: border-box;
-  margin-bottom: 5px;
+  margin-bottom: px;
 }
 
 .note-editor-sticky-toolbar {
@@ -441,8 +441,7 @@ p {
 }
 
 .fmt-btn {
-  width: 44px;
-  height: 44px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -463,9 +462,8 @@ p {
 }
 
 .fmt-select {
-  width: 44px;
-  height: 44px;
-  background: #000000;
+  height: 20px;
+  background: #a8d4f5;
   border: 2px solid #ffffff;
   color: #ffffff;
   font-family: 'Playfair Display', serif;
@@ -488,3 +486,6 @@ p {
   z-index: 10;
   white-space: nowrap;
 }
+
+
+
