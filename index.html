@@ -74,14 +74,14 @@
 
       <!-- SINGLE FORMAT TOOLBAR -->
       <div class="format-toolbar-single" id="formatToolbarSingle">
-        <div class="fmt-btn" data-cmd="bold" data-label="Bold" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">B</div>
-        <div class="fmt-btn" data-cmd="italic" data-label="Italic" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">I</div>
-        <div class="fmt-btn" data-cmd="underline" data-label="Underline" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">U</div>
-        <div class="fmt-btn" id="alignBtn" data-label="Align" onmousedown="event.preventDefault()" onclick="handle_align_click(this)">L</div>
-        <div class="fmt-btn" data-cmd="indent" data-label="Indent" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">I</div>
+        <div class="fmt-btn" data-cmd="bold" data-label="Bold" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-B-</div>
+        <div class="fmt-btn" data-cmd="italic" data-label="Italic" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-ITA-</div>
+        <div class="fmt-btn" data-cmd="underline" data-label="Underline" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-Un-</div>
+        <div class="fmt-btn" id="alignBtn" data-label="Align" onmousedown="event.preventDefault()" onclick="handle_align_click(this)">-ALI-</div>
+        <div class="fmt-btn" data-cmd="indent" data-label="Indent" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-IND-</div>
 
         <select class="fmt-select" id="fontSelect" data-label="Font" onchange="handle_font_select(this)">
-          <option value="">Font</option>
+          <option value="">Font: F</option>
           <optgroup label="Font Color">
             <option value="color:black">Black</option>
             <option value="color:red">Red</option>
@@ -98,7 +98,7 @@
         </select>
 
         <select class="fmt-select" id="highlightSelect" data-label="Highlight" onchange="handle_highlight_select(this)">
-          <option value="">HL</option>
+          <option value="">HiLi: H</option>
           <optgroup label="Text Color">
             <option value="text:red">Red</option>
             <option value="text:blue">Blue</option>
@@ -116,7 +116,7 @@
         </select>
 
         <select class="fmt-select" id="listSelect" data-label="List" onchange="handle_list_select(this)">
-          <option value="">List</option>
+          <option value="">List : L</option>
           <optgroup label="Unordered List">
             <option value="ul:disc">Bulleted</option>
             <option value="ul:circle">Circle</option>
@@ -130,7 +130,7 @@
         </select>
         <div class="fmt-btn" id="listToggleBtn" data-label="List" onmousedown="event.preventDefault()" onclick="handle_list_toggle_click()" style="display:none;"></div>
 
-        <div class="fmt-btn" data-cmd="checkbox" data-label="Checkbox" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">C</div>
+        <div class="fmt-btn" data-cmd="checkbox" data-label="Checkbox" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">✓</div>
       </div>
       <!-- END SINGLE FORMAT TOOLBAR -->
 
