@@ -83,13 +83,22 @@
           <span class="align-line line2"></span>
           <span class="align-line line3"></span>
         </div>
-        <div class="fmt-btn indent-btn" data-cmd="indent" data-label="Indent" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">
-          <span class="indent-line short"></span>
-          <span class="indent-line long"></span>
-          <span class="indent-line long"></span>
+        <div class="indent-group">
+          <div class="fmt-btn indent-arrow-btn" data-label="Decrease Indent" onmousedown="event.preventDefault()" onclick="adjust_indent(-1)">‹</div>
+          <div class="fmt-btn indent-btn" data-cmd="indent" data-label="Indent" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">
+            <span class="indent-line short"></span>
+            <span class="indent-line long"></span>
+            <span class="indent-line long"></span>
+          </div>
+          <div class="fmt-btn indent-arrow-btn" data-label="Increase Indent" onmousedown="event.preventDefault()" onclick="adjust_indent(1)">›</div>
         </div>
 
-        <select class="fmt-select" id="fontSelect" data-label="Font" onchange="handle_font_select(this)">
+        <div class="cursor-move-group">
+          <div class="fmt-btn cursor-arrow-btn" data-label="Move Cursor Left" onmousedown="event.preventDefault()" onclick="move_cursor(-1)">←</div>
+          <div class="fmt-btn cursor-arrow-btn" data-label="Move Cursor Right" onmousedown="event.preventDefault()" onclick="move_cursor(1)">→</div>
+        </div>
+
+        <select class="fmt-select" id="fontSelect" data-label="Font" onmousedown="freeze_editor_selection()" onchange="handle_font_select(this)">
           <option value="">Font:</option>
           <optgroup label="Font Color">
             <option value="color:black">Black</option>
@@ -106,7 +115,7 @@
           </optgroup>
         </select>
 
-        <select class="fmt-select" id="highlightSelect" data-label="Highlight" onchange="handle_highlight_select(this)">
+        <select class="fmt-select" id="highlightSelect" data-label="Highlight" onmousedown="freeze_editor_selection()" onchange="handle_highlight_select(this)">
           <option value="">Hi-Li:</option>
           <optgroup label="Color :">
             <option value="text:red">Red</option>
@@ -124,7 +133,7 @@
           </optgroup>
         </select>
 
-        <select class="fmt-select" id="listSelect" data-label="List" onchange="handle_list_select(this)">
+        <select class="fmt-select" id="listSelect" data-label="List" onmousedown="freeze_editor_selection()" onchange="handle_list_select(this)">
           <option value="">List :</option>
           <optgroup label="UL">
             <option value="ul:disc">Bulleted</option>

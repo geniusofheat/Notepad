@@ -535,6 +535,35 @@ p {
   background: #000000;
 }
 
+/* Indent cluster — icon + nudge arrows, spaced normally (no fused border) */
+.indent-group {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.indent-group .fmt-btn {
+  /* keep the normal button border, no special treatment */
+}
+
+.indent-group .indent-arrow-btn {
+  padding: 0 3px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cursor-move-group {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.cursor-arrow-btn {
+  padding: 0 5px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .fmt-select {
   height: 20px;
   flex-shrink: 0;

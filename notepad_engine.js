@@ -786,6 +786,32 @@ function restore_editor_selection() {
   sel.addRange(saved_range);
 }
 
+// Snapshot used specifically by the Font/Highlight/List dropdowns. Opening
+// a native <select> can collapse or shift the editor's selection right as
+// it takes focus — often before the general selectionchange tracking gets
+// a chance to react — which was causing formatting to land at the start
+// of the note instead of on the selected words. Capturing it here, on
+// mousedown, happens a beat earlier and reliably grabs the real selection.
+let frozen_range = null;
+
+function freeze_editor_selection() {
+  const editor = document.getElementById('note-textarea');
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+    frozen_range = sel.getRangeAt(0).cloneRange();
+  } else if (saved_range) {
+    frozen_range = saved_range.cloneRange();
+  }
+}
+window.freeze_editor_selection = freeze_editor_selection;
+
+function restore_frozen_selection() {
+  if (!frozen_range) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(frozen_range);
+}
+
 // Shows the white/black info box above the clicked control for ~2 seconds.
 function show_fmt_tooltip(el, label) {
   const tooltip = document.getElementById('fmtTooltip');
@@ -863,6 +889,75 @@ function insert_checkbox() {
 
 // Finds the list element that was just created/toggled around the cursor
 // and applies the chosen bullet/number style to it.
+// Nudges the current block's left margin by the given number of pixels
+// (negative = decrease, positive = increase), 1px per tap as requested.
+// Never goes below 0.
+function adjust_indent(delta) {
+  lock_scroll_position();
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus({ preventScroll: true });
+  restore_editor_selection();
+
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  let node = sel.getRangeAt(0).commonAncestorContainer;
+  if (node.nodeType === 3) node = node.parentElement;
+
+  let block = node.closest('div, li, p');
+  if (!block || block === editor) return;
+
+  const current = parseInt(block.style.marginLeft) || 0;
+  const next = Math.max(0, current + delta);
+  block.style.marginLeft = next + 'px';
+
+  save_editor_selection();
+  auto_save_current_note();
+}
+window.adjust_indent = adjust_indent;
+
+// The indent icon itself: tapping it applies a default 5px indent if the
+// line has none, or removes indent entirely if it already has some.
+function toggle_default_indent() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  const editor = document.getElementById('note-textarea');
+  let node = sel.getRangeAt(0).commonAncestorContainer;
+  if (node.nodeType === 3) node = node.parentElement;
+
+  let block = node.closest('div, li, p');
+  if (!block || block === editor) {
+    document.execCommand('formatBlock', false, 'div');
+    node = window.getSelection().getRangeAt(0).commonAncestorContainer;
+    if (node.nodeType === 3) node = node.parentElement;
+    block = node.closest('div, li, p');
+  }
+  if (!block) return;
+
+  const current = parseInt(block.style.marginLeft) || 0;
+  block.style.marginLeft = current > 0 ? '0px' : '5px';
+}
+
+// Moves the text cursor left/right by one character — a manual nudge for
+// when precise touch placement is hard.
+function move_cursor(direction) {
+  lock_scroll_position();
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus({ preventScroll: true });
+  restore_editor_selection();
+
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  sel.modify('move', direction === 1 ? 'forward' : 'backward', 'character');
+
+  save_editor_selection();
+}
+window.move_cursor = move_cursor;
+
 function apply_list_style(tag, style) {
   const sel = window.getSelection();
   if (sel.rangeCount === 0) return;
@@ -916,7 +1011,7 @@ function handle_fmt_click(el) {
       document.execCommand('underline');
       break;
     case 'indent':
-      document.execCommand('indent');
+      toggle_default_indent();
       break;
     case 'checkbox':
       insert_checkbox();
@@ -967,7 +1062,7 @@ function handle_font_select(selectEl) {
 
   const editor = document.getElementById('note-textarea');
   editor.focus({ preventScroll: true });
-  restore_editor_selection();
+  restore_frozen_selection();
 
   const [type, val] = value.split(':');
 
@@ -994,7 +1089,7 @@ function handle_highlight_select(selectEl) {
 
   const editor = document.getElementById('note-textarea');
   editor.focus({ preventScroll: true });
-  restore_editor_selection();
+  restore_frozen_selection();
 
   const [type, val] = value.split(':');
 
@@ -1028,7 +1123,7 @@ function handle_list_select(selectEl) {
 
   const editor = document.getElementById('note-textarea');
   editor.focus({ preventScroll: true });
-  restore_editor_selection();
+  restore_frozen_selection();
 
   const [type, style] = value.split(':');
 
