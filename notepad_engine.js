@@ -1189,3 +1189,42 @@ function handle_list_toggle_click() {
   list_active_type = null;
 }
 window.handle_list_toggle_click = handle_list_toggle_click;
+
+
+// ── SECTION 15: HELP MODAL ──────────────────────────────────────────────────
+
+// Content shown for the main list page (nav.level === 1). Note-editor-page
+// content will be added separately once that's designed.
+const HELP_CONTENT_MAIN = `
+  <p>Need a hand with your lists? Here's what to know:</p>
+  <ul class="help-list">
+    <li>The ✕ button deletes that entire list and every note inside it — it will ask you to confirm before deleting anything.</li>
+    <li>Sync codes link devices together: on a brand-new device, tap [ sync + ] to create a code. Enter that same code on another device to link it. Once a device is already linked, tapping [ sync + ] again just shows you the existing code — it won't create a new one.</li>
+    <li>Tapping a list title opens or closes it — list titles are tappable, not just decorative.</li>
+    <li>Lists and notes sort themselves alphabetically automatically. There's no manual drag-to-reorder.</li>
+    <li>Notes still save fine without an internet connection — they'll sync back up once you're online again.</li>
+  </ul>
+`;
+
+function show_help_modal() {
+  const body = document.getElementById('helpModalBody');
+  const overlay = document.getElementById('helpModalOverlay');
+  if (!body || !overlay) return;
+
+  if (nav.level === 'note') {
+    // Note-editor help content not built yet — falls back to main content
+    // for now until that's designed.
+    body.innerHTML = HELP_CONTENT_MAIN;
+  } else {
+    body.innerHTML = HELP_CONTENT_MAIN;
+  }
+
+  overlay.style.display = 'flex';
+}
+window.show_help_modal = show_help_modal;
+
+function hide_help_modal(event) {
+  const overlay = document.getElementById('helpModalOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+window.hide_help_modal = hide_help_modal;

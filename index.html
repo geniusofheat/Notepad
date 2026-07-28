@@ -20,6 +20,10 @@
 <header>
   <h3 id="pageTitle">📋  &nbsp;&nbsp;Notepad :</h3>
   <div class="notepad-date" id="dateDisplay"></div>
+  <div class="help-btn-wrap">
+    <div class="help-btn" id="helpBtn" onclick="show_help_modal()">?</div>
+    <div class="help-btn-label">help</div>
+  </div>
 </header>
 
       <p id="description-paragraph">This is your Notepad home screen — your lists live here. Use [ new list + ] to start a new list, and [ sync + ] to link this device with another one so your notes stay the same everywhere. Tap a list title to open or close it, then [ add note + ] to add a note inside it. Tap any note title to open it for writing and formatting.
@@ -155,6 +159,8 @@
     </div>
     <!-- END sticky toolbar wrap -->
 
+    <p class="note-editor-description">Use the toolbar above to format your text as you type. For a description of what each button does, tap the Help button at the top of the page.</p>
+
     <div class="notepad-body">
       <div id="note-textarea" contenteditable="true" data-placeholder="Your note goes here."></div>
     </div>
@@ -177,6 +183,20 @@
   }
 </script>
 <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+<!-- HELP MODAL -->
+<div id="helpModalOverlay" class="help-modal-overlay" style="display:none;" onclick="hide_help_modal(event)">
+  <div class="help-modal" onclick="event.stopPropagation()">
+    <div class="help-modal-header">
+      <h3>Help</h3>
+      <div class="fmt-btn" onmousedown="event.preventDefault()" onclick="hide_help_modal()">✕</div>
+    </div>
+    <div class="help-modal-body" id="helpModalBody">
+      <!-- filled in by show_help_modal() based on which page is open -->
+    </div>
+  </div>
+</div>
+<!-- END HELP MODAL -->
+
 <script>eruda.init();</script>
 
 </body>
