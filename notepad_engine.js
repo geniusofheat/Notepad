@@ -70,6 +70,81 @@ document.addEventListener('DOMContentLoaded', () => {
   editor.addEventListener('mouseup', save_editor_selection);
   editor.addEventListener('keyup', save_editor_selection);
   document.addEventListener('selectionchange', save_editor_selection);
+
+  // Mirrors standard word processors: pressing Enter on an EMPTY list item
+  // (numbered or bulleted) exits the list and drops to a plain blank line,
+  // instead of adding another numbered/bulleted empty item forever.
+  editor.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+
+    const sel = window.getSelection();
+    if (sel.rangeCount === 0) return;
+
+    let liNode = sel.getRangeAt(0).startContainer;
+    if (liNode.nodeType === 3) liNode = liNode.parentElement;
+
+    const li = liNode.closest('li');
+    if (!li) return; // not in a list, let the other handler / default behavior run
+
+    const is_empty = li.textContent.trim() === '';
+    if (!is_empty) return; // has content, let the list auto-continue normally
+
+    e.preventDefault();
+
+    const list = li.closest('ol, ul');
+    const newBlock = document.createElement('div');
+    newBlock.appendChild(document.createElement('br'));
+
+    list.after(newBlock);
+    li.remove();
+    if (list.children.length === 0) list.remove();
+
+    const range = document.createRange();
+    range.setStart(newBlock, 0);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    auto_save_current_note();
+  });
+
+  // Mirrors how ordered/unordered lists behave: pressing Enter on a line
+  // that starts with a checkbox creates a new line that also starts with
+  // a checkbox, instead of a plain empty line.
+  editor.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+
+    const sel = window.getSelection();
+    if (sel.rangeCount === 0) return;
+
+    let node = sel.getRangeAt(0).startContainer;
+    if (node.nodeType === 3) node = node.parentElement;
+
+    const block = node.closest('div');
+    if (!block || block === editor) return;
+
+    const firstCheckbox = block.querySelector('input[type="checkbox"]');
+    const is_checkbox_line = firstCheckbox && block.firstElementChild === firstCheckbox;
+    if (!is_checkbox_line) return; // let the browser handle Enter normally
+
+    e.preventDefault();
+
+    const newBlock = document.createElement('div');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    newBlock.appendChild(checkbox);
+    newBlock.appendChild(document.createTextNode('\u00A0'));
+
+    block.after(newBlock);
+
+    const range = document.createRange();
+    range.setStart(newBlock.lastChild, 1);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    auto_save_current_note();
+  });
 });
 
 function set_date_display() {
@@ -704,9 +779,29 @@ function highlight_fmt_btn(el) {
   }
 }
 
-// Inserts an unchecked checkbox at the cursor.
+// Inserts an unchecked checkbox at the cursor. Uses a manual Range
+// insertion instead of execCommand('insertHTML'), which is unreliable
+// about exactly where "current selection" means on mobile browsers.
 function insert_checkbox() {
-  document.execCommand('insertHTML', false, '<input type="checkbox"> ');
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  const space = document.createTextNode('\u00A0');
+
+  range.insertNode(space);
+  range.insertNode(checkbox);
+
+  // Place the cursor right after the inserted space.
+  const newRange = document.createRange();
+  newRange.setStartAfter(space);
+  newRange.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
 }
 
 // Finds the list element that was just created/toggled around the cursor
@@ -860,7 +955,14 @@ function handle_highlight_select(selectEl) {
 }
 window.handle_highlight_select = handle_highlight_select;
 
-// Handles the List select (Unordered List / Ordered List grouped style options).
+// Tracks exactly where the active list is, so the toggle button can turn
+// it off later even if the cursor has since moved elsewhere.
+let list_active_range = null;
+let list_active_type = null;
+
+// Handles the List select (Unordered List / Ordered List grouped style
+// options). After a choice is made, the select hides and a highlighted
+// UL/OL button takes its place — click that button to turn the list off.
 function handle_list_select(selectEl) {
   const value = selectEl.value;
   if (!value) return;
@@ -886,5 +988,52 @@ function handle_list_select(selectEl) {
   save_editor_selection();
   auto_save_current_note();
   selectEl.value = '';
+
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    list_active_range = sel.getRangeAt(0).cloneRange();
+  }
+  list_active_type = type;
+
+  const btn = document.getElementById('listToggleBtn');
+  selectEl.style.display = 'none';
+  btn.textContent = type.toUpperCase();
+  btn.classList.add('active');
+  btn.style.display = 'flex';
 }
 window.handle_list_select = handle_list_select;
+
+// Turns the active list off (using the position it was created at) and
+// swaps the button back to the select so a new choice can be made.
+function handle_list_toggle_click() {
+  const btn = document.getElementById('listToggleBtn');
+  const selectEl = document.getElementById('listSelect');
+
+  lock_scroll_position();
+
+  const editor = document.getElementById('note-textarea');
+  editor.focus({ preventScroll: true });
+
+  if (list_active_range) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(list_active_range);
+  }
+
+  if (list_active_type === 'ul') {
+    document.execCommand('insertUnorderedList');
+  } else if (list_active_type === 'ol') {
+    document.execCommand('insertOrderedList');
+  }
+
+  save_editor_selection();
+  auto_save_current_note();
+
+  btn.classList.remove('active');
+  btn.style.display = 'none';
+  selectEl.style.display = '';
+
+  list_active_range = null;
+  list_active_type = null;
+}
+window.handle_list_toggle_click = handle_list_toggle_click;
