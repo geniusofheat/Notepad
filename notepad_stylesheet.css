@@ -537,6 +537,8 @@ p {
 
 /* Indent cluster — icon + nudge arrows, spaced normally (no fused border) */
 .indent-group {
+  border: 1px solid #ffffff;
+  padding: 5px;
   display: flex;
   gap: 5px;
   flex-shrink: 0;
