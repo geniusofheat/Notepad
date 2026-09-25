@@ -64,6 +64,21 @@ document.addEventListener('DOMContentLoaded', () => {
     auto_save_timer = setTimeout(auto_save_current_note, 800);
   });
 
+  // Force-saves immediately whenever the app is backgrounded, closed, or the
+  // browser/PWA tab is torn down — catches the case where you close the app
+  // less than 800ms after your last keystroke, before the debounce fires.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      clearTimeout(auto_save_timer);
+      auto_save_current_note();
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    clearTimeout(auto_save_timer);
+    auto_save_current_note();
+  });
+
   // Track the user's text selection so toolbar buttons can restore it
   // after the click moves focus away from the editor. selectionchange
   // catches touchscreen selection (drag handles) that mouseup/keyup miss.
