@@ -588,6 +588,25 @@ function auto_save_current_note() {
   save_notes();
 }
 
+// Manual save button handler — force-saves immediately (skips the 800ms
+// debounce) and flashes "Saved ✓" on the button as confirmation.
+function manual_save_click(el) {
+  lock_scroll_position();
+  clearTimeout(auto_save_timer);
+  auto_save_current_note();
+
+  if (el) {
+    const original = el.textContent;
+    el.textContent = 'Saved ✓';
+    el.classList.add('active');
+    setTimeout(() => {
+      el.textContent = original;
+      el.classList.remove('active');
+    }, 1200);
+  }
+}
+window.manual_save_click = manual_save_click;
+
 
 // ── VOICE INPUT ──────────────────────────────────────────────────────────────
 
@@ -1234,6 +1253,3 @@ function hide_help_modal(event) {
   if (overlay) overlay.style.display = 'none';
 }
 window.hide_help_modal = hide_help_modal;
-
-
-
