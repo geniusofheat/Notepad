@@ -32,7 +32,6 @@
 <!-- TOOLBAR ROW — always visible, [ new list + ] reveals input below -->
 <div class="toolbar-row" id="listToolbarRow">
   <div class="orange-btn" style="margin: 0px;" id="newListBtn" onclick="show_list_toolbar()">new list +</div>
-  <div class="orange-btn" style="margin: 0px;" onclick="manual_save_click(this)">💾 Save</div>
   <div class="orange-btn" style="margin: 0px;" id="syncBtn" onclick="handle_sync_click()">sync +</div>
 </div>
 <!-- END TOOLBAR ROW -->
@@ -156,6 +155,8 @@
         <div class="fmt-btn" id="listToggleBtn" data-label="List" onmousedown="event.preventDefault()" onclick="handle_list_toggle_click()" style="display:none;"></div>
 
         <div class="fmt-btn" data-cmd="checkbox" data-label="Checkbox" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">✓</div>
+
+        <div class="fmt-btn" data-label="Save" onmousedown="event.preventDefault()" onclick="manual_save_click(this)">💾</div>
       </div>
       <!-- END SINGLE FORMAT TOOLBAR -->
 
