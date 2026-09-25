@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notepad</title>
-
+  
   <meta name="theme-color" content="#c8a96e">
 
   <link rel="manifest" href="notepad_manifest.json">
@@ -76,6 +76,9 @@
       <div class="toolbar-row">
         <h3 id="note-title-display"></h3>
         <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
+        <span class="toolbar-divider" style="border-left: 1px solid #999; height: 24px; margin: 0 6px;"></span>
+        <button class="orange-btn" id="saveBtn" onclick="manual_save_click(this)" style="display:none;">💾 Save</button>
+        <span class="toolbar-divider" style="border-left: 1px solid #999; height: 24px; margin: 0 6px;"></span>
         <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
       </div>
 
@@ -155,8 +158,6 @@
         <div class="fmt-btn" id="listToggleBtn" data-label="List" onmousedown="event.preventDefault()" onclick="handle_list_toggle_click()" style="display:none;"></div>
 
         <div class="fmt-btn" data-cmd="checkbox" data-label="Checkbox" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">✓</div>
-
-        <div class="fmt-btn" data-label="Save" onmousedown="event.preventDefault()" onclick="manual_save_click(this)">💾</div>
       </div>
       <!-- END SINGLE FORMAT TOOLBAR -->
 

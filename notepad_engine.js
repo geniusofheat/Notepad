@@ -564,6 +564,9 @@ function show_back_btn() {
 
   const mic = document.getElementById('micBtn');
   if (mic) mic.style.display = 'inline-flex';
+
+  const save = document.getElementById('saveBtn');
+  if (save) save.style.display = 'inline-flex';
 }
 
 function hide_back_btn() {
@@ -572,6 +575,9 @@ function hide_back_btn() {
 
   const mic = document.getElementById('micBtn');
   if (mic) mic.style.display = 'none';
+
+  const save = document.getElementById('saveBtn');
+  if (save) save.style.display = 'none';
 }
 
 
