@@ -1,10 +1,13 @@
+<!-- ═══════════════════════════════════════════════════════════════════════
+     DOCUMENT HEAD — page meta, manifest, fonts, stylesheet link
+═══════════════════════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notepad</title>
-  
+
   <meta name="theme-color" content="#c8a96e">
 
   <link rel="manifest" href="notepad_manifest.json">
@@ -12,11 +15,19 @@
 
   <link rel="stylesheet" href="notepad_stylesheet.css">
 </head>
+<!-- ═══ END DOCUMENT HEAD ═══ -->
 
 <body>
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     BREADCRUMB — filled in by render_breadcrumb() in the JS
+═══════════════════════════════════════════════════════════════════════ -->
 <div id="breadcrumb"></div>
+<!-- ═══ END BREADCRUMB ═══ -->
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     PAGE HEADER — title, date display, help button
+═══════════════════════════════════════════════════════════════════════ -->
 <header>
   <h3 id="pageTitle">📋  &nbsp;&nbsp;Notepad :</h3>
   <div class="notepad-date" id="dateDisplay"></div>
@@ -25,18 +36,27 @@
     <div class="help-btn-label">help</div>
   </div>
 </header>
+<!-- ═══ END PAGE HEADER ═══ -->
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     MAIN PAGE DESCRIPTION — intro text shown only on the list-of-lists page
+═══════════════════════════════════════════════════════════════════════ -->
       <p id="mainPageDescription">This is your Notepad home screen — your lists live here. Use [ new list + ] to start a new list, and [ sync + ] to link this device with another one so your notes stay the same everywhere. Tap a list title to open or close it, then [ add note + ] to add a note inside it. Tap any note title to open it for writing and formatting.
       </p>
+<!-- ═══ END MAIN PAGE DESCRIPTION ═══ -->
 
-<!-- TOOLBAR ROW — always visible, [ new list + ] reveals input below -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TOOLBAR ROW — always visible, [ new list + ] reveals input below
+═══════════════════════════════════════════════════════════════════════ -->
 <div class="toolbar-row" id="listToolbarRow">
   <div class="orange-btn" style="margin: 0px;" id="newListBtn" onclick="show_list_toolbar()">new list +</div>
   <div class="orange-btn" style="margin: 0px;" id="syncBtn" onclick="handle_sync_click()">sync +</div>
 </div>
-<!-- END TOOLBAR ROW -->
+<!-- ═══ END TOOLBAR ROW ═══ -->
 
-<!-- SHARED INPUT DIVIDER — new list input row, plus hidden import file picker -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SHARED INPUT DIVIDER — new list input row, plus hidden import file picker
+═══════════════════════════════════════════════════════════════════════ -->
 <div id="listAddFields" style="display:none;">
 
   <input class="text-input" id="newListInput" placeholder="Enter list name...">
@@ -50,12 +70,15 @@
   style="display:none"
   onchange="import_notes(event)"
 >
-<!-- END SHARED INPUT DIVIDER -->
+<!-- ═══ END SHARED INPUT DIVIDER ═══ -->
 
 
 <main class="main">
 
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+       NOTES LIST VIEW — level 1 + 2 (lists → note titles)
+  ═══════════════════════════════════════════════════════════════════ -->
   <div id="notes-list-view">
 
     <div class="notepad-body">
@@ -65,24 +88,29 @@
     </div>
 
   </div>
-  <!-- END NOTES LIST VIEW -->
+  <!-- ═══ END NOTES LIST VIEW ═══ -->
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+       NOTE EDITOR VIEW — single reusable screen for writing/editing
+       whichever note was tapped (populated by open_note() in the JS)
+  ═══════════════════════════════════════════════════════════════════ -->
   <div id="note-editor-view" style="display:none;">
 
     <p class="note-editor-description">Use the buttons in the formatting toolbar to format your text. Press the help button to get a description of what each button does.</p>
 
     <div class="note-editor-sticky-toolbar">
 
+      <!-- ─── NOTE HEADER ROW — note title, mic, save, back ─────────────── -->
       <div class="toolbar-row">
         <h3 id="note-title-display"></h3>
         <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
-        <span class="toolbar-divider" style="border-left: 1px solid #999; height: 24px; margin: 0 6px;"></span>
         <button class="orange-btn" id="saveBtn" onclick="manual_save_click(this)" style="display:none;">💾 Save</button>
-        <span class="toolbar-divider" style="border-left: 1px solid #999; height: 24px; margin: 0 6px;"></span>
         <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
       </div>
+      <!-- ─── END NOTE HEADER ROW ─────────────────────────────────────── -->
 
-      <!-- SINGLE FORMAT TOOLBAR -->
+      <!-- ─── SINGLE FORMAT TOOLBAR — bold/italic/underline/align/indent/
+           cursor-move/font/highlight/list/checkbox ─────────────────────── -->
       <div class="format-toolbar-single" id="formatToolbarSingle">
         <div class="fmt-btn" data-cmd="bold" data-label="Bold" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-B-</div>
         <div class="fmt-btn" data-cmd="italic" data-label="Italic" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">-I-</div>
@@ -159,21 +187,27 @@
 
         <div class="fmt-btn" data-cmd="checkbox" data-label="Checkbox" onmousedown="event.preventDefault()" onclick="handle_fmt_click(this)">✓</div>
       </div>
-      <!-- END SINGLE FORMAT TOOLBAR -->
+      <!-- ─── END SINGLE FORMAT TOOLBAR ──────────────────────────────── -->
 
     </div>
-    <!-- END sticky toolbar wrap -->
+    <!-- ─── END sticky toolbar wrap ───────────────────────────────────── -->
 
+    <!-- ─── NOTE TEXT BODY — the contenteditable writing area ─────────── -->
     <div class="notepad-body">
       <div id="note-textarea" contenteditable="true" data-placeholder="Your note goes here."></div>
     </div>
+    <!-- ─── END NOTE TEXT BODY ─────────────────────────────────────────── -->
 
     <div id="fmtTooltip" class="fmt-tooltip" style="display:none;"></div>
 
   </div>
-  <!-- END NOTE EDITOR VIEW -->
+  <!-- ═══ END NOTE EDITOR VIEW ═══ -->
 
 </main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SCRIPTS — Firebase SDK, sync module, main engine, service worker
+═══════════════════════════════════════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -186,7 +220,11 @@
   }
 </script>
 <script src="//cdn.jsdelivr.net/npm/eruda"></script>
-<!-- HELP MODAL -->
+<!-- ═══ END SCRIPTS ═══ -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     HELP MODAL — overlay shown by show_help_modal()
+═══════════════════════════════════════════════════════════════════════ -->
 <div id="helpModalOverlay" class="help-modal-overlay" style="display:none;" onclick="hide_help_modal(event)">
   <div class="help-modal" onclick="event.stopPropagation()">
     <div class="help-modal-header">
@@ -198,7 +236,7 @@
     </div>
   </div>
 </div>
-<!-- END HELP MODAL -->
+<!-- ═══ END HELP MODAL ═══ -->
 
 <script>eruda.init();</script>
 
