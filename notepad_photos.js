@@ -1,197 +1,250 @@
-// ── NOTEPAD PHOTOS ───────────────────────────────────────────────────────────
-// Opens the device's native file picker and inserts selected images into
-// the current note at the cursor position.
+// ═══════════════════════════════════════════════════════════════════════
+// NOTEPAD PHOTOS — local image picker and note image insertion
+// ═══════════════════════════════════════════════════════════════════════
 
-let photo_saved_range = null;
+// ─── § PHOTO SELECTION — preserve the cursor before opening file picker ───
 
-
-// ─── § SAVE CURSOR POSITION ─────────────────────────────────────────────────
+let saved_photo_selection = null;
 
 function save_photo_selection() {
   const editor = document.getElementById('note-textarea');
+
+  if (!editor) return;
+
   const selection = window.getSelection();
 
-  if (!editor || !selection || selection.rangeCount === 0) return;
+  if (!selection || selection.rangeCount === 0) return;
 
   const range = selection.getRangeAt(0);
 
   if (editor.contains(range.commonAncestorContainer)) {
-    photo_saved_range = range.cloneRange();
+    saved_photo_selection = range.cloneRange();
   }
 }
 
 
-// ─── § RESTORE CURSOR POSITION ──────────────────────────────────────────────
+// ─── § PHOTO SELECTION — restore cursor after file picker closes ─────────
 
 function restore_photo_selection() {
-  if (!photo_saved_range) return;
+  const editor = document.getElementById('note-textarea');
+
+  if (!editor) return;
+
+  editor.focus();
+
+  if (!saved_photo_selection) {
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    return;
+  }
 
   const selection = window.getSelection();
 
   selection.removeAllRanges();
-  selection.addRange(photo_saved_range);
+  selection.addRange(saved_photo_selection);
 }
 
 
-// ─── § OPEN PHOTO FILE PICKER ────────────────────────────────────────────────
+// ─── § PHOTO PICKER — open Android's normal file picker ─────────────────
 
 function trigger_photo_picker() {
   save_photo_selection();
 
   const input = document.getElementById('photoFileInput');
 
-  if (input) {
-    input.click();
-  }
+  if (!input) return;
+
+  input.click();
 }
 
-window.trigger_photo_picker = trigger_photo_picker;
 
-
-// ─── § INSERT SELECTED PHOTOS ───────────────────────────────────────────────
+// ─── § PHOTO INSERTION — read selected image files ──────────────────────
 
 function insert_note_photos(event) {
-  const files = Array.from(event.target.files || []);
+  const input = event.target;
+
+  if (!input || !input.files || input.files.length === 0) {
+    return;
+  }
+
+  const files = Array.from(input.files);
+
+  restore_photo_selection();
+
+  insert_photo_files(files);
+}
+
+
+// ─── § PHOTO INSERTION — insert each selected image into the note ───────
+
+function insert_photo_files(files) {
   const editor = document.getElementById('note-textarea');
 
-  if (!editor || files.length === 0) {
-    event.target.value = '';
+  if (!editor || !files || files.length === 0) {
     return;
   }
 
   restore_photo_selection();
 
-  editor.focus({ preventScroll: true });
+  let files_remaining = files.length;
 
-  const selection = window.getSelection();
+  files.forEach(function(file) {
+    if (!file.type.startsWith('image/')) {
+      files_remaining--;
 
-  let range;
+      if (files_remaining === 0) {
+        finish_photo_insert();
+      }
 
-  if (photo_saved_range) {
-    range = photo_saved_range.cloneRange();
-  } else if (
-    selection.rangeCount > 0 &&
-    editor.contains(selection.getRangeAt(0).commonAncestorContainer)
-  ) {
-    range = selection.getRangeAt(0).cloneRange();
-  } else {
-    range = document.createRange();
-    range.selectNodeContents(editor);
-    range.collapse(false);
-  }
-
-  range.deleteContents();
-
-  let remaining = files.length;
-
-  files.forEach((file) => {
+      return;
+    }
 
     const reader = new FileReader();
 
-    reader.onload = function(e) {
-
+    reader.onload = function(load_event) {
       const image = document.createElement('img');
 
-      image.src = e.target.result;
       image.className = 'note-photo';
+      image.src = load_event.target.result;
       image.alt = file.name;
 
-      range.insertNode(image);
+      insert_element_at_cursor(image);
 
-      const spacer = document.createElement('div');
-      spacer.appendChild(document.createElement('br'));
+      files_remaining--;
 
-      image.after(spacer);
-
-      range = document.createRange();
-      range.setStartAfter(spacer);
-      range.collapse(true);
-
-      remaining--;
-
-      if (remaining === 0) {
-
-        const newSelection = window.getSelection();
-
-        newSelection.removeAllRanges();
-        newSelection.addRange(range);
-
-        if (typeof auto_save_current_note === 'function') {
-          auto_save_current_note();
-        }
+      if (files_remaining === 0) {
+        finish_photo_insert();
       }
     };
 
     reader.onerror = function() {
+      files_remaining--;
 
-      remaining--;
-
-      if (
-        remaining === 0 &&
-        typeof auto_save_current_note === 'function'
-      ) {
-        auto_save_current_note();
+      if (files_remaining === 0) {
+        finish_photo_insert();
       }
     };
 
     reader.readAsDataURL(file);
   });
-
-  photo_saved_range = null;
-
-  // Reset the input so the same photo can be selected again later.
-  event.target.value = '';
 }
 
 
-// ─── § PHOTO BUTTON VISIBILITY ───────────────────────────────────────────────
-// The existing engine controls when the note editor is shown/hidden.
-// Watch that existing element so the new Photo button follows it without
-// changing the existing navigation code.
+// ─── § PHOTO INSERTION — place image at current cursor position ─────────
 
-function update_photo_button_visibility() {
+function insert_element_at_cursor(element) {
+  const editor = document.getElementById('note-textarea');
 
-  const editorView = document.getElementById('note-editor-view');
-  const photoButton = document.getElementById('photoBtn');
+  if (!editor) return;
 
-  if (!editorView || !photoButton) return;
+  restore_photo_selection();
 
-  if (editorView.style.display !== 'none') {
-    photoButton.style.display = 'inline-flex';
+  const selection = window.getSelection();
+
+  if (!selection || selection.rangeCount === 0) {
+    editor.appendChild(element);
+    editor.appendChild(document.createElement('br'));
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+
+  if (!editor.contains(range.commonAncestorContainer)) {
+    editor.appendChild(element);
+    editor.appendChild(document.createElement('br'));
+    return;
+  }
+
+  range.deleteContents();
+  range.insertNode(element);
+
+  const spacer = document.createElement('br');
+
+  if (element.nextSibling) {
+    element.parentNode.insertBefore(spacer, element.nextSibling);
   } else {
-    photoButton.style.display = 'none';
+    element.parentNode.appendChild(spacer);
+  }
+
+  const new_range = document.createRange();
+
+  new_range.setStartAfter(spacer);
+  new_range.collapse(true);
+
+  selection.removeAllRanges();
+  selection.addRange(new_range);
+
+  saved_photo_selection = new_range.cloneRange();
+}
+
+
+// ─── § PHOTO SAVE — save note after images have been inserted ───────────
+
+function finish_photo_insert() {
+  const editor = document.getElementById('note-textarea');
+
+  if (!editor) return;
+
+  editor.focus();
+
+  if (typeof auto_save_current_note === 'function') {
+    auto_save_current_note();
+  }
+
+  saved_photo_selection = null;
+
+  const input = document.getElementById('photoFileInput');
+
+  if (input) {
+    input.value = '';
   }
 }
 
 
-const photo_view_observer = new MutationObserver(
-  update_photo_button_visibility
-);
+// ─── § PHOTO BUTTON — keep Photos button visible only in note editor ────
+
+function update_photo_button_visibility() {
+  const editor_view = document.getElementById('note-editor-view');
+  const photo_button = document.getElementById('photoBtn');
+
+  if (!editor_view || !photo_button) return;
+
+  const editor_visible =
+    editor_view.style.display !== 'none' &&
+    getComputedStyle(editor_view).display !== 'none';
+
+  photo_button.style.display = editor_visible ? 'inline-block' : 'none';
+}
 
 
-function initialize_photo_button() {
+// ─── § PHOTO BUTTON — watch existing editor navigation ──────────────────
 
-  const editorView = document.getElementById('note-editor-view');
+function start_photo_button_observer() {
+  const editor_view = document.getElementById('note-editor-view');
 
-  if (!editorView) return;
-
-  photo_view_observer.observe(editorView, {
-    attributes: true,
-    attributeFilter: ['style']
-  });
+  if (!editor_view) return;
 
   update_photo_button_visibility();
+
+  const observer = new MutationObserver(function() {
+    update_photo_button_visibility();
+  });
+
+  observer.observe(editor_view, {
+    attributes: true,
+    attributeFilter: ['style', 'class']
+  });
 }
 
 
-if (document.readyState === 'loading') {
+// ─── § PHOTO MODULE — initialize after page is loaded ───────────────────
 
-  document.addEventListener(
-    'DOMContentLoaded',
-    initialize_photo_button
-  );
-
-} else {
-
-  initialize_photo_button();
-}
+document.addEventListener('DOMContentLoaded', function() {
+  start_photo_button_observer();
+});
