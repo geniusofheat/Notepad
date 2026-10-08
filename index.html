@@ -100,10 +100,15 @@
 
     <div class="note-editor-sticky-toolbar">
 
-      <!-- ─── NOTE HEADER ROW — note title, mic, save, back ─────────────── -->
+      <!-- ─── NOTE HEADER ROW — note title, mic, photos, save, back ─────── -->
       <div class="toolbar-row">
         <h3 id="note-title-display"></h3>
-        <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
+
+        <div class="note-header-action-group">
+          <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
+          <button class="orange-btn" id="photoBtn" onclick="trigger_photo_picker()" style="display:none;">Photos +</button>
+        </div>
+
         <button class="orange-btn" id="saveBtn" onclick="manual_save_click(this)" style="display:none;">💾 Save</button>
         <button class="orange-btn" id="headerBackBtn" onclick="handleBack()" style="display:none;">← Back</button>
       </div>
@@ -206,13 +211,27 @@
 </main>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
-     SCRIPTS — Firebase SDK, sync module, main engine, service worker
+     PHOTO FILE PICKER — hidden input opened by the Photos + button
+═══════════════════════════════════════════════════════════════════════ -->
+<input
+  type="file"
+  id="photoFileInput"
+  accept="image/*"
+  multiple
+  style="display:none"
+  onchange="insert_note_photos(event)"
+>
+<!-- ═══ END PHOTO FILE PICKER ═══ -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SCRIPTS — Firebase SDK, sync module, main engine, photo module, service worker
 ═══════════════════════════════════════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="notepad_sync.js"></script>
-  <script src="notepad_engine.js"></script>
+<script src="notepad_engine.js"></script>
+<script src="notepad_photos.js"></script>
 
 <script>
   if ('serviceWorker' in navigator) {
