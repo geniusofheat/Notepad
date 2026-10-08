@@ -403,6 +403,17 @@ p {
   pointer-events: none;
 }
 
+/* =====================
+   NOTE PHOTOS
+===================== */
+
+.note-photo {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 8px 0;
+}
+
 /* The global reset at the top of this file zeroes out ol/ul padding,
    which pushes list markers (numbers/bullets) off to the left where
    they get clipped by the scroll container. This restores room for them. */
