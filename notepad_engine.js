@@ -10,6 +10,8 @@
 // - Note editor switched from <textarea> to contenteditable <div> so notes
 //   can now store formatted HTML (bold, italic, lists, headings, etc).
 // - New SECTION 14 at the bottom: formatting toolbar button handlers.
+// - Local/cloud sync now protects newer local notes from older Firebase
+//   snapshots overwriting them.
 
 
 // ── SECTION 1: STATE ────────────────────────────────────────────────────────
@@ -32,6 +34,10 @@ let auto_save_timer = null;
 
 let saved_range = null; // last known text selection inside the note editor
 
+// Tracks whether this device has made a local change that has not yet been
+// confirmed by the Firebase listener.
+let local_notes_dirty = false;
+
 
 // ── SECTION 2: INIT ─────────────────────────────────────────────────────────
 
@@ -43,9 +49,69 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start listening for changes pushed from other linked devices.
   if (typeof subscribeToNotes === 'function') {
     subscribeToNotes((cloud_notes) => {
-      notes = cloud_notes || [];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-      redraw_list();
+
+      const incoming = Array.isArray(cloud_notes)
+        ? cloud_notes
+        : [];
+
+      const local_latest = get_latest_note_update(notes);
+      const cloud_latest = get_latest_note_update(incoming);
+
+      // A local note is newer than the cloud copy.
+      // Keep the local copy and push it back to Firebase instead of allowing
+      // an older cloud snapshot to overwrite it.
+      if (local_latest > cloud_latest) {
+        if (typeof saveNotesToCloud === 'function') {
+          saveNotesToCloud(notes);
+        }
+        return;
+      }
+
+      // A cloud note is newer than the local copy.
+      // Accept the cloud version normally.
+      if (cloud_latest > local_latest) {
+        notes = incoming;
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(notes)
+        );
+
+        local_notes_dirty = false;
+
+        redraw_list();
+        return;
+      }
+
+      // Both versions have the same newest timestamp.
+      // If they are identical, the local change has successfully reached
+      // the cloud and the dirty flag can be cleared.
+      if (local_latest === cloud_latest) {
+
+        const local_json = JSON.stringify(notes);
+        const cloud_json = JSON.stringify(incoming);
+
+        if (local_json === cloud_json) {
+          local_notes_dirty = false;
+          return;
+        }
+
+        // If this device has a known unsynced local edit, preserve it.
+        if (local_notes_dirty) {
+          if (typeof saveNotesToCloud === 'function') {
+            saveNotesToCloud(notes);
+          }
+          return;
+        }
+
+        // No known local edit is pending, so accept the cloud copy.
+        notes = incoming;
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(notes)
+        );
+
+        redraw_list();
+      }
     });
   }
 
@@ -185,10 +251,36 @@ function load_notes() {
 function save_notes() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
 
+  // Mark the local copy as newer/unsynced until the Firebase listener
+  // confirms that the same data has reached the cloud.
+  local_notes_dirty = true;
+
   // Push the latest notes up to the cloud so other linked devices get them.
   if (typeof saveNotesToCloud === 'function') {
     saveNotesToCloud(notes);
   }
+}
+
+// Finds the newest updated timestamp anywhere inside the notes structure.
+// This lets the sync listener determine whether the local or cloud copy
+// contains the newer note.
+function get_latest_note_update(notesData) {
+
+  let latest = 0;
+
+  (notesData || []).forEach((category) => {
+
+    (category.items || []).forEach((item) => {
+
+      const time = Date.parse(item.updated || '');
+
+      if (!Number.isNaN(time) && time > latest) {
+        latest = time;
+      }
+    });
+  });
+
+  return latest;
 }
 
 
@@ -514,7 +606,7 @@ function open_note(cat_id, item_id) {
   render_breadcrumb();
   document.getElementById('note-textarea').innerHTML = item.content || '';
 
-  // Makes the Enter key create a real new block (a <div>) instead of just
+  // Makes the Enter key create a real new block (a <div>) instead of
   // a line break, so formatting commands like ordered/unordered list
   // attach to the correct line rather than the whole note from the start.
   document.execCommand('defaultParagraphSeparator', false, 'div');
