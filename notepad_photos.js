@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-// NOTEPAD PHOTOS — local image picker and note image insertion
+// NOTEPAD PHOTOS — local image picker, insertion, and resizing
 // Works with notepad_engine.js selection and save system.
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -36,7 +36,6 @@ function insert_note_photos(event) {
     return;
   }
 
-  // Restore the exact cursor/selection maintained by notepad_engine.js.
   editor.focus({ preventScroll: true });
   restore_editor_selection();
 
@@ -58,7 +57,6 @@ function insert_note_photos(event) {
 
     reader.onload = function(e) {
 
-      // Restore the engine's current selection before each image.
       editor.focus({ preventScroll: true });
       restore_editor_selection();
 
@@ -71,7 +69,6 @@ function insert_note_photos(event) {
 
         const range = sel.getRangeAt(0);
 
-        // Make sure the selection is actually inside the note editor.
         if (!editor.contains(range.commonAncestorContainer)) {
           editor.appendChild(document.createElement('br'));
           editor.appendChild(create_note_photo(e.target.result, file.name));
@@ -86,8 +83,6 @@ function insert_note_photos(event) {
 
           range.insertNode(image);
 
-          // Put a blank line after the image so the user can continue
-          // typing below it.
           const spacer = document.createElement('div');
           spacer.appendChild(document.createElement('br'));
 
@@ -96,7 +91,6 @@ function insert_note_photos(event) {
             image.nextSibling
           );
 
-          // Place the cursor in the new blank line.
           const newRange = document.createRange();
           newRange.setStart(spacer, 0);
           newRange.collapse(true);
@@ -104,7 +98,6 @@ function insert_note_photos(event) {
           sel.removeAllRanges();
           sel.addRange(newRange);
 
-          // Give the engine the new cursor position.
           save_editor_selection();
         }
       }
@@ -140,8 +133,153 @@ function create_note_photo(data_url, filename) {
   image.src = data_url;
   image.alt = filename || 'Photo';
 
+  // Keep the image proportional when resized.
+  image.style.height = 'auto';
+
+  image.addEventListener('click', function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    select_note_photo(image);
+  });
+
   return image;
 }
+
+
+// ─── § PHOTO SELECTION — select one photo for resizing ──────────────────
+
+let selected_note_photo = null;
+
+function select_note_photo(image) {
+  clear_photo_selection();
+
+  selected_note_photo = image;
+  image.classList.add('note-photo-selected');
+
+  show_photo_resize_controls(image);
+}
+
+
+// ─── § PHOTO SELECTION — clear current selection ─────────────────────────
+
+function clear_photo_selection() {
+  document.querySelectorAll('.note-photo-selected').forEach((image) => {
+    image.classList.remove('note-photo-selected');
+  });
+
+  document.querySelectorAll('.photo-resize-controls').forEach((controls) => {
+    controls.remove();
+  });
+
+  selected_note_photo = null;
+}
+
+
+// ─── § RESIZE CONTROLS — create controls below selected photo ────────────
+
+function show_photo_resize_controls(image) {
+
+  const controls = document.createElement('div');
+
+  controls.className = 'photo-resize-controls';
+
+  const smaller = document.createElement('button');
+  smaller.type = 'button';
+  smaller.className = 'orange-btn';
+  smaller.textContent = '−';
+  smaller.title = 'Make photo smaller';
+
+  const sizeLabel = document.createElement('span');
+  sizeLabel.className = 'photo-size-label';
+
+  const larger = document.createElement('button');
+  larger.type = 'button';
+  larger.className = 'orange-btn';
+  larger.textContent = '+';
+  larger.title = 'Make photo larger';
+
+  smaller.addEventListener('click', function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    resize_note_photo(image, -50);
+  });
+
+  larger.addEventListener('click', function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    resize_note_photo(image, 50);
+  });
+
+  controls.appendChild(smaller);
+  controls.appendChild(sizeLabel);
+  controls.appendChild(larger);
+
+  image.parentNode.insertBefore(
+    controls,
+    image.nextSibling
+  );
+
+  update_photo_size_label(image, sizeLabel);
+}
+
+
+// ─── § PHOTO RESIZING — change width while preserving aspect ratio ──────
+
+function resize_note_photo(image, amount) {
+
+  if (!image || !image.naturalWidth) return;
+
+  const currentWidth = image.offsetWidth;
+
+  let newWidth = currentWidth + amount;
+
+  const minimumWidth = 50;
+  const maximumWidth = image.parentElement
+    ? image.parentElement.clientWidth
+    : window.innerWidth;
+
+  newWidth = Math.max(
+    minimumWidth,
+    Math.min(newWidth, maximumWidth)
+  );
+
+  image.style.width = newWidth + 'px';
+  image.style.height = 'auto';
+
+  const label = image.nextElementSibling;
+
+  if (label && label.classList.contains('photo-resize-controls')) {
+    const sizeLabel = label.querySelector('.photo-size-label');
+
+    if (sizeLabel) {
+      update_photo_size_label(image, sizeLabel);
+    }
+  }
+
+  auto_save_current_note();
+}
+
+
+// ─── § PHOTO SIZE LABEL ─────────────────────────────────────────────────
+
+function update_photo_size_label(image, label) {
+  label.textContent = Math.round(image.offsetWidth) + ' px';
+}
+
+
+// ─── § PHOTO CLICK-AWAY — tapping elsewhere deselects the photo ─────────
+
+document.addEventListener('click', function(event) {
+
+  if (
+    selected_note_photo &&
+    !event.target.closest('.note-photo') &&
+    !event.target.closest('.photo-resize-controls')
+  ) {
+    clear_photo_selection();
+  }
+});
 
 
 // ─── § PHOTO SAVE — use the engine's existing save system ───────────────
@@ -177,7 +315,7 @@ function update_photo_button() {
 }
 
 
-// ─── § PHOTO BUTTON — observe the same editor display changes ───────────
+// ─── § PHOTO BUTTON — observe the editor display changes ────────────────
 
 document.addEventListener('DOMContentLoaded', function() {
 

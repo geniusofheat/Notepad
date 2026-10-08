@@ -424,6 +424,39 @@ p {
 }
 
 /* =====================
+   NOTE PHOTO RESIZING
+===================== */
+
+.note-photo {
+  cursor: pointer;
+}
+
+.note-photo-selected {
+  outline: 2px solid #2f6fa3;
+}
+
+.photo-resize-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 5px 0 10px 0;
+}
+
+.photo-resize-controls .orange-btn {
+  margin: 0px;
+  min-width: 32px;
+  height: 28px;
+  padding: 2px 8px;
+}
+
+.photo-size-label {
+  min-width: 65px;
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+}
+
+/* =====================
    FORMATTING TOOLBARS
 ===================== */
 
