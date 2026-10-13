@@ -644,6 +644,242 @@ p {
 }
 
 /* =====================
+   CATEGORY FORMATTING TOOLBAR (redesign)
+   One compact row: Formatting : [Category menu] [Select]
+   The old per-button toolbar rules above (.align-btn, .indent-group,
+   .cursor-move-group, .fmt-select, ...) are left in place but are no
+   longer used by index.html.
+===================== */
+
+.fmt-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.fmt-row-label {
+  flex: 0 0 auto;
+  color: #ffffff;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Larger, touch-friendly version of the standard toolbar button */
+.fmt-btn.fmt-big {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 15px;
+  touch-action: manipulation;
+}
+
+.fmt-cat-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.fmt-cat-btn #fmtCategoryLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fmt-caret {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+.fmt-select-btn {
+  flex: 0 0 auto;
+}
+
+/* Short message line under the row (e.g. "Not inside a list") */
+.fmt-notice {
+  width: 100%;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+/* ---- Category menu: bulleted, nested, tap-to-expand (no hover needed) ---- */
+
+.fmt-menu {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  max-height: 45vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #ffffff;
+  border: 2px solid #2f6fa3;
+  box-shadow: 2px 6px 18px rgba(0,0,0,0.35);
+  list-style: none;
+  padding: 4px 0;
+  z-index: 30;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fmt-menu.open {
+  display: block;
+}
+
+.fmt-menu ul,
+.fmt-menu li {
+  list-style: none;
+}
+
+.fmt-head,
+.fmt-item {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 12px;
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  color: #1a1a2e;
+  cursor: pointer;
+  touch-action: manipulation;
+  border-bottom: 1px solid rgba(100, 149, 237, 0.25);
+}
+
+/* level 1: category */
+.fmt-cat > .fmt-head {
+  font-weight: 700;
+}
+
+.fmt-cat > .fmt-head::before {
+  content: '\2022';          /* bullet */
+  margin-right: 10px;
+}
+
+/* expandable heads show a small arrow */
+.fmt-head::after {
+  content: '\25B8';          /* right-pointing triangle */
+  margin-left: auto;
+  padding-left: 10px;
+  font-size: 13px;
+}
+
+.fmt-cat.open > .fmt-head::after,
+.fmt-group.open > .fmt-head::after {
+  content: '\25BE';          /* down-pointing triangle */
+}
+
+.fmt-cat.open > .fmt-head,
+.fmt-group.open > .fmt-head {
+  background: #e8f1fa;
+}
+
+/* sub lists are collapsed until their head is tapped */
+.fmt-sub {
+  display: none;
+}
+
+.fmt-cat.open > .fmt-sub,
+.fmt-group.open > .fmt-sub {
+  display: block;
+}
+
+/* level 2: groups and direct commands inside a category */
+.fmt-cat > .fmt-sub > .fmt-item,
+.fmt-cat > .fmt-sub > .fmt-group > .fmt-head {
+  padding-left: 32px;
+}
+
+.fmt-cat > .fmt-sub > .fmt-item::before,
+.fmt-cat > .fmt-sub > .fmt-group > .fmt-head::before {
+  content: '\25E6';          /* white bullet */
+  margin-right: 10px;
+}
+
+/* level 3: commands inside a group */
+.fmt-group .fmt-sub .fmt-item {
+  padding-left: 54px;
+  font-size: 15px;
+}
+
+.fmt-group .fmt-sub .fmt-item::before {
+  content: '\2013';          /* en dash */
+  margin-right: 10px;
+}
+
+.fmt-item:active,
+.fmt-head:active {
+  background: #cfe3f7;
+}
+
+/* toggle commands (bold, italic, ...) show as active while on */
+.fmt-item.active {
+  background: #a8d4f5;
+  font-weight: 700;
+}
+
+.fmt-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border: 1px solid #000000;
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+
+.fmt-swatch-none {
+  background: #ffffff;
+  background-image: linear-gradient(135deg, transparent 45%, #cc0000 45%, #cc0000 55%, transparent 55%);
+}
+
+/* ---- Select mode ---- */
+
+/* The Select button, while selection mode is on, uses the existing
+   .fmt-btn.active look (light blue). */
+
+/* The blue-background / white-text selection is drawn with the CSS Custom
+   Highlight API (a Range painted by the browser). It is never written into
+   the note's HTML, so it cannot be saved. */
+::highlight(fmt-select) {
+  background-color: #2f6fa3;
+  color: #ffffff;
+}
+
+/* Fallback for browsers without the Custom Highlight API: while select
+   mode is on, the native selection itself is drawn blue/white. */
+#note-textarea.select-mode::selection {
+  background: #2f6fa3;
+  color: #ffffff;
+}
+
+/* ---- Structural styles available from the Styles category ---- */
+
+#note-textarea h1,
+#note-textarea h2,
+#note-textarea h3,
+#note-textarea h4,
+#note-textarea h5,
+#note-textarea h6 {
+  margin: 6px 0;
+  padding: 0;
+  line-height: 1.2;
+}
+
+#note-textarea blockquote {
+  margin: 8px 0 8px 12px;
+  padding: 2px 0 2px 10px;
+  border-left: 3px solid #2f6fa3;
+  color: #333333;
+}
+
+/* =====================
    HELP BUTTON + MODAL
 ===================== */
 

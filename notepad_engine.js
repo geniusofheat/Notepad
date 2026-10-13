@@ -119,9 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') add_category();
   });
 
-  document.getElementById('newNoteInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') add_note_item();
-  });
+  // #newNoteInput only exists while a note title is being added (redraw_list
+  // creates it on demand), so it is usually missing at page load. Without this
+  // guard the TypeError aborted the rest of this handler, which meant the
+  // editor's autosave and selection-tracking listeners below never attached.
+  const new_note_input = document.getElementById('newNoteInput');
+  if (new_note_input) {
+    new_note_input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') add_note_item();
+    });
+  }
 
   const editor = document.getElementById('note-textarea');
 
@@ -604,6 +611,7 @@ function open_note(cat_id, item_id) {
   document.getElementById('note-title-display').textContent = item.title;
   set_header_title('📝  Note :');
   render_breadcrumb();
+  reset_fmt_toolbar();
   document.getElementById('note-textarea').innerHTML = item.content || '';
 
   // Makes the Enter key create a real new block (a <div>) instead of
@@ -625,6 +633,7 @@ window.handleBack = handleBack;
 
 function back_one_level() {
   auto_save_current_note();
+  reset_fmt_toolbar();
 
   if (nav.level === 'note') {
     document.getElementById('note-editor-view').style.display = 'none';
@@ -771,6 +780,9 @@ function voiceInputToNote() {
 
     save_editor_selection();
     auto_save_current_note();
+
+    // If Select mode is waiting for text to appear, pick the first word now.
+    if (typeof on_editor_text_added === 'function') on_editor_text_added();
   };
 }
 window.voiceInputToNote = voiceInputToNote;
@@ -880,7 +892,7 @@ function merge_notes(imported) {
 
 // ── SECTION 14: RICH TEXT FORMATTING TOOLBAR ────────────────────────────────
 
-const TOGGLE_COMMANDS = ['bold', 'italic', 'underline'];
+const TOGGLE_COMMANDS = ['bold', 'italic', 'underline', 'strikeThrough', 'superscript', 'subscript'];
 
 let align_state = 'left'; // tracks the single cycling align button
 
@@ -1008,7 +1020,10 @@ function insert_checkbox() {
   if (sel.rangeCount === 0) return;
 
   const range = sel.getRangeAt(0);
-  range.deleteContents();
+
+  // Insert in front of any selected text instead of deleting it — a checkbox
+  // should never silently erase the words the user had selected.
+  if (!range.collapsed) range.collapse(true);
 
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
@@ -1040,42 +1055,41 @@ function adjust_indent(delta) {
   const sel = window.getSelection();
   if (sel.rangeCount === 0) return;
 
-  let node = sel.getRangeAt(0).commonAncestorContainer;
-  if (node.nodeType === 3) node = node.parentElement;
+  // Every paragraph / list item touched by the selection (a bare first line
+  // is wrapped in a <div> first so it has something to indent).
+  const blocks = get_blocks_or_wrap();
+  if (blocks.length === 0) return;
 
-  let block = node.closest('div, li, p');
-  if (!block || block === editor) return;
-
-  const current = parseInt(block.style.marginLeft) || 0;
-  const next = Math.max(0, current + delta);
-  block.style.marginLeft = next + 'px';
+  blocks.forEach((block) => {
+    const current = parseInt(block.style.marginLeft) || 0;
+    const next = Math.max(0, current + delta);   // never below 0
+    block.style.marginLeft = next + 'px';
+  });
 
   save_editor_selection();
   auto_save_current_note();
 }
 window.adjust_indent = adjust_indent;
 
-// The indent icon itself: tapping it applies a default 5px indent if the
-// line has none, or removes indent entirely if it already has some.
-function toggle_default_indent() {
+// Default indent: with no argument it toggles — applies a 5px indent if the
+// (first) selected line has none, or removes indent if it already has some.
+// force = 'on' always sets the default 5px indent; force = 'off' removes it.
+function toggle_default_indent(force) {
   const sel = window.getSelection();
   if (sel.rangeCount === 0) return;
 
-  const editor = document.getElementById('note-textarea');
-  let node = sel.getRangeAt(0).commonAncestorContainer;
-  if (node.nodeType === 3) node = node.parentElement;
+  const blocks = get_blocks_or_wrap();
+  if (blocks.length === 0) return;
 
-  let block = node.closest('div, li, p');
-  if (!block || block === editor) {
-    document.execCommand('formatBlock', false, 'div');
-    node = window.getSelection().getRangeAt(0).commonAncestorContainer;
-    if (node.nodeType === 3) node = node.parentElement;
-    block = node.closest('div, li, p');
-  }
-  if (!block) return;
+  const first = parseInt(blocks[0].style.marginLeft) || 0;
+  let indent_on;
+  if (force === 'on') indent_on = true;
+  else if (force === 'off') indent_on = false;
+  else indent_on = first === 0;
 
-  const current = parseInt(block.style.marginLeft) || 0;
-  block.style.marginLeft = current > 0 ? '0px' : '5px';
+  blocks.forEach((block) => {
+    block.style.marginLeft = indent_on ? '5px' : '0px';
+  });
 }
 
 // Moves the text cursor left/right by one character — a manual nudge for
@@ -1100,7 +1114,25 @@ function apply_list_style(tag, style) {
   const sel = window.getSelection();
   if (sel.rangeCount === 0) return;
 
-  let node = sel.getRangeAt(0).commonAncestorContainer;
+  const editor = document.getElementById('note-textarea');
+  const range = sel.getRangeAt(0);
+
+  // Style every innermost list the selection touches, so a selection that
+  // spans several lines (or a nested list) is handled sensibly.
+  const touched = Array.from(editor.querySelectorAll('ul, ol'))
+    .filter((list) => range.intersectsNode(list));
+  const innermost = touched.filter(
+    (list) => !touched.some((other) => other !== list && list.contains(other))
+  );
+  const targets = innermost.filter((list) => list.tagName.toLowerCase() === tag);
+
+  if (targets.length > 0) {
+    targets.forEach((list) => { list.style.listStyleType = style; });
+    return;
+  }
+
+  // Fallback (original behavior): nearest list around the selection.
+  let node = range.commonAncestorContainer;
   if (node.nodeType === 3) node = node.parentElement;
 
   const list = node.closest(tag);
@@ -1148,6 +1180,15 @@ function handle_fmt_click(el) {
     case 'underline':
       document.execCommand('underline');
       break;
+    case 'strikeThrough':
+      document.execCommand('strikeThrough');
+      break;
+    case 'superscript':
+      document.execCommand('superscript');
+      break;
+    case 'subscript':
+      document.execCommand('subscript');
+      break;
     case 'indent':
       toggle_default_indent();
       break;
@@ -1157,7 +1198,9 @@ function handle_fmt_click(el) {
   }
 
   highlight_fmt_btn(el);
-  show_fmt_tooltip(el, label);
+  // Menu items show their own active state; the floating tooltip would only
+  // end up hidden behind the open menu.
+  if (!el.closest('.fmt-menu')) show_fmt_tooltip(el, label);
   save_editor_selection();
   auto_save_current_note();
 }
@@ -1202,14 +1245,11 @@ function handle_font_select(selectEl) {
   editor.focus({ preventScroll: true });
   restore_frozen_selection();
 
-  const [type, val] = value.split(':');
-
-  if (type === 'color') {
-    document.execCommand('foreColor', false, val);
-    show_fmt_tooltip(selectEl, 'Font Color');
-  } else if (type === 'size') {
-    document.execCommand('fontSize', false, val);
-    show_fmt_tooltip(selectEl, 'Font Size');
+  // The actual formatting lives in apply_font_choice() so the category menu
+  // and this (legacy) select handler share one implementation.
+  apply_font_choice(value);
+  if (selectEl.getBoundingClientRect) {
+    show_fmt_tooltip(selectEl, value.startsWith('size:') ? 'Font Size' : 'Font Color');
   }
 
   save_editor_selection();
@@ -1217,6 +1257,23 @@ function handle_font_select(selectEl) {
   selectEl.value = '';
 }
 window.handle_font_select = handle_font_select;
+
+// Single authoritative implementation of font color / size / family.
+// value is 'color:red', 'size:3' or 'name:Space Mono'.
+function apply_font_choice(value) {
+  const cut = value.indexOf(':');
+  const type = value.slice(0, cut);
+  const val = value.slice(cut + 1);
+
+  if (type === 'color') {
+    document.execCommand('foreColor', false, val);
+  } else if (type === 'size') {
+    document.execCommand('fontSize', false, val);
+  } else if (type === 'name') {
+    document.execCommand('fontName', false, val);
+  }
+}
+window.apply_font_choice = apply_font_choice;
 
 // Handles the Highlight select (Text Color / Background Color grouped options).
 function handle_highlight_select(selectEl) {
@@ -1229,14 +1286,9 @@ function handle_highlight_select(selectEl) {
   editor.focus({ preventScroll: true });
   restore_frozen_selection();
 
-  const [type, val] = value.split(':');
-
-  if (type === 'text') {
-    document.execCommand('foreColor', false, val);
-    show_fmt_tooltip(selectEl, 'Text Color');
-  } else if (type === 'bg') {
-    document.execCommand('hiliteColor', false, val);
-    show_fmt_tooltip(selectEl, 'Background Color');
+  apply_highlight_choice(value);
+  if (selectEl.getBoundingClientRect) {
+    show_fmt_tooltip(selectEl, value.startsWith('text:') ? 'Text Color' : 'Background Color');
   }
 
   save_editor_selection();
@@ -1244,6 +1296,23 @@ function handle_highlight_select(selectEl) {
   selectEl.value = '';
 }
 window.handle_highlight_select = handle_highlight_select;
+
+// Single authoritative implementation of text color / background highlight.
+// value is 'text:red' (font color) or 'bg:yellow' (background highlight).
+// 'bg:none' removes a highlight.
+function apply_highlight_choice(value) {
+  const cut = value.indexOf(':');
+  const type = value.slice(0, cut);
+  let val = value.slice(cut + 1);
+
+  if (type === 'text') {
+    document.execCommand('foreColor', false, val);
+  } else if (type === 'bg') {
+    if (val === 'none') val = 'transparent';
+    document.execCommand('hiliteColor', false, val);
+  }
+}
+window.apply_highlight_choice = apply_highlight_choice;
 
 // Tracks exactly where the active list is, so the toggle button can turn
 // it off later even if the cursor has since moved elsewhere.
@@ -1263,16 +1332,13 @@ function handle_list_select(selectEl) {
   editor.focus({ preventScroll: true });
   restore_frozen_selection();
 
-  const [type, style] = value.split(':');
+  const type = value.split(':')[0];
 
-  if (type === 'ul') {
-    document.execCommand('insertUnorderedList');
-    apply_list_style('ul', style);
-    show_fmt_tooltip(selectEl, 'Unordered List');
-  } else if (type === 'ol') {
-    document.execCommand('insertOrderedList');
-    apply_list_style('ol', style);
-    show_fmt_tooltip(selectEl, 'Ordered List');
+  // The list creation / restyling lives in apply_list_choice() so the
+  // category menu and this (legacy) select handler share one implementation.
+  apply_list_choice(value);
+  if (selectEl.getBoundingClientRect) {
+    show_fmt_tooltip(selectEl, type === 'ul' ? 'Unordered List' : 'Ordered List');
   }
 
   save_editor_selection();
@@ -1285,13 +1351,65 @@ function handle_list_select(selectEl) {
   }
   list_active_type = type;
 
+  // The old UL/OL toggle button no longer exists in the redesigned toolbar
+  // (the menu has a "Remove list" item instead), so only touch it if present.
   const btn = document.getElementById('listToggleBtn');
-  selectEl.style.display = 'none';
-  btn.textContent = '-' + type.toUpperCase() + '-';
-  btn.classList.add('active');
-  btn.style.display = 'flex';
+  if (btn) {
+    selectEl.style.display = 'none';
+    btn.textContent = '-' + type.toUpperCase() + '-';
+    btn.classList.add('active');
+    btn.style.display = 'flex';
+  }
 }
 window.handle_list_select = handle_list_select;
+
+// Single authoritative implementation of list creation / restyling.
+// value is 'ul:disc', 'ul:circle', 'ul:square', 'ol:decimal',
+// 'ol:lower-alpha' or 'ol:upper-roman'.
+//  - not in a list            -> creates one of the chosen type
+//  - in a list of the other type -> converts it (ul <-> ol)
+//  - already in that type of list -> only changes the bullet/number style
+//    (never toggles the list off by accident)
+function apply_list_choice(value) {
+  const cut = value.indexOf(':');
+  const tag = value.slice(0, cut);
+  const style = value.slice(cut + 1);
+
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  let node = sel.getRangeAt(0).startContainer;
+  if (node.nodeType === 3) node = node.parentElement;
+  const editor = document.getElementById('note-textarea');
+  const current = node && node.closest('ul, ol');
+  const in_matching_list =
+    current && editor.contains(current) && current.tagName.toLowerCase() === tag;
+
+  if (!in_matching_list) {
+    document.execCommand(tag === 'ul' ? 'insertUnorderedList' : 'insertOrderedList');
+  }
+  apply_list_style(tag, style);
+}
+window.apply_list_choice = apply_list_choice;
+
+// Turns the list around the selection off, leaving its text as plain lines.
+// Returns false when the selection is not inside a list.
+function remove_list() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return false;
+
+  let node = sel.getRangeAt(0).startContainer;
+  if (node.nodeType === 3) node = node.parentElement;
+  const editor = document.getElementById('note-textarea');
+  const current = node && node.closest('ul, ol');
+  if (!current || !editor.contains(current)) return false;
+
+  document.execCommand(
+    current.tagName.toLowerCase() === 'ul' ? 'insertUnorderedList' : 'insertOrderedList'
+  );
+  return true;
+}
+window.remove_list = remove_list;
 
 // Turns the active list off (using the position it was created at) and
 // swaps the button back to the select so a new choice can be made.
@@ -1319,14 +1437,699 @@ function handle_list_toggle_click() {
   save_editor_selection();
   auto_save_current_note();
 
-  btn.classList.remove('active');
-  btn.style.display = 'none';
-  selectEl.style.display = '';
+  // These two elements belonged to the old toolbar; guard so the function
+  // stays safe to call from the redesigned one.
+  if (btn) {
+    btn.classList.remove('active');
+    btn.style.display = 'none';
+  }
+  if (selectEl) selectEl.style.display = '';
 
   list_active_range = null;
   list_active_type = null;
 }
 window.handle_list_toggle_click = handle_list_toggle_click;
+
+
+// ── SECTION 14B: CATEGORY FORMATTING MENU + SELECT MODE ─────────────────────
+// The redesigned toolbar is one row — Formatting : [Category menu] [Select].
+// Every menu item runs through run_fmt_item(). Items that already had a
+// handler in SECTION 14 (bold / italic / underline / checkbox, indent,
+// font, highlight, list) call that same handler; only genuinely new
+// commands (strikethrough, spacing, styles, ...) are implemented here.
+
+const BLOCK_SELECTOR = 'div, p, li, h1, h2, h3, h4, h5, h6, blockquote';
+
+let select_mode = false;            // true while Select mode is on
+let select_range = null;            // the temporary custom selection (a live Range)
+let select_pending_first_word = false;
+let fmt_notice_timer = null;
+
+function get_editor() {
+  return document.getElementById('note-textarea');
+}
+
+function range_in_editor(range) {
+  const editor = get_editor();
+  return !!range && !!editor && editor.contains(range.commonAncestorContainer);
+}
+
+
+// ── Menu open / close / expand ──────────────────────────────────────────────
+
+function toggle_fmt_menu(force) {
+  const menu = document.getElementById('fmtMenu');
+  const btn = document.getElementById('fmtCategoryBtn');
+  if (!menu) return;
+
+  const open = typeof force === 'boolean' ? force : !menu.classList.contains('open');
+  menu.classList.toggle('open', open);
+
+  if (btn) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.classList.toggle('active', open);
+  }
+  if (open) refresh_fmt_menu_state();
+}
+window.toggle_fmt_menu = toggle_fmt_menu;
+
+function close_fmt_menu() {
+  toggle_fmt_menu(false);
+}
+window.close_fmt_menu = close_fmt_menu;
+
+// Accordion: tapping a category (or group) head opens it and closes its
+// siblings. The category button label shows the open category's name.
+function toggle_fmt_branch(li) {
+  if (!li || !li.parentElement) return;
+
+  const was_open = li.classList.contains('open');
+  Array.from(li.parentElement.children).forEach((sib) => {
+    if (sib !== li) sib.classList.remove('open');
+  });
+  li.classList.toggle('open', !was_open);
+
+  if (li.classList.contains('fmt-cat')) {
+    const label = document.getElementById('fmtCategoryLabel');
+    if (label) label.textContent = was_open ? 'Category' : li.dataset.cat;
+
+    const menu = document.getElementById('fmtMenu');
+    if (menu && !was_open) menu.scrollTop = Math.max(0, li.offsetTop - 4);
+  }
+}
+
+function handle_fmt_menu_click(event) {
+  const head = event.target.closest('.fmt-head');
+  if (head) {
+    toggle_fmt_branch(head.parentElement);
+    return;
+  }
+
+  const item = event.target.closest('.fmt-item');
+  if (item) run_fmt_item(item);
+}
+
+// Marks bold / italic / underline / strikethrough / superscript / subscript
+// items as active when the current selection already has that format.
+function refresh_fmt_menu_state() {
+  const menu = document.getElementById('fmtMenu');
+  const editor = get_editor();
+  if (!menu || !editor) return;
+
+  const sel = window.getSelection();
+  const in_editor = sel.rangeCount > 0 && range_in_editor(sel.getRangeAt(0));
+
+  menu.querySelectorAll('.fmt-item[data-cmd]').forEach((el) => {
+    if (!TOGGLE_COMMANDS.includes(el.dataset.cmd)) return;
+    let on = false;
+    if (in_editor) {
+      try { on = document.queryCommandState(el.dataset.cmd); } catch (err) { on = false; }
+    }
+    el.classList.toggle('active', on);
+  });
+}
+
+// Short message under the toolbar row (for things that could not be applied).
+function fmt_notice(message) {
+  const el = document.getElementById('fmtNotice');
+  if (!el) return;
+  el.textContent = message;
+  el.style.display = 'block';
+  clearTimeout(fmt_notice_timer);
+  fmt_notice_timer = setTimeout(() => { el.style.display = 'none'; }, 2500);
+}
+
+
+// ── Selection handling for menu commands ────────────────────────────────────
+
+// Puts the right selection back before a command runs. Menu items do not
+// take focus (mousedown is cancelled), but if the browser did move the
+// selection away, fall back to Select mode's range, then the last saved one.
+function fmt_prime_selection() {
+  const editor = get_editor();
+  const sel = window.getSelection();
+
+  // Look at the live selection BEFORE focus(): focusing a blurred
+  // contenteditable can drop the caret at the start of the note.
+  const live_ok = sel.rangeCount > 0 && range_in_editor(sel.getRangeAt(0));
+  const live_clone = live_ok ? sel.getRangeAt(0).cloneRange() : null;
+
+  editor.focus({ preventScroll: true });
+
+  let target = null;
+  if (select_mode && select_range && !select_range.collapsed) {
+    target = select_range;
+  } else if (live_clone) {
+    target = live_clone;
+  } else {
+    target = saved_range || frozen_range;
+  }
+
+  if (target) {
+    sel.removeAllRanges();
+    sel.addRange(target.cloneRange());
+  }
+}
+
+// After a command: keep the selection (so more formats can be stacked),
+// keep Select mode's temporary range in step with it, refresh state, save.
+function fmt_finish(item) {
+  save_editor_selection();
+
+  if (select_mode) {
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0 && range_in_editor(sel.getRangeAt(0)) && !sel.getRangeAt(0).collapsed) {
+      set_select_range(sel.getRangeAt(0), false);
+    } else {
+      paint_select_highlight();
+    }
+  }
+
+  refresh_fmt_menu_state();
+
+  if (item && !item.dataset.cmd) {
+    item.classList.add('active');
+    setTimeout(() => item.classList.remove('active'), 600);
+  }
+
+  auto_save_current_note();
+}
+
+
+// ── Block helpers (paragraph / heading / list-item level formatting) ────────
+
+// True when the range only touches the very edge of the block (for example a
+// selection that ends at the start of the next line) and holds none of its text.
+function touches_only_edge(range, block) {
+  const whole = document.createRange();
+  whole.selectNodeContents(block);
+
+  const inter = range.cloneRange();
+  if (inter.compareBoundaryPoints(Range.START_TO_START, whole) < 0) {
+    inter.setStart(whole.startContainer, whole.startOffset);
+  }
+  if (inter.compareBoundaryPoints(Range.END_TO_END, whole) > 0) {
+    inter.setEnd(whole.endContainer, whole.endOffset);
+  }
+  return inter.collapsed;
+}
+
+// The innermost paragraph / heading / quote / list-item blocks the current
+// selection touches. A collapsed cursor returns the one block it sits in.
+function get_selected_blocks() {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (!editor || sel.rangeCount === 0) return [];
+
+  const range = sel.getRangeAt(0);
+  if (!range_in_editor(range)) return [];
+
+  let blocks = Array.from(editor.querySelectorAll(BLOCK_SELECTOR))
+    .filter((block) => range.intersectsNode(block));
+
+  if (!range.collapsed) {
+    blocks = blocks.filter((block) => !touches_only_edge(range, block));
+  }
+
+  // Keep only innermost blocks so a wrapper <div> does not get the style
+  // meant for the lines inside it.
+  return blocks.filter((block) => !blocks.some((other) => other !== block && block.contains(other)));
+}
+
+// Same, but if the cursor is in bare text sitting directly in the editor
+// (no block around it yet), wrap that line in a <div> first.
+function get_blocks_or_wrap() {
+  let blocks = get_selected_blocks();
+  if (blocks.length === 0) {
+    document.execCommand('formatBlock', false, 'div');
+    blocks = get_selected_blocks();
+  }
+  return blocks;
+}
+
+function apply_block_style(prop, value) {
+  const blocks = get_blocks_or_wrap();
+  blocks.forEach((block) => {
+    block.style[prop] = value;
+    if (!block.getAttribute('style')) block.removeAttribute('style');
+  });
+}
+
+// Paragraph style: 'div' (normal text), 'h1'..'h6', or 'blockquote'.
+// Each selected paragraph is converted on its own, so a selection that spans
+// several paragraphs gives several headings (the browser's own formatBlock
+// would merge them into one block). Indent / spacing / alignment styles on
+// the paragraph are carried over to the new element.
+function apply_block_tag(tag) {
+  const blocks = get_blocks_or_wrap();
+  if (blocks.length === 0) return;
+
+  if (blocks.some((block) => block.tagName === 'LI')) {
+    fmt_notice('Styles can\u2019t be applied inside a list. Remove the list first.');
+    return;
+  }
+
+  const sel = window.getSelection();
+  const range = sel.getRangeAt(0);
+
+  // Text nodes survive being moved; remember the selection by node + offset.
+  const saved = {
+    sc: range.startContainer, so: range.startOffset,
+    ec: range.endContainer, eo: range.endOffset
+  };
+  const replaced = new Map();
+
+  blocks.forEach((block) => {
+    if (block.tagName.toLowerCase() === tag) return;
+
+    const converted = document.createElement(tag);
+    const style = block.getAttribute('style');
+    if (style) converted.setAttribute('style', style);
+
+    while (block.firstChild) converted.appendChild(block.firstChild);
+    block.parentNode.replaceChild(converted, block);
+    replaced.set(block, converted);
+  });
+
+  const mapped = (node) => replaced.get(node) || node;
+  try {
+    const restored = document.createRange();
+    restored.setStart(mapped(saved.sc), saved.so);
+    restored.setEnd(mapped(saved.ec), saved.eo);
+    sel.removeAllRanges();
+    sel.addRange(restored);
+  } catch (err) { /* keep whatever selection the browser chose */ }
+}
+
+function insert_paragraph_break(soft) {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  // Never replace the selected text with a break — drop the caret at its end.
+  if (!sel.isCollapsed) sel.collapseToEnd();
+  document.execCommand(soft ? 'insertLineBreak' : 'insertParagraph');
+}
+
+function reset_paragraph_formatting() {
+  get_selected_blocks().forEach((block) => {
+    ['marginLeft', 'marginTop', 'marginBottom', 'lineHeight', 'textAlign'].forEach((prop) => {
+      block.style[prop] = '';
+    });
+    if (!block.getAttribute('style')) block.removeAttribute('style');
+  });
+}
+
+const ALIGN_COMMANDS = {
+  left: 'justifyLeft',
+  center: 'justifyCenter',
+  right: 'justifyRight',
+  justify: 'justifyFull'
+};
+
+// Direct alignment choice (the old single button cycled; this does not).
+function apply_alignment(kind) {
+  const cmd = ALIGN_COMMANDS[kind];
+  if (!cmd) return;
+  document.execCommand(cmd);
+  if (kind !== 'justify') align_state = kind;
+}
+
+
+// ── Menu dispatcher ─────────────────────────────────────────────────────────
+
+function run_fmt_item(item) {
+  if (nav.level !== 'note') return;
+
+  lock_scroll_position();
+  fmt_prime_selection();
+  freeze_editor_selection();   // keeps the legacy frozen-selection helpers in step
+
+  const cmd = item.dataset.cmd;
+  const act = item.dataset.act;
+  const val = item.dataset.val || '';
+
+  try {
+    if (cmd) {
+      // bold, italic, underline, strikethrough, superscript, subscript, checkbox
+      handle_fmt_click(item);
+    } else {
+      switch (act) {
+        case 'size':          apply_font_choice('size:' + val); break;
+        case 'fontname':      apply_font_choice('name:' + val); break;
+        case 'color':         apply_font_choice('color:' + val); break;
+        case 'hilite':        apply_highlight_choice('bg:' + val); break;
+
+        case 'para-break':    insert_paragraph_break(false); break;
+        case 'line-break':    insert_paragraph_break(true); break;
+        case 'para-reset':    reset_paragraph_formatting(); break;
+        case 'cursor':        move_cursor(parseInt(val, 10)); break;
+
+        case 'list':          apply_list_choice(val); break;
+        case 'list-off':
+          if (!remove_list()) fmt_notice('The cursor is not inside a list.');
+          break;
+
+        case 'align':         apply_alignment(val); break;
+
+        case 'indent':        adjust_indent(parseInt(val, 10)); break;
+        case 'indent-default': toggle_default_indent('on'); break;
+        case 'indent-remove': toggle_default_indent('off'); break;
+
+        case 'linespace':     apply_block_style('lineHeight', val === 'single' ? '' : val); break;
+        case 'space-before':  apply_block_style('marginTop', val + 'px'); break;
+        case 'space-after':   apply_block_style('marginBottom', val + 'px'); break;
+
+        case 'style':         apply_block_tag(val); break;
+        case 'clear':         document.execCommand('removeFormat'); break;
+      }
+    }
+  } catch (err) {
+    console.error('Formatting command failed:', act || cmd, err);
+  }
+
+  fmt_finish(item);
+}
+window.run_fmt_item = run_fmt_item;
+
+
+// ── Select mode ─────────────────────────────────────────────────────────────
+// First press: mode on + first word of the note selected.
+// While on: tapping a word selects that word; native drag handles still work.
+// Second press: mode off, temporary selection cleared.
+// The blue/white look is a CSS Custom Highlight painted over a Range (with a
+// ::selection fallback) — nothing is ever written into the note's HTML.
+
+const WORD_CHAR = /[\p{L}\p{N}_'’-]/u;
+const WORD_START = /[\p{L}\p{N}][\p{L}\p{N}_'’-]*/u;
+
+function is_word_char(ch) {
+  return !!ch && WORD_CHAR.test(ch);
+}
+
+function paint_select_highlight() {
+  if (!(window.CSS && CSS.highlights && typeof Highlight === 'function')) return;
+
+  CSS.highlights.delete('fmt-select');
+  if (select_mode && select_range && !select_range.collapsed) {
+    CSS.highlights.set('fmt-select', new Highlight(select_range));
+  }
+}
+
+function set_select_range(range, push_native) {
+  select_range = range ? range.cloneRange() : null;
+  if (select_range) {
+    select_pending_first_word = false;
+    saved_range = select_range.cloneRange();
+  }
+
+  if (select_range && push_native) {
+    const editor = get_editor();
+    const sel = window.getSelection();
+    editor.focus({ preventScroll: true });
+    sel.removeAllRanges();
+    sel.addRange(select_range.cloneRange());
+  }
+
+  paint_select_highlight();
+}
+
+// Two text nodes are "adjacent" for word purposes when nothing but
+// formatting tags sits between them (no line break, checkbox or photo).
+function text_nodes_adjacent(a, b) {
+  const between = document.createRange();
+  between.setStart(a, a.data.length);
+  between.setEnd(b, 0);
+  return !between.cloneContents().querySelector('br, img, input');
+}
+
+function neighbour_text_node(node, direction) {
+  const walker = document.createTreeWalker(get_editor(), NodeFilter.SHOW_TEXT);
+  walker.currentNode = node;
+  const other = direction < 0 ? walker.previousNode() : walker.nextNode();
+  if (!other) return null;
+  if (block_of(other) !== block_of(node)) return null;
+  const first = direction < 0 ? other : node;
+  const second = direction < 0 ? node : other;
+  return text_nodes_adjacent(first, second) ? other : null;
+}
+
+// Nearest block element inside the editor (null for bare top-level text).
+function block_of(node) {
+  const editor = get_editor();
+  let el = node && node.nodeType === 3 ? node.parentElement : node;
+  while (el && el !== editor) {
+    if (el.matches && el.matches(BLOCK_SELECTOR)) return el;
+    el = el.parentElement;
+  }
+  return null;
+}
+
+// Range covering the whole word at (text node, offset). The word may continue
+// into neighbouring text nodes (e.g. "he<b>llo</b>"). Null if not on a word.
+function word_range_at(node, offset) {
+  const text = node.data;
+  let at = offset;
+
+  if (!is_word_char(text[at])) {
+    if (at > 0 && is_word_char(text[at - 1])) at = at - 1;
+    else return null;
+  }
+
+  let start_node = node;
+  let start_off = at;
+  for (;;) {
+    while (start_off > 0 && is_word_char(start_node.data[start_off - 1])) start_off--;
+    if (start_off > 0) break;
+    const prev = neighbour_text_node(start_node, -1);
+    if (prev && prev.data.length > 0 && is_word_char(prev.data[prev.data.length - 1])) {
+      start_node = prev;
+      start_off = prev.data.length;
+    } else {
+      break;
+    }
+  }
+
+  let end_node = node;
+  let end_off = at + 1;
+  for (;;) {
+    while (end_off < end_node.data.length && is_word_char(end_node.data[end_off])) end_off++;
+    if (end_off < end_node.data.length) break;
+    const next = neighbour_text_node(end_node, 1);
+    if (next && next.data.length > 0 && is_word_char(next.data[0])) {
+      end_node = next;
+      end_off = 0;
+    } else {
+      break;
+    }
+  }
+
+  const range = document.createRange();
+  range.setStart(start_node, start_off);
+  range.setEnd(end_node, end_off);
+  return range;
+}
+
+function find_first_word_range() {
+  const editor = get_editor();
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    const match = WORD_START.exec(node.data);
+    if (match) return word_range_at(node, match.index);
+  }
+  return null;
+}
+
+// Tap handler for Select mode: turn the tapped caret into its whole word.
+function select_word_at_caret() {
+  if (!select_mode) return;
+
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  const range = sel.getRangeAt(0);
+  if (!range_in_editor(range)) return;
+
+  // The user dragged native handles: adopt their selection as-is.
+  if (!range.collapsed) {
+    set_select_range(range, false);
+    return;
+  }
+
+  let node = range.startContainer;
+  let offset = range.startOffset;
+
+  if (node.nodeType !== 3) {
+    // Caret sits between elements: look at the nearest text beside it.
+    let target = node.childNodes[offset] || null;
+    let from_end = false;
+    if (!target) {
+      target = node.childNodes[offset - 1] || null;
+      from_end = true;
+    }
+    if (!target) return;
+
+    const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+    let text_node = target.nodeType === 3 ? target : null;
+    if (!text_node) {
+      let n;
+      while ((n = walker.nextNode())) text_node = n;           // last text node
+      if (!from_end) { walker.currentNode = target; text_node = walker.nextNode(); } // first
+    }
+    if (!text_node) return;
+    node = text_node;
+    offset = from_end ? text_node.data.length : 0;
+  }
+
+  const word = word_range_at(node, offset);
+  if (word) set_select_range(word, true);
+}
+
+function enter_select_mode() {
+  const editor = get_editor();
+  if (!editor) return;
+
+  select_mode = true;
+  select_pending_first_word = false;
+  editor.classList.add('select-mode');
+
+  // No soft keyboard while picking words — it would cover the toolbar.
+  editor.setAttribute('inputmode', 'none');
+
+  const btn = document.getElementById('fmtSelectBtn');
+  if (btn) {
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+  }
+
+  const first = find_first_word_range();
+  if (first) {
+    set_select_range(first, true);
+  } else {
+    // Empty note: stay in Select mode; the first word is picked once text
+    // appears (see on_editor_text_added) or when the user taps a word.
+    select_pending_first_word = true;
+    select_range = null;
+    paint_select_highlight();
+  }
+}
+
+// silent = true skips collapsing the native selection (used when leaving a note).
+function exit_select_mode(silent) {
+  const editor = get_editor();
+  const was_on = select_mode;
+
+  select_mode = false;
+  select_range = null;
+  select_pending_first_word = false;
+
+  if (editor) {
+    editor.classList.remove('select-mode');
+    editor.removeAttribute('inputmode');
+  }
+
+  paint_select_highlight();
+
+  const btn = document.getElementById('fmtSelectBtn');
+  if (btn) {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-pressed', 'false');
+  }
+
+  if (was_on && !silent && editor) {
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0 && range_in_editor(sel.getRangeAt(0)) && !sel.isCollapsed) {
+      sel.collapseToEnd();
+      save_editor_selection();
+    }
+  }
+}
+
+function toggle_select_mode() {
+  if (nav.level !== 'note') return;
+  if (select_mode) exit_select_mode(false);
+  else enter_select_mode();
+}
+window.toggle_select_mode = toggle_select_mode;
+
+// Called when text appears in the note by something other than typing
+// (voice input, paste): finishes a pending "select the first word".
+function on_editor_text_added() {
+  // Only acts when Select mode was switched on in an empty note and is still
+  // waiting for its first word. Formatting commands also fire input events,
+  // and those must never move the user's selection.
+  if (!select_mode || !select_pending_first_word) return;
+
+  const first = find_first_word_range();
+  if (first) set_select_range(first, true);
+}
+window.on_editor_text_added = on_editor_text_added;
+
+// Leaving a note (or opening another) puts the toolbar back to normal.
+function reset_fmt_toolbar() {
+  exit_select_mode(true);
+  close_fmt_menu();
+
+  const label = document.getElementById('fmtCategoryLabel');
+  if (label) label.textContent = 'Category';
+  document.querySelectorAll('#fmtMenu .open').forEach((el) => el.classList.remove('open'));
+}
+window.reset_fmt_toolbar = reset_fmt_toolbar;
+
+// Wires up the menu and Select mode. Separate from the main DOMContentLoaded
+// handler so nothing here depends on it.
+document.addEventListener('DOMContentLoaded', () => {
+  const editor = get_editor();
+  const menu = document.getElementById('fmtMenu');
+  const bar = document.getElementById('formatToolbarSingle');
+
+  if (menu) {
+    // Menu items must never steal focus / collapse the editor selection.
+    menu.addEventListener('mousedown', (e) => e.preventDefault());
+    menu.addEventListener('click', handle_fmt_menu_click);
+  }
+
+  // Snapshot the selection the instant a touch lands on the toolbar, before
+  // the browser has any chance to move it.
+  if (bar) {
+    ['pointerdown', 'touchstart'].forEach((type) => {
+      bar.addEventListener(type, () => freeze_editor_selection(), { capture: true, passive: true });
+    });
+  }
+
+  if (editor) {
+    editor.addEventListener('click', (e) => {
+      if (e.target.closest && e.target.closest('.note-photo')) return;
+
+      // Tapping the note means the user wants the text, not the menu.
+      close_fmt_menu();
+
+      if (!select_mode) return;
+      if (e.target.tagName === 'INPUT') return;   // checkbox tap
+      setTimeout(select_word_at_caret, 0);
+    });
+
+    // Pasted text can satisfy a pending "select the first word". Ordinary
+    // typing is ignored so a keystroke never replaces the selected word.
+    editor.addEventListener('input', (e) => {
+      if (!select_mode) return;
+      if (!/^(insertFromPaste|insertFromDrop|insertFromYank|insertReplacementText)$/.test(e.inputType || '')) return;
+      on_editor_text_added();
+    });
+  }
+
+  // Native drag handles: adopt whatever range the user selects while in
+  // Select mode so formatting and the blue highlight follow it.
+  document.addEventListener('selectionchange', () => {
+    if (!select_mode) return;
+    const sel = window.getSelection();
+    if (sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!range.collapsed && range_in_editor(range)) {
+      set_select_range(range, false);
+    }
+  });
+});
 
 
 // ── SECTION 15: HELP MODAL ──────────────────────────────────────────────────
