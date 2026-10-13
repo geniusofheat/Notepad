@@ -386,22 +386,61 @@ p {
 
 
 #note-textarea {
+  position: relative;
   width: 100%;
-  min-height: 400px;
+  min-height: calc(100% + 1px);   /* always 1px taller than its box, so the note box always scrolls on its own */
   padding: 10px 10px;
   font-family: 'Crimson Pro', serif;
-  font-size: 14px;
+  font-size: 18px;                /* default size for everything typed */
   outline: none;
   border-left: 4px solid #2f6fa3;
+}
+
+/* The note box: finger on the note scrolls the note only; finger anywhere
+   else scrolls the page. Height is set by fit_note_area() in the engine. */
+#noteBody {
+  height: calc(100vh - 200px);    /* fallback; the engine sets the real height */
+  min-height: 160px;
+  max-height: none;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* contenteditable placeholder (textarea placeholder doesn't work on divs) */
-#note-textarea:empty:before {
+#note-textarea:empty:before,
+#note-textarea.is-empty:before {
   content: attr(data-placeholder);
+  position: absolute;
+  left: 10px;
+  top: 10px;
   font-style: italic;
   color: #888;
   pointer-events: none;
+}
+
+/* Paragraph spacing: every paragraph (a new one starts each time Enter is
+   pressed) has 12 px after it. The Spacing menu overrides this per paragraph. */
+#note-textarea > div,
+#note-textarea > p {
+  margin-bottom: 12px;
+}
+
+/* List items: 6 px between items (the Lists options + the - / + buttons change
+   it through --li-gap on the list). The list itself has 12 px after it. */
+#note-textarea ol,
+#note-textarea ul {
+  margin-bottom: 12px;
+}
+
+#note-textarea li {
+  font-size: 18px;                /* numbers and bullets match the text size */
+  margin-bottom: var(--li-gap, 6px);
+}
+
+#note-textarea li:last-child {
+  margin-bottom: 0;
 }
 
 /* =====================
@@ -841,28 +880,55 @@ p {
 }
 
 /* ---- Note action line: one reserved line at the top of the white note area ----
-   Black buttons with a 1px black border: undo, redo, then − / +.
-   It sits inside the sticky toolbar block so it stays reachable while the
-   note scrolls. Room for more buttons later: add them inside .note-action-line. */
+   [title of what - / + control]  ... undo redo | left right | - +
+   The title (left) names the option the - / + buttons are stepping, e.g.
+   Weight, Size, Spacing, or All while Select is on. Room for more buttons
+   later: add them inside .note-action-line. */
 
 .note-action-line {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
+  gap: 3px;
   height: 36px;
   padding: 0 6px;
   background: #ffffff;
 }
 
+.note-action-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 28px;
+  margin: 0 4px 0 0;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #000000;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.note-action-title.pressable {
+  border-color: #000000;
+  cursor: pointer;
+  text-align: center;
+  flex: 0 0 auto;
+  min-width: 44px;
+}
+
 .note-action-gap {
-  width: 14px;
+  width: 6px;
   flex: 0 0 auto;
 }
 
 .note-action-btn {
   flex: 0 0 auto;
-  width: 36px;
+  width: 32px;
   height: 30px;
   padding: 0;
   margin: 0;
@@ -871,7 +937,7 @@ p {
   background: transparent;
   color: #000000;
   font-family: 'Playfair Display', serif;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
@@ -1068,4 +1134,56 @@ p {
   font-family: 'Crimson Pro', serif;
   font-size: 15px;
   line-height: 1.4;
+}
+/* =====================
+   HELP TOPICS (expand / collapse like the Formatting list)
+===================== */
+
+.help-modal-body .help-intro {
+  padding: 0 0 10px 0;
+  font-style: italic;
+}
+
+.help-topic-head {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 12px;
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  border-bottom: 1px solid rgba(100, 149, 237, 0.25);
+}
+
+.help-topic-head::before {
+  content: '\2022';
+  margin-right: 10px;
+}
+
+.help-topic-head::after {
+  content: '\25B8';
+  margin-left: auto;
+  padding-left: 10px;
+  font-size: 13px;
+}
+
+.help-topic.open > .help-topic-head {
+  background: #e8f1fa;
+}
+
+.help-topic.open > .help-topic-head::after {
+  content: '\25BE';
+}
+
+.help-topic-body {
+  display: none;
+  padding: 12px 12px 4px 32px;
+}
+
+.help-topic.open > .help-topic-body {
+  display: block;
 }

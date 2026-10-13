@@ -587,6 +587,36 @@ function go_home() {
 }
 window.go_home = go_home;
 
+// A first line typed (or loaded) with no paragraph around it has no "12 px after
+// it". Wrap such loose top-level text in a <div> so every paragraph is a block.
+// Only run at calm moments (Enter pressed, note opened) -- never while typing,
+// because moving the text being typed would break the phone keyboard's word
+// suggestions.
+function wrap_loose_top_level() {
+  const ed = get_editor();
+  if (!ed) return;
+  const sel = window.getSelection();
+  const BLOCKS = /^(DIV|P|UL|OL|BLOCKQUOTE|H[1-6]|PRE|TABLE|IMG)$/;
+  let run = [];
+
+  const flush = () => {
+    const worth = run.some((n) => n.nodeType === 1 || n.textContent.trim() !== '');
+    const holds_caret = sel.rangeCount > 0 && run.some((n) => n.contains(sel.anchorNode));
+    if (run.length && worth && !holds_caret) {
+      const div = document.createElement('div');
+      ed.insertBefore(div, run[0]);
+      run.forEach((n) => div.appendChild(n));
+    }
+    run = [];
+  };
+
+  Array.from(ed.childNodes).forEach((n) => {
+    if (n.nodeType === 1 && BLOCKS.test(n.tagName)) { flush(); return; }
+    run.push(n);
+  });
+  flush();
+}
+
 function open_note(cat_id, item_id) {
   const cat = notes.find(c => c.id === cat_id);
   if (!cat) return;
@@ -613,6 +643,7 @@ function open_note(cat_id, item_id) {
   render_breadcrumb();
   reset_fmt_toolbar();
   document.getElementById('note-textarea').innerHTML = item.content || '';
+  wrap_loose_top_level();
   reset_history();
 
   // Makes the Enter key create a real new block (a <div>) instead of
@@ -621,8 +652,30 @@ function open_note(cat_id, item_id) {
   document.execCommand('defaultParagraphSeparator', false, 'div');
 
   show_back_btn();
+  fit_note_area();
 }
 window.open_note = open_note;
+
+// The note box is a fixed-height scroll area that fills the screen below the
+// toolbar: a finger on the note scrolls the note only; a finger anywhere else
+// scrolls the whole page. Re-measured whenever the screen size, the keypad or
+// the toolbar height changes.
+function fit_note_area() {
+  const body = document.getElementById('noteBody');
+  const view = document.getElementById('note-editor-view');
+  if (!body || !view || view.style.display === 'none') return;
+
+  const viewport = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const top = body.getBoundingClientRect().top + window.scrollY;   // top of the note box on the page
+  const height = Math.max(160, Math.floor(viewport - top - 12));
+  body.style.height = height + 'px';
+}
+window.fit_note_area = fit_note_area;
+
+window.addEventListener('resize', fit_note_area);
+window.addEventListener('orientationchange', () => setTimeout(fit_note_area, 200));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fit_note_area);
+window.addEventListener('load', fit_note_area);
 
 
 // ── BACK NAVIGATION ─────────────────────────────────────────────────────────
@@ -708,7 +761,16 @@ function auto_save_current_note() {
   const item = find_item(nav.item_id);
   if (!item) return;
 
-  item.content = document.getElementById('note-textarea').innerHTML;
+  const editor = document.getElementById('note-textarea');
+
+  // A ticked checkbox is only a live property of the element; copy it into the
+  // HTML attribute so the tick is part of the saved note (and of undo / sync).
+  editor.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+    if (box.checked) box.setAttribute('checked', '');
+    else box.removeAttribute('checked');
+  });
+
+  item.content = editor.innerHTML;
   item.updated = new Date().toISOString();
   save_notes();
 
@@ -1793,24 +1855,24 @@ function clear_all_formatting() {
   if (headings.length > 0) convert_blocks(headings, 'div');
 }
 
-// Font size in exact pixels (1-50). The browser's own fontSize command only
-// knows seven coarse steps, so it is used to wrap the text and each wrapper is
-// then swapped for <span style="font-size: Npx">. Re-sizing text that already
-// has a pixel size replaces that size instead of nesting spans deeper each time.
-function apply_font_px(px) {
+// Wraps the selected text in <span style="..."> using exact CSS values. The
+// browser's own fontSize command is used only to wrap the text (it knows just
+// seven coarse steps); each wrapper is then swapped for a span carrying the
+// requested style(s), e.g. {fontSize:'18px'} or {fontWeight:'700'}. Re-styling
+// text that already has that style replaces it instead of nesting spans
+// deeper each time. A bare caret inside a word styles that word.
+// Returns false when there was nothing to style.
+function apply_span_style(styles) {
   const editor = get_editor();
   const sel = window.getSelection();
-  if (sel.rangeCount === 0) return;
+  if (sel.rangeCount === 0) return false;
+  const props = Object.keys(styles);
 
-  // A bare caret has no text to size: use the word it sits in.
   if (sel.isCollapsed) {
     const range = sel.getRangeAt(0);
     const word = range.startContainer.nodeType === 3
       ? word_range_at(range.startContainer, range.startOffset) : null;
-    if (!word) {
-      fmt_notice('Select some text first (or tap Select).');
-      return;
-    }
+    if (!word) return false;
     sel.removeAllRanges();
     sel.addRange(word);
   }
@@ -1821,7 +1883,7 @@ function apply_font_px(px) {
 
   const wrappers = Array.from(editor.querySelectorAll('font[size="7"]'))
     .filter((el) => !before.has(el));
-  if (wrappers.length === 0) return;
+  if (wrappers.length === 0) return false;
 
   const live = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
   const saved = live ? {
@@ -1832,11 +1894,11 @@ function apply_font_px(px) {
 
   wrappers.forEach((font) => {
     const span = document.createElement('span');
-    span.style.fontSize = px + 'px';
+    props.forEach((prop) => { span.style[prop] = styles[prop]; });
 
     // The browser sometimes reuses an existing <font color="..."> (or face)
     // element for the size. Keep that element so its color / font survive,
-    // and put the pixel size on a span inside it.
+    // and put the new style on a span inside it.
     const carries_other_format =
       font.hasAttribute('color') || font.hasAttribute('face') || font.hasAttribute('style');
 
@@ -1850,10 +1912,13 @@ function apply_font_px(px) {
     }
     replaced.set(font, span);
 
-    // Sizes set earlier inside this text are superseded by the new one.
+    // Values set earlier inside this text are superseded by the new one.
     span.querySelectorAll('span').forEach((inner) => {
-      if (inner.style.fontSize) {
-        inner.style.fontSize = '';
+      let touched = false;
+      props.forEach((prop) => {
+        if (inner.style[prop]) { inner.style[prop] = ''; touched = true; }
+      });
+      if (touched) {
         if (!inner.getAttribute('style')) inner.removeAttribute('style');
         if (inner.attributes.length === 0) {
           while (inner.firstChild) inner.parentNode.insertBefore(inner.firstChild, inner);
@@ -1863,11 +1928,11 @@ function apply_font_px(px) {
     });
     span.querySelectorAll('font[size]').forEach((inner) => inner.removeAttribute('size'));
 
-    // Same text already wrapped in a sized span: update that span, no nesting.
+    // Same text already wrapped in a span with this style: update that span, no nesting.
     const parent = span.parentElement;
     if (parent && parent !== editor && parent.tagName === 'SPAN' &&
-        parent.style.fontSize && parent.childNodes.length === 1) {
-      parent.style.fontSize = px + 'px';
+        props.every((prop) => parent.style[prop]) && parent.childNodes.length === 1) {
+      props.forEach((prop) => { parent.style[prop] = styles[prop]; });
       while (span.firstChild) parent.insertBefore(span.firstChild, span);
       span.remove();
       replaced.set(font, parent);
@@ -1887,8 +1952,38 @@ function apply_font_px(px) {
       sel.addRange(restored);
     } catch (err) { /* keep the browser's selection */ }
   }
+  return true;
+}
+
+// Font size in exact pixels (1-50).
+function apply_font_px(px) {
+  if (!apply_span_style({ fontSize: px + 'px' })) {
+    fmt_notice('Select some text first (or tap Select).');
+  }
 }
 window.apply_font_px = apply_font_px;
+
+// Font weight 100-900 (400 = normal, 700 = bold). Used by Bold and its − / +.
+function current_weight() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return 400;
+  let node = sel.getRangeAt(0).startContainer;
+  if (node.nodeType === 3) node = node.parentElement;
+  if (!node) return 400;
+  return parseInt(getComputedStyle(node).fontWeight, 10) || 400;
+}
+
+function apply_weight(weight) {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return false;
+
+  // A bare caret between words has no text to thicken.
+  const caret = sel.getRangeAt(0);
+  const on_word = caret.startContainer.nodeType === 3 &&
+    word_range_at(caret.startContainer, caret.startOffset);
+  if (sel.isCollapsed && !on_word) return false;
+  return apply_span_style({ fontWeight: String(weight) });
+}
 
 // First-line indent set to an exact size (0 removes it, including any older
 // whole-paragraph indent). Used by the Indentation menu and the − / + buttons.
@@ -1939,25 +2034,49 @@ function apply_alignment(kind) {
 }
 
 
-// ── Active option + − / + stepping ──────────────────────────────────────────
+// ── Active option + − / + stepping + action-row title ──────────────────────
 // The last option chosen in the Formatting list is the "active option". Its
-// name stays in the list's title, and the − / + buttons step ONLY that option
-// to the previous / next choice in the same list (they never touch other
-// formatting already on the text).
+// name stays in the list's title, and the − / + buttons step ONLY what that
+// option controls (they never touch other formatting already on the text).
+// The title at the left of the action row names what − / + are controlling:
+// Weight, Size, Spacing, ... or "All" while Select is on.
 
 let active_fmt_item = null;
-let active_fmt_value = null;     // current number for range options (font size)
+let active_fmt_value = null;     // current number for range options
+let select_controls_selection = false;   // Select is on and − / + stretch the selection
 
-// Range options (font size) are stepped by a number: data-min / data-max /
-// data-inc. Pressing the option loads its normal value (data-val, 14 px);
-// − / + then move it one step at a time.
+// What each kind of option is called in the action row.
+const CONTROL_TITLES = {
+  size: 'Size', fontpx: 'Size', fontname: 'Font', color: 'Color', hilite: 'Highlight',
+  align: 'Alignment', 'indent-set': 'Indent', linespace: 'Line spacing',
+  'space-before': 'Space before', 'space-after': 'Space after', list: 'Spacing'
+};
+
+function control_title(item) {
+  if (!item) return '';
+  if (item.dataset.cmd === 'bold') return 'Weight';
+  return CONTROL_TITLES[item.dataset.act] || '';
+}
+
+// Options stepped by a number: {min, max, inc, kind}, or null.
+//  - Bold: weight 100-900 in steps of 100
+//  - Font Size: 1-50 px
+//  - List options: the space after each list item (0-50 px), default 6 px
+function range_spec(item) {
+  if (!item) return null;
+  if (item.dataset.act === 'list') return { min: 0, max: 50, inc: 1, kind: 'listgap' };
+  if (item.dataset.act === 'fontpx') return { min: 1, max: 50, inc: 1, kind: 'fontpx' };
+  if (item.dataset.cmd === 'bold') return { min: 100, max: 900, inc: 100, kind: 'weight' };
+  return null;
+}
+
 function is_range_item(item) {
-  return !!item && item.hasAttribute('data-min') && item.hasAttribute('data-max');
+  return !!range_spec(item);
 }
 
 // The choices − / + can move through: sibling options of the same kind
-// (e.g. a color list, the indent sizes). Toggle commands such as Bold, and
-// one-off actions, have nothing to step through.
+// (e.g. a color list, the indent sizes). Toggle commands such as Italic,
+// and one-off actions, have nothing to step through.
 function fmt_step_list(item) {
   if (!item || !item.dataset.act || item.hasAttribute('data-nostep') || is_range_item(item)) return [];
   const siblings = Array.from(item.parentElement.children).filter(
@@ -1969,17 +2088,82 @@ function fmt_step_list(item) {
 }
 
 function fmt_item_title(item, value) {
-  if (is_range_item(item) && value !== null && value !== undefined && item.dataset.title) {
-    return item.dataset.title.replace('{v}', value);
+  const spec = range_spec(item);
+  if (spec && value !== null && value !== undefined) {
+    if (spec.kind === 'fontpx') return 'Size: ' + value + ' px';
+    if (spec.kind === 'weight') return 'Weight: ' + value;
   }
   return item.dataset.short || item.dataset.label || item.textContent.trim();
 }
 
+// Spacing after list items lives on the list as --li-gap (default 6 px).
+function list_gap_at_selection() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return 6;
+  let node = sel.getRangeAt(0).startContainer;
+  if (node.nodeType === 3) node = node.parentElement;
+  const list = node && node.closest ? node.closest('ul, ol') : null;
+  if (!list || !get_editor().contains(list)) return 6;
+  const raw = parseInt(list.style.getPropertyValue('--li-gap'), 10);
+  return isNaN(raw) ? 6 : raw;
+}
+
+// Sets the space after each list item of every list the selection touches.
+// Returns false when the cursor is not in a list.
+function apply_list_gap(px) {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return false;
+  const range = sel.getRangeAt(0);
+
+  const touched = Array.from(editor.querySelectorAll('ul, ol'))
+    .filter((list) => range.intersectsNode(list));
+  const innermost = touched.filter(
+    (list) => !touched.some((other) => other !== list && list.contains(other))
+  );
+  if (innermost.length === 0) return false;
+
+  innermost.forEach((list) => list.style.setProperty('--li-gap', px + 'px'));
+  return true;
+}
+
+function update_action_title() {
+  const el = document.getElementById('actionTitle');
+  if (!el) return;
+
+  let text = '';
+  let pressable = false;
+
+  if (select_mode && select_controls_selection) {
+    text = 'All';                 // press it to select the whole note
+    pressable = true;
+  } else {
+    text = control_title(active_fmt_item);
+    pressable = select_mode && !!text;   // press it to go back to stretching the selection
+  }
+
+  el.textContent = text;
+  el.classList.toggle('pressable', pressable);
+  el.disabled = !pressable;
+  el.setAttribute('aria-label', pressable
+    ? (select_controls_selection ? 'Select all text' : 'Back to selecting words')
+    : text);
+}
+
 function set_active_fmt_item(item, value) {
   active_fmt_item = item;
-  active_fmt_value = is_range_item(item)
-    ? (value !== undefined && value !== null ? value : parseInt(item.dataset.val, 10))
-    : null;
+  const spec = range_spec(item);
+  if (item) select_controls_selection = false;     // a chosen option takes over − / +
+
+  if (!spec) {
+    active_fmt_value = null;
+  } else if (value !== undefined && value !== null) {
+    active_fmt_value = value;
+  } else if (spec.kind === 'listgap') {
+    active_fmt_value = list_gap_at_selection();
+  } else {
+    active_fmt_value = parseInt(item.dataset.val, 10);
+  }
 
   const label = document.getElementById('fmtCategoryLabel');
   if (label) label.textContent = item ? fmt_item_title(item, active_fmt_value) : 'Category';
@@ -1989,12 +2173,18 @@ function set_active_fmt_item(item, value) {
 function update_step_buttons() {
   const down = document.getElementById('stepDownBtn');
   const up = document.getElementById('stepUpBtn');
+  update_action_title();
 
-  if (is_range_item(active_fmt_item)) {
-    const min = parseInt(active_fmt_item.dataset.min, 10);
-    const max = parseInt(active_fmt_item.dataset.max, 10);
-    if (down) down.disabled = !(active_fmt_value > min);
-    if (up) up.disabled = !(active_fmt_value < max);
+  if (select_mode && select_controls_selection) {
+    if (down) down.disabled = false;
+    if (up) up.disabled = false;
+    return;
+  }
+
+  const spec = range_spec(active_fmt_item);
+  if (spec) {
+    if (down) down.disabled = !(active_fmt_value > spec.min);
+    if (up) up.disabled = !(active_fmt_value < spec.max);
     return;
   }
 
@@ -2006,13 +2196,20 @@ function update_step_buttons() {
 }
 
 function step_fmt(direction) {
-  if (nav.level !== 'note' || !active_fmt_item) return;
+  if (nav.level !== 'note') return;
 
-  if (is_range_item(active_fmt_item)) {
-    const min = parseInt(active_fmt_item.dataset.min, 10);
-    const max = parseInt(active_fmt_item.dataset.max, 10);
-    const inc = parseInt(active_fmt_item.dataset.inc, 10) || 1;
-    const next = Math.min(max, Math.max(min, active_fmt_value + (direction > 0 ? inc : -inc)));
+  // Select is on and nothing else was chosen: − / + take a word off / add a word.
+  if (select_mode && select_controls_selection) {
+    keyboard_off();
+    stretch_selection(direction);
+    return;
+  }
+
+  if (!active_fmt_item) return;
+
+  const spec = range_spec(active_fmt_item);
+  if (spec) {
+    const next = Math.min(spec.max, Math.max(spec.min, active_fmt_value + (direction > 0 ? spec.inc : -spec.inc)));
     if (next === active_fmt_value) return;
     run_fmt_item(active_fmt_item, next);
     return;
@@ -2025,6 +2222,22 @@ function step_fmt(direction) {
   run_fmt_item(next);
 }
 window.step_fmt = step_fmt;
+
+// Tap on the title at the left of the action row (only active in Select mode).
+//  "All"          -> select the whole note
+//  option title   -> hand − / + back to stretching the selection
+function action_title_click() {
+  if (nav.level !== 'note' || !select_mode) return;
+  keyboard_off();
+
+  if (select_controls_selection) {
+    select_all_text();
+  } else {
+    select_controls_selection = true;
+    update_step_buttons();
+  }
+}
+window.action_title_click = action_title_click;
 
 
 // ── Menu dispatcher ─────────────────────────────────────────────────────────
@@ -2039,12 +2252,18 @@ function run_fmt_item(item, value_override) {
   const cmd = item.dataset.cmd;
   const act = item.dataset.act;
   const val = item.dataset.val || '';
-  let applied_value;     // for options stepped by number (font size)
+  let applied_value;     // for options stepped by number (font size, weight, list spacing)
+  const stepping = value_override !== undefined;
 
   try {
-    if (cmd) {
+    if (cmd === 'bold' && stepping) {
+      // − / + on Bold: exact weight (100-900) on the selected text
+      if (apply_weight(value_override)) applied_value = value_override;
+      else { applied_value = active_fmt_value; fmt_notice('Select some text first (or tap Select).'); }
+    } else if (cmd) {
       // bold, italic, underline, strikethrough, superscript, subscript, checkbox
       handle_fmt_click(item);
+      if (cmd === 'bold') applied_value = current_weight();
     } else {
       switch (act) {
         case 'size':          apply_font_choice('size:' + val); break;
@@ -2057,7 +2276,17 @@ function run_fmt_item(item, value_override) {
         case 'para-reset':    reset_paragraph_formatting(); break;
         case 'cursor':        move_cursor(parseInt(val, 10)); break;
 
-        case 'list':          apply_list_choice(val); break;
+        case 'list':
+          // Choosing a list style makes the list; − / + then change the space
+          // after each list item (and never re-create the list).
+          if (!stepping) apply_list_choice(val);
+          if (stepping) {
+            if (apply_list_gap(value_override)) applied_value = value_override;
+            else { applied_value = active_fmt_value; fmt_notice('The cursor is not inside a list.'); }
+          } else {
+            applied_value = list_gap_at_selection();
+          }
+          break;
         case 'list-off':
           if (!remove_list()) fmt_notice('The cursor is not inside a list.');
           break;
@@ -2066,7 +2295,7 @@ function run_fmt_item(item, value_override) {
 
         case 'indent':        adjust_indent(parseInt(val, 10)); break;
         case 'indent-set':    apply_indent_set(parseInt(val, 10)); break;
-        case 'fontpx':        applied_value = value_override !== undefined ? value_override : parseInt(val, 10);
+        case 'fontpx':        applied_value = stepping ? value_override : parseInt(val, 10);
                               apply_font_px(applied_value); break;
         case 'indent-default': toggle_default_indent('on'); break;
         case 'indent-remove': toggle_default_indent('off'); break;
@@ -2269,11 +2498,138 @@ function select_word_at_caret() {
   if (word) set_select_range(word, true);
 }
 
+// ── Word navigation helpers (Select mode: All / + / − and the arrow buttons) ─
+// The note's text is flattened into one string (a "\n" after every text node,
+// so words never run together across paragraphs) so "the next word" is just
+// the next run of word characters.
+
+function flat_text() {
+  const walker = document.createTreeWalker(get_editor(), NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  let text = '';
+  let n;
+  while ((n = walker.nextNode())) {
+    nodes.push({ node: n, start: text.length });
+    text += n.data + '\n';
+  }
+  return { text, nodes };
+}
+
+function point_to_pos(flat, container, offset) {
+  if (container.nodeType === 3) {
+    const hit = flat.nodes.find((e) => e.node === container);
+    if (hit) return hit.start + offset;
+  }
+  const b = document.createRange();
+  b.setStart(container, offset);
+  b.collapse(true);
+  for (const e of flat.nodes) {
+    if (b.comparePoint(e.node, 0) >= 0) return e.start;   // first text at/after the point
+  }
+  return flat.text.length;
+}
+
+function pos_to_point(flat, pos) {
+  for (const e of flat.nodes) {
+    if (pos >= e.start && pos <= e.start + e.node.data.length) return [e.node, pos - e.start];
+  }
+  return null;
+}
+
+// The whole word just after (dir > 0) or just before (dir < 0) a range.
+function neighbour_word(range, dir) {
+  const flat = flat_text();
+  const text = flat.text;
+  let p;
+
+  if (dir > 0) {
+    p = point_to_pos(flat, range.endContainer, range.endOffset);
+    while (p < text.length && is_word_char(text[p])) p++;      // finish a half-selected word
+    while (p < text.length && !is_word_char(text[p])) p++;
+    if (p >= text.length) return null;
+  } else {
+    p = point_to_pos(flat, range.startContainer, range.startOffset) - 1;
+    while (p >= 0 && is_word_char(text[p])) p--;               // skip back over a half-selected word
+    while (p >= 0 && !is_word_char(text[p])) p--;
+    if (p < 0) return null;
+  }
+
+  const point = pos_to_point(flat, p);
+  return point ? word_range_at(point[0], point[1]) : null;
+}
+
+// Select mode, + / −: add the next word to the selection, or drop the last one
+// (a selection never shrinks below one word).
+function stretch_selection(direction) {
+  if (!select_range || select_range.collapsed) {
+    const first = find_first_word_range();
+    if (first) set_select_range(first, true);
+    return;
+  }
+
+  if (direction > 0) {
+    const word = neighbour_word(select_range, 1);
+    if (!word) return;
+    const grown = select_range.cloneRange();
+    grown.setEnd(word.endContainer, word.endOffset);
+    set_select_range(grown, true);
+    return;
+  }
+
+  // Last word of the selection = the word holding its final character.
+  const flat = flat_text();
+  let p = point_to_pos(flat, select_range.endContainer, select_range.endOffset) - 1;
+  while (p >= 0 && !is_word_char(flat.text[p])) p--;
+  const point = p >= 0 ? pos_to_point(flat, p) : null;
+  const last = point ? word_range_at(point[0], point[1]) : null;
+  if (!last) return;
+
+  const before = neighbour_word(last, -1);
+  if (!before || before.compareBoundaryPoints(Range.START_TO_START, select_range) < 0) return;
+
+  const shrunk = select_range.cloneRange();
+  shrunk.setEnd(before.endContainer, before.endOffset);
+  set_select_range(shrunk, true);
+}
+
+// "All": the whole note becomes the selection.
+function select_all_text() {
+  const editor = get_editor();
+  if (!editor) return;
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  set_select_range(range, true);
+}
+
+// Action-row ← / →.
+//  Select off: the cursor moves one character.
+//  Select on:  the highlight jumps to the next word in that direction.
+function move_left_right(direction) {
+  if (nav.level !== 'note') return;
+  keyboard_off();
+
+  if (select_mode) {
+    const base = select_range && !select_range.collapsed ? select_range : null;
+    let word;
+    if (base) {
+      word = neighbour_word(base, direction);
+    } else {
+      word = find_first_word_range();
+    }
+    if (word) set_select_range(word, true);
+    return;
+  }
+
+  move_cursor(direction);
+}
+window.move_left_right = move_left_right;
+
 function enter_select_mode() {
   const editor = get_editor();
   if (!editor) return;
 
   select_mode = true;
+  select_controls_selection = true;      // − / + stretch the selection; title reads "All"
   select_pending_first_word = false;
   editor.classList.add('select-mode');
 
@@ -2296,6 +2652,7 @@ function enter_select_mode() {
     select_range = null;
     paint_select_highlight();
   }
+  update_step_buttons();
 }
 
 // silent = true skips collapsing the native selection (used when leaving a note).
@@ -2304,8 +2661,10 @@ function exit_select_mode(silent) {
   const was_on = select_mode;
 
   select_mode = false;
+  select_controls_selection = false;
   select_range = null;
   select_pending_first_word = false;
+  update_step_buttons();
 
   if (editor) {
     // inputmode stays "none" here on purpose: removing it while the note is
@@ -2398,6 +2757,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (editor) {
+    // Enter starts a new paragraph: make sure the line before it is one too.
+    editor.addEventListener('input', (e) => {
+      if (e.inputType === 'insertParagraph') wrap_loose_top_level();
+    });
+
+    // Ticking / unticking a checkbox saves the note right away.
+    editor.addEventListener('change', (e) => {
+      if (e.target && e.target.type === 'checkbox') {
+        clearTimeout(auto_save_timer);
+        auto_save_current_note();
+      }
+    });
+
     editor.addEventListener('click', (e) => {
       if (e.target.closest && e.target.closest('.note-photo')) return;
 
@@ -2582,32 +2954,201 @@ window.redo_note = redo_note;
 
 
 // ── SECTION 15: HELP MODAL ──────────────────────────────────────────────────
+// One ? button, two sets of help: one for the lists screen, one for the note
+// screen. Each is a list of topics; tapping a topic opens its bullet list and
+// closes the one that was open (same idea as the Formatting list).
 
-// Content shown for the main list page (nav.level === 1). Note-editor-page
-// content will be added separately once that's designed.
-const HELP_CONTENT_MAIN = `
-  <p>Need a hand with your lists? Here's what to know:</p>
-  <ul class="help-list">
-    <li>The ✕ button deletes that entire list and every note inside it — it will ask you to confirm before deleting anything.</li>
-    <li>Sync codes link devices together: on a brand-new device, tap [ sync + ] to create a code. Enter that same code on another device to link it. Once a device is already linked, tapping [ sync + ] again just shows you the existing code — it won't create a new one.</li>
-    <li>Tapping a list title opens or closes it — list titles are tappable, not just decorative.</li>
-    <li>Lists and notes sort themselves alphabetically automatically. There's no manual drag-to-reorder.</li>
-    <li>Notes still save fine without an internet connection — they'll sync back up once you're online again.</li>
-  </ul>
-`;
+const HELP_TOPICS_MAIN = [
+  { title: 'Your lists and notes', items: [
+    'This home screen holds your lists, and each list holds your notes.',
+    'Tap a list title to open or close it.',
+    'Tap a note title to open it for writing and formatting.',
+    'New lists and new notes are placed in alphabetical order automatically.'
+  ]},
+  { title: 'Making a list', items: [
+    'Tap [ new list + ], type a title, and confirm to add it.',
+    'The new list appears in alphabetical order with the other lists.'
+  ]},
+  { title: 'Adding and opening notes', items: [
+    'Open a list, then tap [ add note + ] inside it.',
+    'Type a title for the note and confirm to add it.',
+    'Tap the note title to open the writing screen.',
+    'Use the ← Back button on the note screen to return here.'
+  ]},
+  { title: 'Deleting lists and notes', items: [
+    'The ✕ next to a list deletes that whole list and every note in it, after asking you to confirm.',
+    'The ✕ next to a note deletes only that note, right away, with no confirmation.',
+    'Deleted lists and notes cannot be brought back.'
+  ]},
+  { title: 'Syncing devices', items: [
+    'Tap [ sync + ] on a new device and choose OK to create a new sync code.',
+    'Choose Cancel instead to type in a code from another device and link to it.',
+    'Once a device is linked, tapping [ sync + ] just shows its existing code.',
+    'Anyone who has your code can link to your notes, so keep it private.'
+  ]},
+  { title: 'Saving and offline use', items: [
+    'Every change is saved on this device automatically as you go.',
+    'With a sync code, your notes are also copied to the cloud and to your linked devices.',
+    'Without a sync code, your notes stay on this device only.',
+    'Clearing your browser or site data can erase notes that were never synced.'
+  ]}
+];
+
+const HELP_TOPICS_NOTE = [
+  { title: 'The note screen', items: [
+    'The title of the note is shown on its own line above the buttons.',
+    '🎤 types what you say into the note at the cursor.',
+    'Photos + adds one or more pictures at the cursor.',
+    '💾 Save saves right now; the note also saves by itself a moment after you stop typing.',
+    '← Back saves and returns to your lists.',
+    'Touch the note to scroll the note; touch anywhere else to scroll the whole page.'
+  ]},
+  { title: 'The Formatting list', items: [
+    'The top row reads "Formatting :", then the list, then the Select button.',
+    'Tap the list to open it, tap a category, and tap an option (some categories have groups inside them).',
+    'An option applies right away; there is no Apply button.',
+    'After you choose, the list closes and its title shows the option you chose.',
+    'The list floats over the note and never pushes it down; tap the note to close it.',
+    'Choosing a formatting option never brings up the keypad.'
+  ]},
+  { title: 'The Select button', items: [
+    'Select lets you pick text without the keypad getting in the way.',
+    'Press Select once: the first word of the note turns blue and the action row title reads All.',
+    'Tap any word to select it instead, or drag the handles to select more.',
+    'Pick as many formatting options as you like; they all apply to the blue text.',
+    'Press Select again to turn it off.',
+    'In an empty note, Select waits and picks the first word as soon as text appears.'
+  ]},
+  { title: 'The action row (←  →  −  +)', items: [
+    'The action row is the line at the top right of the white note area.',
+    'The title on its left says what − and + are changing: Weight, Size, Spacing, Indent, Color, and so on.',
+    '− and + step only the option you chose last, and never change other formatting.',
+    'With Select on and the title reading All, tap All to select the whole note.',
+    'With Select on, + adds the next word to the selection and − takes the last word off.',
+    'After you choose a formatting option while Select is on, − and + control that option; tap the title to give them back to the selection.',
+    '← and → move the cursor one letter left or right.',
+    'With Select on, ← and → move the blue highlight to the next word in that direction.'
+  ]},
+  { title: 'Undo and redo (↶ ↷)', items: [
+    '↶ undoes the last change, including formatting.',
+    '↷ brings back what you undid.',
+    'Each note starts with fresh undo history when you open it.',
+    'Making a new change after undoing clears what ↷ could redo.'
+  ]},
+  { title: 'Text', items: [
+    'Bold: makes the text bold; − and + change its Weight from 100 (thin) to 900 (heaviest) in steps of 100.',
+    'Italic and Underline: switch on and off.',
+    'Strikethrough, Superscript and Subscript also appear here and under Effects.',
+    'Text size: Small, Medium, Large or X-Large; − and + move through them.',
+    'Highlight: puts a color behind the text.'
+  ]},
+  { title: 'Paragraph', items: [
+    'Pressing Enter starts a new paragraph, with 12 px of space after it.',
+    'New paragraph: starts a new paragraph at the cursor.',
+    'Line break: starts a new line inside the same paragraph.',
+    'Reset paragraph formatting: removes indent, spacing and alignment from the paragraph.'
+  ]},
+  { title: 'Lists', items: [
+    'Bulleted: Bullet, Circle or Square markers.',
+    'Numbered: Numbers (1, 2, 3), lowercase letters (a, b, c) or Uppercase Roman (I, II, III).',
+    'Pressing Enter at the end of an item starts the next item.',
+    'After you choose a list, the action row title reads Spacing and − / + change the space after each list item (6 px to start).',
+    'Checkboxes: Insert checkbox puts a tick box at the cursor, and ticks are saved with the note.',
+    'Remove list: turns the list back into plain lines.'
+  ]},
+  { title: 'Alignment', items: [
+    'Align left, Center, Align right and Justify.',
+    '− and + move through the four choices.',
+    'Alignment applies to the whole paragraph the cursor is in.'
+  ]},
+  { title: 'Indentation', items: [
+    'Choose None, 5, 10, 15, 20, 25, 30, 40 or 50 px.',
+    'Indent moves only the first line of the paragraph.',
+    '− and + step through the sizes.',
+    'None removes the indent.'
+  ]},
+  { title: 'Spacing', items: [
+    'Line spacing: Single, 1.5 lines or Double.',
+    'Space before paragraph: None, 6, 12 or 24 px.',
+    'Space after paragraph: None, 6, 12 or 24 px (every paragraph starts with 12 px).',
+    '− and + move through the choices in the group you used last.'
+  ]},
+  { title: 'Font', items: [
+    'Font family: Crimson Pro (the default), Playfair Display, Space Mono, Sans-serif, Serif or Monospace.',
+    'Size: 1 px to 50 px; everything you type starts at 18 px.',
+    'After you choose a size, − and + change it 1 px at a time.',
+    'With the cursor in a word, the size applies to that word; between words, select text first.'
+  ]},
+  { title: 'Color', items: [
+    'Font color: Black, Gray, Red, Orange, Green, Blue or Purple.',
+    'Highlight color: Yellow, Orange, Red, Green, Blue, Pink or None.',
+    '− and + step through the colors in the same group.'
+  ]},
+  { title: 'Effects', items: [
+    'Strikethrough, Superscript and Subscript.',
+    'Quote: sets the paragraph off as a quotation; tap it again to turn it off.',
+    'Clear formatting: removes quotes, indent, spacing, alignment and character formatting (lists stay).'
+  ]},
+  { title: 'Photos', items: [
+    'Photos + opens your picture library; you can pick several photos at once.',
+    'Photos are inserted at the cursor.',
+    'Tap a photo to select it; an orange ↘ handle appears on its corner.',
+    'Drag the handle to resize the photo, then tap elsewhere to let go.',
+    'Very large photos make a note heavy and can slow syncing, so a few at a time works best.'
+  ]},
+  { title: 'Typing and the keypad', items: [
+    'The keypad appears only when you tap into the note itself.',
+    'Using the Formatting list, Select or the action row keeps it hidden.',
+    'Tap the note again whenever you want to type.'
+  ]},
+  { title: 'Tips', items: [
+    'To format one word, put the cursor in it and choose an option.',
+    'To format a few words, use Select, then + to add words.',
+    'Formatting stacks: choose several options in a row on the same selection.',
+    'Not sure what you did? ↶ undoes it.'
+  ]}
+];
+
+function build_help_html(topics) {
+  return topics.map((topic, i) => {
+    const items = topic.items.map((text) => '<li>' + text + '</li>').join('');
+    return '<div class="help-topic" data-topic="' + i + '">' +
+      '<div class="help-topic-head" role="button" tabindex="0">' + topic.title + '</div>' +
+      '<ul class="help-list help-topic-body">' + items + '</ul>' +
+    '</div>';
+  }).join('');
+}
+
+// Opens one topic and closes any other; tapping an open topic closes it.
+function toggle_help_topic(topic_el) {
+  if (!topic_el) return;
+  const was_open = topic_el.classList.contains('open');
+  document.querySelectorAll('#helpModalBody .help-topic.open')
+    .forEach((el) => el.classList.remove('open'));
+  if (!was_open) {
+    topic_el.classList.add('open');
+    if (topic_el.scrollIntoView) topic_el.scrollIntoView({ block: 'nearest' });
+  }
+}
+window.toggle_help_topic = toggle_help_topic;
 
 function show_help_modal() {
   const body = document.getElementById('helpModalBody');
   const overlay = document.getElementById('helpModalOverlay');
+  const heading = document.getElementById('helpModalTitle');
   if (!body || !overlay) return;
 
-  if (nav.level === 'note') {
-    // Note-editor help content not built yet — falls back to main content
-    // for now until that's designed.
-    body.innerHTML = HELP_CONTENT_MAIN;
-  } else {
-    body.innerHTML = HELP_CONTENT_MAIN;
-  }
+  const in_note = nav.level === 'note';
+  body.innerHTML =
+    '<p class="help-intro">' + (in_note
+      ? 'Tap a topic to see how it works.'
+      : 'Tap a topic to see how it works.') + '</p>' +
+    build_help_html(in_note ? HELP_TOPICS_NOTE : HELP_TOPICS_MAIN);
+
+  if (heading) heading.textContent = in_note ? 'Help — Writing a note' : 'Help — Your lists';
+  body.scrollTop = 0;
+  const modal = body.closest('.help-modal');
+  if (modal) modal.scrollTop = 0;
 
   overlay.style.display = 'flex';
 }
@@ -2618,3 +3159,18 @@ function hide_help_modal(event) {
   if (overlay) overlay.style.display = 'none';
 }
 window.hide_help_modal = hide_help_modal;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.getElementById('helpModalBody');
+  if (!body) return;
+  body.addEventListener('click', (e) => {
+    const head = e.target.closest('.help-topic-head');
+    if (head) toggle_help_topic(head.parentElement);
+  });
+  body.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('help-topic-head')) {
+      e.preventDefault();
+      toggle_help_topic(e.target.parentElement);
+    }
+  });
+});

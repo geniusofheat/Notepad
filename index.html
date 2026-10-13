@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#c8a96e">
 
   <link rel="manifest" href="notepad_manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Playfair+Display:wght@400;600&family=Space+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Playfair+Display:wght@400;600&family=Space+Mono&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="notepad_stylesheet.css?v=2">
 
@@ -153,7 +153,7 @@
         <li class="fmt-cat" data-cat="Text">
           <div class="fmt-head">Text</div>
           <ul class="fmt-sub">
-            <li class="fmt-item" data-cmd="bold" data-label="Bold">Bold</li>
+            <li class="fmt-item" data-cmd="bold" data-label="Bold" data-val="700" data-min="100" data-max="900" data-inc="100" data-title="Weight: {v}" data-short="Bold">Bold</li>
             <li class="fmt-item" data-cmd="italic" data-label="Italic">Italic</li>
             <li class="fmt-item" data-cmd="underline" data-label="Underline">Underline</li>
             <li class="fmt-item" data-cmd="strikeThrough" data-label="Strikethrough">Strikethrough</li>
@@ -188,13 +188,6 @@
             <li class="fmt-item" data-act="para-break" data-val="">New paragraph</li>
             <li class="fmt-item" data-act="line-break" data-val="">Line break (same paragraph)</li>
             <li class="fmt-item" data-act="para-reset" data-val="">Reset paragraph formatting</li>
-          <li class="fmt-group">
-            <div class="fmt-head">Move cursor</div>
-            <ul class="fmt-sub">
-              <li class="fmt-item" data-act="cursor" data-val="-1" data-nostep="1">Cursor left ←</li>
-              <li class="fmt-item" data-act="cursor" data-val="1" data-nostep="1">Cursor right →</li>
-            </ul>
-          </li>
           </ul>
         </li>
         <li class="fmt-cat" data-cat="Lists">
@@ -293,7 +286,61 @@
               <li class="fmt-item" data-act="fontname" data-val="monospace" data-short="Monospace">Monospace</li>
             </ul>
           </li>
-            <li class="fmt-item" data-act="fontpx" data-val="14" data-min="1" data-max="50" data-inc="1" data-title="Size: {v} px" data-short="Size: 14 px">Size (14 px)</li>
+          <li class="fmt-group">
+            <div class="fmt-head">Size</div>
+            <ul class="fmt-sub">
+              <li class="fmt-item" data-act="fontpx" data-val="1" data-short="Size: 1 px">1 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="2" data-short="Size: 2 px">2 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="3" data-short="Size: 3 px">3 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="4" data-short="Size: 4 px">4 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="5" data-short="Size: 5 px">5 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="6" data-short="Size: 6 px">6 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="7" data-short="Size: 7 px">7 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="8" data-short="Size: 8 px">8 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="9" data-short="Size: 9 px">9 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="10" data-short="Size: 10 px">10 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="11" data-short="Size: 11 px">11 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="12" data-short="Size: 12 px">12 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="13" data-short="Size: 13 px">13 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="14" data-short="Size: 14 px">14 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="15" data-short="Size: 15 px">15 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="16" data-short="Size: 16 px">16 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="17" data-short="Size: 17 px">17 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="18" data-short="Size: 18 px">18 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="19" data-short="Size: 19 px">19 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="20" data-short="Size: 20 px">20 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="21" data-short="Size: 21 px">21 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="22" data-short="Size: 22 px">22 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="23" data-short="Size: 23 px">23 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="24" data-short="Size: 24 px">24 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="25" data-short="Size: 25 px">25 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="26" data-short="Size: 26 px">26 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="27" data-short="Size: 27 px">27 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="28" data-short="Size: 28 px">28 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="29" data-short="Size: 29 px">29 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="30" data-short="Size: 30 px">30 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="31" data-short="Size: 31 px">31 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="32" data-short="Size: 32 px">32 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="33" data-short="Size: 33 px">33 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="34" data-short="Size: 34 px">34 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="35" data-short="Size: 35 px">35 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="36" data-short="Size: 36 px">36 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="37" data-short="Size: 37 px">37 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="38" data-short="Size: 38 px">38 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="39" data-short="Size: 39 px">39 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="40" data-short="Size: 40 px">40 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="41" data-short="Size: 41 px">41 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="42" data-short="Size: 42 px">42 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="43" data-short="Size: 43 px">43 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="44" data-short="Size: 44 px">44 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="45" data-short="Size: 45 px">45 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="46" data-short="Size: 46 px">46 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="47" data-short="Size: 47 px">47 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="48" data-short="Size: 48 px">48 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="49" data-short="Size: 49 px">49 px</li>
+              <li class="fmt-item" data-act="fontpx" data-val="50" data-short="Size: 50 px">50 px</li>
+            </ul>
+          </li>
           </ul>
         </li>
         <li class="fmt-cat" data-cat="Color">
@@ -342,14 +389,19 @@
 
 
       <!-- ─── NOTE ACTION LINE — one reserved line at the top of the white note area.
-           Floating black buttons, no borders: undo, redo, then − / + (step the
-           option last chosen in the Formatting list). Add future buttons here. ── -->
+           Left: the title of whatever the − / + buttons are controlling (Weight, Size,
+           Spacing, ... or "All" while Select is on; press "All" to select all text).
+           Right: undo, redo, move left, move right, −, +. Add future buttons here. ── -->
       <div class="note-action-line" id="noteActionLine">
+        <button type="button" class="note-action-title" id="actionTitle" onmousedown="event.preventDefault()" onclick="action_title_click()"></button>
         <button type="button" class="note-action-btn" id="undoBtn" title="Undo" aria-label="Undo" onmousedown="event.preventDefault()" onclick="undo_note()" disabled>↶</button>
         <button type="button" class="note-action-btn" id="redoBtn" title="Redo" aria-label="Redo" onmousedown="event.preventDefault()" onclick="redo_note()" disabled>↷</button>
         <span class="note-action-gap"></span>
-        <button type="button" class="note-action-btn" id="stepDownBtn" title="Previous option" aria-label="Decrease" onmousedown="event.preventDefault()" onclick="step_fmt(-1)" disabled>−</button>
-        <button type="button" class="note-action-btn" id="stepUpBtn" title="Next option" aria-label="Increase" onmousedown="event.preventDefault()" onclick="step_fmt(1)" disabled>+</button>
+        <button type="button" class="note-action-btn" id="moveLeftBtn" title="Move left" aria-label="Move left" onmousedown="event.preventDefault()" onclick="move_left_right(-1)">←</button>
+        <button type="button" class="note-action-btn" id="moveRightBtn" title="Move right" aria-label="Move right" onmousedown="event.preventDefault()" onclick="move_left_right(1)">→</button>
+        <span class="note-action-gap"></span>
+        <button type="button" class="note-action-btn" id="stepDownBtn" title="Decrease" aria-label="Decrease" onmousedown="event.preventDefault()" onclick="step_fmt(-1)" disabled>−</button>
+        <button type="button" class="note-action-btn" id="stepUpBtn" title="Increase" aria-label="Increase" onmousedown="event.preventDefault()" onclick="step_fmt(1)" disabled>+</button>
       </div>
       <!-- ─── END NOTE ACTION LINE ───────────────────────────────────── -->
 
@@ -357,7 +409,7 @@
     <!-- ─── END sticky toolbar wrap ───────────────────────────────────── -->
 
     <!-- ─── NOTE TEXT BODY — the contenteditable writing area ─────────── -->
-    <div class="notepad-body">
+    <div class="notepad-body" id="noteBody">
       <div id="note-textarea" contenteditable="true" data-placeholder="Your note goes here."></div>
     </div>
     <!-- ─── END NOTE TEXT BODY ─────────────────────────────────────────── -->
@@ -406,7 +458,7 @@
 <div id="helpModalOverlay" class="help-modal-overlay" style="display:none;" onclick="hide_help_modal(event)">
   <div class="help-modal" onclick="event.stopPropagation()">
     <div class="help-modal-header">
-      <h3>Help</h3>
+      <h3 id="helpModalTitle">Help</h3>
       <div class="fmt-btn" onmousedown="event.preventDefault()" onclick="hide_help_modal()">✕</div>
     </div>
     <div class="help-modal-body" id="helpModalBody">
