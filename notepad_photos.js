@@ -57,6 +57,15 @@ function insert_note_photos(event) {
 
     reader.onload = function(e) {
 
+      // Phone photos are several MB each, which overflows the phone's
+      // storage for the note (nothing would save). Shrink before inserting.
+      shrink_photo(e.target.result, file.type, function(small_url) {
+        insert_one_photo(small_url, file.name);
+      });
+    };
+
+    function insert_one_photo(photo_url, photo_name) {
+
       editor.focus({ preventScroll: true });
       restore_editor_selection();
 
@@ -65,7 +74,7 @@ function insert_note_photos(event) {
       if (!sel || sel.rangeCount === 0) {
         editor.appendChild(document.createElement('br'));
         editor.appendChild(
-          create_note_photo(e.target.result, file.name)
+          create_note_photo(photo_url, photo_name)
         );
       } else {
 
@@ -75,7 +84,7 @@ function insert_note_photos(event) {
 
           editor.appendChild(document.createElement('br'));
           editor.appendChild(
-            create_note_photo(e.target.result, file.name)
+            create_note_photo(photo_url, photo_name)
           );
 
         } else {
@@ -83,8 +92,8 @@ function insert_note_photos(event) {
           range.deleteContents();
 
           const image = create_note_photo(
-            e.target.result,
-            file.name
+            photo_url,
+            photo_name
           );
 
           range.insertNode(image);
@@ -113,7 +122,7 @@ function insert_note_photos(event) {
       if (remaining === 0) {
         finish_photo_insert();
       }
-    };
+    }
 
     reader.onerror = function() {
       remaining--;
@@ -129,6 +138,47 @@ function insert_note_photos(event) {
 
 window.insert_note_photos = insert_note_photos;
 
+
+
+// ─── § PHOTO SHRINK — keep saved photos small enough to store and sync ───
+// Longest side 1280 px, JPEG quality 0.8: roughly 150-300 KB instead of
+// several MB. If anything goes wrong the original photo is used.
+
+const PHOTO_MAX_SIDE = 1280;
+
+function shrink_photo(data_url, mime_type, done) {
+  if (mime_type === 'image/gif' || mime_type === 'image/svg+xml') {
+    done(data_url);
+    return;
+  }
+
+  const img = new Image();
+
+  img.onload = function() {
+    try {
+      const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * scale));
+      const h = Math.max(1, Math.round(img.naturalHeight * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';          // JPEG has no transparency
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const small = canvas.toDataURL('image/jpeg', 0.8);
+      done(small.length < data_url.length ? small : data_url);
+    } catch (err) {
+      done(data_url);
+    }
+  };
+
+  img.onerror = function() { done(data_url); };
+  img.src = data_url;
+}
 
 // ─── § PHOTO ELEMENT — create the image stored inside note HTML ─────────
 

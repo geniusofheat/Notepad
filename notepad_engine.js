@@ -255,17 +255,29 @@ function load_notes() {
   notes = raw ? JSON.parse(raw) : [];
 }
 
+// Returns true when the notes were stored on this device. A full phone
+// storage (very large photos) makes localStorage throw; that must never stop
+// Save / Back from working, so the error is caught and reported instead.
 function save_notes() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  let stored = true;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  } catch (err) {
+    stored = false;
+    console.error('Could not store notes on this device:', err);
+  }
 
   // Mark the local copy as newer/unsynced until the Firebase listener
   // confirms that the same data has reached the cloud.
   local_notes_dirty = true;
 
   // Push the latest notes up to the cloud so other linked devices get them.
-  if (typeof saveNotesToCloud === 'function') {
-    saveNotesToCloud(notes);
+  try {
+    if (typeof saveNotesToCloud === 'function') saveNotesToCloud(notes);
+  } catch (err) {
+    console.error('Could not send notes to the cloud:', err);
   }
+  return stored;
 }
 
 // Finds the newest updated timestamp anywhere inside the notes structure.
@@ -686,8 +698,8 @@ function handleBack() {
 window.handleBack = handleBack;
 
 function back_one_level() {
-  auto_save_current_note();
-  reset_fmt_toolbar();
+  try { auto_save_current_note(); } catch (err) { console.error('Save on Back failed:', err); }
+  try { reset_fmt_toolbar(); } catch (err) { console.error(err); }
 
   if (nav.level === 'note') {
     document.getElementById('note-editor-view').style.display = 'none';
@@ -772,9 +784,14 @@ function auto_save_current_note() {
 
   item.content = editor.innerHTML;
   item.updated = new Date().toISOString();
-  save_notes();
+  const stored = save_notes();
 
-  if (typeof record_history === 'function') record_history();
+  try {
+    if (typeof record_history === 'function') record_history();
+  } catch (err) {
+    console.error('Undo history failed:', err);
+  }
+  return stored;
 }
 
 // Manual save button handler — force-saves immediately (skips the 800ms
@@ -782,11 +799,12 @@ function auto_save_current_note() {
 function manual_save_click(el) {
   lock_scroll_position();
   clearTimeout(auto_save_timer);
-  auto_save_current_note();
+  const stored = auto_save_current_note() !== false;
 
   if (el) {
     const original = el.textContent;
-    el.textContent = 'Saved ✓';
+    el.textContent = stored ? 'Saved ✓' : 'Not saved ✗';
+    if (!stored) alert('This note could not be saved because your phone storage for this app is full. Try removing a photo or two.');
     el.classList.add('active');
     setTimeout(() => {
       el.textContent = original;
