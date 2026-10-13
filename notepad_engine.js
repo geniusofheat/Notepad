@@ -685,10 +685,6 @@ function show_back_btn() {
   const save = document.getElementById('saveBtn');
   if (save) save.style.display = 'inline-flex';
 
-  ['undoBtn', 'redoBtn'].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'inline-flex';
-  });
 }
 
 function hide_back_btn() {
@@ -701,10 +697,6 @@ function hide_back_btn() {
   const save = document.getElementById('saveBtn');
   if (save) save.style.display = 'none';
 
-  ['undoBtn', 'redoBtn'].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
 }
 
 
@@ -1542,6 +1534,10 @@ function toggle_fmt_menu(force) {
   const open = typeof force === 'boolean' ? force : !menu.classList.contains('open');
   menu.classList.toggle('open', open);
   if (open) keyboard_off();   // opening the menu must never leave the keypad up
+  if (!open) {
+    // Closing leaves a clean list: next time only the ten categories show.
+    menu.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));
+  }
 
   if (btn) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -1568,9 +1564,6 @@ function toggle_fmt_branch(li) {
   li.classList.toggle('open', !was_open);
 
   if (li.classList.contains('fmt-cat')) {
-    const label = document.getElementById('fmtCategoryLabel');
-    if (label) label.textContent = was_open ? 'Category' : li.dataset.cat;
-
     const menu = document.getElementById('fmtMenu');
     if (menu && !was_open) menu.scrollTop = Math.max(0, li.offsetTop - 4);
   }
@@ -1584,7 +1577,10 @@ function handle_fmt_menu_click(event) {
   }
 
   const item = event.target.closest('.fmt-item');
-  if (item) run_fmt_item(item);
+  if (item) {
+    run_fmt_item(item);
+    close_fmt_menu();          // list contracts; the title shows the chosen option
+  }
 }
 
 // Marks bold / italic / underline / strikethrough / superscript / subscript
@@ -1734,28 +1730,19 @@ function apply_block_style(prop, value) {
   });
 }
 
-// Paragraph style: 'div' (normal text), 'h1'..'h6', or 'blockquote'.
-// Each selected paragraph is converted on its own, so a selection that spans
-// several paragraphs gives several headings (the browser's own formatBlock
-// would merge them into one block). Indent / spacing / alignment styles on
-// the paragraph are carried over to the new element.
-function apply_block_tag(tag) {
-  const blocks = get_blocks_or_wrap();
-  if (blocks.length === 0) return;
-
-  if (blocks.some((block) => block.tagName === 'LI')) {
-    fmt_notice('Styles can\u2019t be applied inside a list. Remove the list first.');
-    return;
-  }
-
+// Converts the given blocks to another element ('div', 'h1'..'h6',
+// 'blockquote'), one block at a time, so a selection that spans several
+// paragraphs gives several headings (the browser's own formatBlock would merge
+// them into one). Indent / spacing / alignment styles carry over.
+function convert_blocks(blocks, tag) {
   const sel = window.getSelection();
-  const range = sel.getRangeAt(0);
+  const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
 
   // Text nodes survive being moved; remember the selection by node + offset.
-  const saved = {
+  const saved = range ? {
     sc: range.startContainer, so: range.startOffset,
     ec: range.endContainer, eo: range.endOffset
-  };
+  } : null;
   const replaced = new Map();
 
   blocks.forEach((block) => {
@@ -1770,6 +1757,7 @@ function apply_block_tag(tag) {
     replaced.set(block, converted);
   });
 
+  if (!saved) return;
   const mapped = (node) => replaced.get(node) || node;
   try {
     const restored = document.createRange();
@@ -1778,6 +1766,46 @@ function apply_block_tag(tag) {
     sel.removeAllRanges();
     sel.addRange(restored);
   } catch (err) { /* keep whatever selection the browser chose */ }
+}
+
+// Paragraph style: 'div' (normal text), 'h1'..'h6', or 'blockquote'.
+function apply_block_tag(tag) {
+  const blocks = get_blocks_or_wrap();
+  if (blocks.length === 0) return;
+
+  if (blocks.some((block) => block.tagName === 'LI')) {
+    fmt_notice('Headings and quotes can\u2019t be applied inside a list. Remove the list first.');
+    return;
+  }
+  convert_blocks(blocks, tag);
+}
+
+// Clear formatting: removes character formatting (bold, color, size, font,
+// highlight, ...) AND paragraph formatting (headings, quotes, indent,
+// spacing, alignment) from the selection. Lists are left as lists.
+function clear_all_formatting() {
+  document.execCommand('removeFormat');
+
+  const blocks = get_selected_blocks();
+  reset_paragraph_formatting();
+
+  const headings = blocks.filter((block) => /^(H[1-6]|BLOCKQUOTE)$/.test(block.tagName));
+  if (headings.length > 0) convert_blocks(headings, 'div');
+}
+
+// First-line indent set to an exact size (0 removes it, including any older
+// whole-paragraph indent). Used by the Indentation menu and the − / + buttons.
+function apply_indent_set(px) {
+  const blocks = get_blocks_or_wrap();
+  blocks.forEach((block) => {
+    if (px > 0) {
+      block.style.textIndent = px + 'px';
+    } else {
+      block.style.textIndent = '';
+      block.style.marginLeft = '';
+      if (!block.getAttribute('style')) block.removeAttribute('style');
+    }
+  });
 }
 
 function insert_paragraph_break(soft) {
@@ -1812,6 +1840,60 @@ function apply_alignment(kind) {
   document.execCommand(cmd);
   if (kind !== 'justify') align_state = kind;
 }
+
+
+// ── Active option + − / + stepping ──────────────────────────────────────────
+// The last option chosen in the Formatting list is the "active option". Its
+// name stays in the list's title, and the − / + buttons step ONLY that option
+// to the previous / next choice in the same list (they never touch other
+// formatting already on the text).
+
+let active_fmt_item = null;
+
+// The choices − / + can move through: sibling options of the same kind
+// (e.g. H1..H6, a color list, the indent sizes). Toggle commands such as
+// Bold, and one-off actions, have nothing to step through.
+function fmt_step_list(item) {
+  if (!item || !item.dataset.act || item.hasAttribute('data-nostep')) return [];
+  const siblings = Array.from(item.parentElement.children).filter(
+    (el) => el.classList.contains('fmt-item') &&
+            el.dataset.act === item.dataset.act &&
+            !el.hasAttribute('data-nostep')
+  );
+  return siblings.length >= 2 ? siblings : [];
+}
+
+function fmt_item_title(item) {
+  return item.dataset.short || item.dataset.label || item.textContent.trim();
+}
+
+function set_active_fmt_item(item) {
+  active_fmt_item = item;
+  const label = document.getElementById('fmtCategoryLabel');
+  if (label) label.textContent = item ? fmt_item_title(item) : 'Category';
+  update_step_buttons();
+}
+
+function update_step_buttons() {
+  const down = document.getElementById('stepDownBtn');
+  const up = document.getElementById('stepUpBtn');
+  const list = fmt_step_list(active_fmt_item);
+  const idx = list.indexOf(active_fmt_item);
+
+  if (down) down.disabled = !(idx > 0);
+  if (up) up.disabled = !(idx >= 0 && idx < list.length - 1);
+}
+
+function step_fmt(direction) {
+  if (nav.level !== 'note' || !active_fmt_item) return;
+
+  const list = fmt_step_list(active_fmt_item);
+  const next = list[list.indexOf(active_fmt_item) + (direction > 0 ? 1 : -1)];
+  if (!next) return;
+
+  run_fmt_item(next);
+}
+window.step_fmt = step_fmt;
 
 
 // ── Menu dispatcher ─────────────────────────────────────────────────────────
@@ -1851,6 +1933,7 @@ function run_fmt_item(item) {
         case 'align':         apply_alignment(val); break;
 
         case 'indent':        adjust_indent(parseInt(val, 10)); break;
+        case 'indent-set':    apply_indent_set(parseInt(val, 10)); break;
         case 'indent-default': toggle_default_indent('on'); break;
         case 'indent-remove': toggle_default_indent('off'); break;
 
@@ -1859,7 +1942,7 @@ function run_fmt_item(item) {
         case 'space-after':   apply_block_style('marginBottom', val + 'px'); break;
 
         case 'style':         apply_block_tag(val); break;
-        case 'clear':         document.execCommand('removeFormat'); break;
+        case 'clear':         clear_all_formatting(); break;
       }
     }
   } catch (err) {
@@ -1867,6 +1950,7 @@ function run_fmt_item(item) {
   }
 
   fmt_finish(item);
+  set_active_fmt_item(item);
 }
 window.run_fmt_item = run_fmt_item;
 
@@ -2133,8 +2217,7 @@ function reset_fmt_toolbar() {
   const ed = get_editor();
   if (ed) ed.removeAttribute('inputmode');   // a freshly opened note is typeable
 
-  const label = document.getElementById('fmtCategoryLabel');
-  if (label) label.textContent = 'Category';
+  set_active_fmt_item(null);
   document.querySelectorAll('#fmtMenu .open').forEach((el) => el.classList.remove('open'));
 }
 window.reset_fmt_toolbar = reset_fmt_toolbar;
@@ -2145,6 +2228,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const editor = get_editor();
   const menu = document.getElementById('fmtMenu');
   const bar = document.getElementById('formatToolbarSingle');
+  const action_line = document.getElementById('noteActionLine');
 
   if (menu) {
     // Menu items must never steal focus / collapse the editor selection.
@@ -2158,6 +2242,15 @@ document.addEventListener('DOMContentLoaded', () => {
     ['pointerdown', 'touchstart'].forEach((type) => {
       bar.addEventListener(type, () => {
         keyboard_off();            // hide the keypad the instant the toolbar is touched
+        freeze_editor_selection();
+      }, { capture: true, passive: true });
+    });
+  }
+
+  if (action_line) {
+    ['pointerdown', 'touchstart'].forEach((type) => {
+      action_line.addEventListener(type, () => {
+        keyboard_off();
         freeze_editor_selection();
       }, { capture: true, passive: true });
     });

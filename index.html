@@ -121,8 +121,6 @@
         <h3 id="note-title-display"></h3>
 
         <div class="note-header-action-group">
-          <button class="orange-btn undo-redo-btn" id="undoBtn" title="Undo" aria-label="Undo" onmousedown="event.preventDefault()" onclick="undo_note()" style="display:none;" disabled>↶</button>
-          <button class="orange-btn undo-redo-btn" id="redoBtn" title="Redo" aria-label="Redo" onmousedown="event.preventDefault()" onclick="redo_note()" style="display:none;" disabled>↷</button>
           <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
           <button class="orange-btn" id="photoBtn" onclick="trigger_photo_picker()" style="display:none;">Photos +</button>
         </div>
@@ -157,22 +155,22 @@
           <li class="fmt-group">
             <div class="fmt-head">Text size</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="size" data-val="1">Small</li>
-              <li class="fmt-item" data-act="size" data-val="3">Medium</li>
-              <li class="fmt-item" data-act="size" data-val="5">Large</li>
-              <li class="fmt-item" data-act="size" data-val="7">X-Large</li>
+              <li class="fmt-item" data-act="size" data-val="1" data-short="Size: Small">Small</li>
+              <li class="fmt-item" data-act="size" data-val="3" data-short="Size: Medium">Medium</li>
+              <li class="fmt-item" data-act="size" data-val="5" data-short="Size: Large">Large</li>
+              <li class="fmt-item" data-act="size" data-val="7" data-short="Size: X-Large">X-Large</li>
             </ul>
           </li>
           <li class="fmt-group">
             <div class="fmt-head">Highlight</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="hilite" data-val="yellow"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
-              <li class="fmt-item" data-act="hilite" data-val="orange"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
-              <li class="fmt-item" data-act="hilite" data-val="red"><span class="fmt-swatch" style="background:red"></span>Red</li>
-              <li class="fmt-item" data-act="hilite" data-val="green"><span class="fmt-swatch" style="background:green"></span>Green</li>
-              <li class="fmt-item" data-act="hilite" data-val="blue"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
-              <li class="fmt-item" data-act="hilite" data-val="pink"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
-              <li class="fmt-item" data-act="hilite" data-val="none"><span class="fmt-swatch fmt-swatch-none"></span>None</li>
+              <li class="fmt-item" data-act="hilite" data-val="yellow" data-short="Highlight: Yellow"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
+              <li class="fmt-item" data-act="hilite" data-val="orange" data-short="Highlight: Orange"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
+              <li class="fmt-item" data-act="hilite" data-val="red" data-short="Highlight: Red"><span class="fmt-swatch" style="background:red"></span>Red</li>
+              <li class="fmt-item" data-act="hilite" data-val="green" data-short="Highlight: Green"><span class="fmt-swatch" style="background:green"></span>Green</li>
+              <li class="fmt-item" data-act="hilite" data-val="blue" data-short="Highlight: Blue"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
+              <li class="fmt-item" data-act="hilite" data-val="pink" data-short="Highlight: Pink"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
+              <li class="fmt-item" data-act="hilite" data-val="none" data-short="Highlight: None"><span class="fmt-swatch fmt-swatch-none"></span>None</li>
             </ul>
           </li>
           </ul>
@@ -186,8 +184,8 @@
           <li class="fmt-group">
             <div class="fmt-head">Move cursor</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="cursor" data-val="-1">Cursor left ←</li>
-              <li class="fmt-item" data-act="cursor" data-val="1">Cursor right →</li>
+              <li class="fmt-item" data-act="cursor" data-val="-1" data-nostep="1">Cursor left ←</li>
+              <li class="fmt-item" data-act="cursor" data-val="1" data-nostep="1">Cursor right →</li>
             </ul>
           </li>
           </ul>
@@ -198,17 +196,17 @@
           <li class="fmt-group">
             <div class="fmt-head">Bulleted</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="list" data-val="ul:disc">Bullet</li>
-              <li class="fmt-item" data-act="list" data-val="ul:circle">Circle</li>
-              <li class="fmt-item" data-act="list" data-val="ul:square">Square</li>
+              <li class="fmt-item" data-act="list" data-val="ul:disc" data-short="Bullet">Bullet</li>
+              <li class="fmt-item" data-act="list" data-val="ul:circle" data-short="Circle">Circle</li>
+              <li class="fmt-item" data-act="list" data-val="ul:square" data-short="Square">Square</li>
             </ul>
           </li>
           <li class="fmt-group">
             <div class="fmt-head">Numbered</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="list" data-val="ol:decimal">Numbers (1, 2, 3)</li>
-              <li class="fmt-item" data-act="list" data-val="ol:lower-alpha">Lowercase letters (a, b, c)</li>
-              <li class="fmt-item" data-act="list" data-val="ol:upper-roman">Uppercase Roman (I, II, III)</li>
+              <li class="fmt-item" data-act="list" data-val="ol:decimal" data-short="1 2 3">Numbers (1, 2, 3)</li>
+              <li class="fmt-item" data-act="list" data-val="ol:lower-alpha" data-short="a b c">Lowercase letters (a, b, c)</li>
+              <li class="fmt-item" data-act="list" data-val="ol:upper-roman" data-short="I II III">Uppercase Roman (I, II, III)</li>
             </ul>
           </li>
           <li class="fmt-group">
@@ -223,21 +221,24 @@
         <li class="fmt-cat" data-cat="Alignment">
           <div class="fmt-head">Alignment</div>
           <ul class="fmt-sub">
-            <li class="fmt-item" data-act="align" data-val="left">Align left</li>
-            <li class="fmt-item" data-act="align" data-val="center">Center</li>
-            <li class="fmt-item" data-act="align" data-val="right">Align right</li>
-            <li class="fmt-item" data-act="align" data-val="justify">Justify</li>
+            <li class="fmt-item" data-act="align" data-val="left" data-short="Align: Left">Align left</li>
+            <li class="fmt-item" data-act="align" data-val="center" data-short="Align: Center">Center</li>
+            <li class="fmt-item" data-act="align" data-val="right" data-short="Align: Right">Align right</li>
+            <li class="fmt-item" data-act="align" data-val="justify" data-short="Align: Justify">Justify</li>
           </ul>
         </li>
         <li class="fmt-cat" data-cat="Indentation">
           <div class="fmt-head">Indentation</div>
           <ul class="fmt-sub">
-            <li class="fmt-item" data-act="indent" data-val="1">Increase indent (1 px)</li>
-            <li class="fmt-item" data-act="indent" data-val="-1">Decrease indent (1 px)</li>
-            <li class="fmt-item" data-act="indent" data-val="10">Increase indent (10 px)</li>
-            <li class="fmt-item" data-act="indent" data-val="-10">Decrease indent (10 px)</li>
-            <li class="fmt-item" data-act="indent-default" data-val="">Apply default indent (5 px)</li>
-            <li class="fmt-item" data-act="indent-remove" data-val="">Remove indent</li>
+            <li class="fmt-item" data-act="indent-set" data-val="0" data-short="Indent: None">None (remove indent)</li>
+            <li class="fmt-item" data-act="indent-set" data-val="5" data-short="Indent 5 px">5 px</li>
+            <li class="fmt-item" data-act="indent-set" data-val="10" data-short="Indent 10 px">10 px</li>
+            <li class="fmt-item" data-act="indent-set" data-val="15" data-short="Indent 15 px">15 px</li>
+            <li class="fmt-item" data-act="indent-set" data-val="20" data-short="Indent 20 px">20 px</li>
+            <li class="fmt-item" data-act="indent-set" data-val="25" data-short="Indent 25 px">25 px</li>
+            <li class="fmt-item" data-act="indent-set" data-val="30" data-short="Indent 30 px">30 px</li>
+            <li class="fmt-item" data-act="indent-set" data-val="40" data-short="Indent 40 px">40 px</li>
+            <li class="fmt-item" data-act="indent-set" data-val="50" data-short="Indent 50 px">50 px</li>
           </ul>
         </li>
         <li class="fmt-cat" data-cat="Spacing">
@@ -246,27 +247,27 @@
           <li class="fmt-group">
             <div class="fmt-head">Line spacing</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="linespace" data-val="single">Single</li>
-              <li class="fmt-item" data-act="linespace" data-val="1.5">1.5 lines</li>
-              <li class="fmt-item" data-act="linespace" data-val="2">Double</li>
+              <li class="fmt-item" data-act="linespace" data-val="single" data-short="Lines: Single">Single</li>
+              <li class="fmt-item" data-act="linespace" data-val="1.5" data-short="Lines: 1.5">1.5 lines</li>
+              <li class="fmt-item" data-act="linespace" data-val="2" data-short="Lines: Double">Double</li>
             </ul>
           </li>
           <li class="fmt-group">
             <div class="fmt-head">Space before paragraph</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="space-before" data-val="0">None</li>
-              <li class="fmt-item" data-act="space-before" data-val="6">Small (6 px)</li>
-              <li class="fmt-item" data-act="space-before" data-val="12">Medium (12 px)</li>
-              <li class="fmt-item" data-act="space-before" data-val="24">Large (24 px)</li>
+              <li class="fmt-item" data-act="space-before" data-val="0" data-short="Before: None">None</li>
+              <li class="fmt-item" data-act="space-before" data-val="6" data-short="Before: 6 px">Small (6 px)</li>
+              <li class="fmt-item" data-act="space-before" data-val="12" data-short="Before: 12 px">Medium (12 px)</li>
+              <li class="fmt-item" data-act="space-before" data-val="24" data-short="Before: 24 px">Large (24 px)</li>
             </ul>
           </li>
           <li class="fmt-group">
             <div class="fmt-head">Space after paragraph</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="space-after" data-val="0">None</li>
-              <li class="fmt-item" data-act="space-after" data-val="6">Small (6 px)</li>
-              <li class="fmt-item" data-act="space-after" data-val="12">Medium (12 px)</li>
-              <li class="fmt-item" data-act="space-after" data-val="24">Large (24 px)</li>
+              <li class="fmt-item" data-act="space-after" data-val="0" data-short="After: None">None</li>
+              <li class="fmt-item" data-act="space-after" data-val="6" data-short="After: 6 px">Small (6 px)</li>
+              <li class="fmt-item" data-act="space-after" data-val="12" data-short="After: 12 px">Medium (12 px)</li>
+              <li class="fmt-item" data-act="space-after" data-val="24" data-short="After: 24 px">Large (24 px)</li>
             </ul>
           </li>
           </ul>
@@ -274,14 +275,8 @@
         <li class="fmt-cat" data-cat="Styles">
           <div class="fmt-head">Styles</div>
           <ul class="fmt-sub">
-            <li class="fmt-item" data-act="style" data-val="div">Normal text</li>
-            <li class="fmt-item" data-act="style" data-val="h1">Heading 1</li>
-            <li class="fmt-item" data-act="style" data-val="h2">Heading 2</li>
-            <li class="fmt-item" data-act="style" data-val="h3">Heading 3</li>
-            <li class="fmt-item" data-act="style" data-val="h4">Heading 4</li>
-            <li class="fmt-item" data-act="style" data-val="h5">Heading 5</li>
-            <li class="fmt-item" data-act="style" data-val="h6">Heading 6</li>
-            <li class="fmt-item" data-act="style" data-val="blockquote">Quote</li>
+            <li class="fmt-item" data-act="style" data-val="div" data-short="Normal">Normal text</li>
+            <li class="fmt-item" data-act="style" data-val="blockquote" data-short="Quote">Quote</li>
           </ul>
         </li>
         <li class="fmt-cat" data-cat="Font">
@@ -290,21 +285,24 @@
           <li class="fmt-group">
             <div class="fmt-head">Font family</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="fontname" data-val="Crimson Pro">Crimson Pro (default)</li>
-              <li class="fmt-item" data-act="fontname" data-val="Playfair Display">Playfair Display</li>
-              <li class="fmt-item" data-act="fontname" data-val="Space Mono">Space Mono</li>
-              <li class="fmt-item" data-act="fontname" data-val="sans-serif">Sans-serif</li>
-              <li class="fmt-item" data-act="fontname" data-val="serif">Serif</li>
-              <li class="fmt-item" data-act="fontname" data-val="monospace">Monospace</li>
+              <li class="fmt-item" data-act="fontname" data-val="Crimson Pro" data-short="Crimson Pro">Crimson Pro (default)</li>
+              <li class="fmt-item" data-act="fontname" data-val="Playfair Display" data-short="Playfair Display">Playfair Display</li>
+              <li class="fmt-item" data-act="fontname" data-val="Space Mono" data-short="Space Mono">Space Mono</li>
+              <li class="fmt-item" data-act="fontname" data-val="sans-serif" data-short="Sans-serif">Sans-serif</li>
+              <li class="fmt-item" data-act="fontname" data-val="serif" data-short="Serif">Serif</li>
+              <li class="fmt-item" data-act="fontname" data-val="monospace" data-short="Monospace">Monospace</li>
             </ul>
           </li>
           <li class="fmt-group">
-            <div class="fmt-head">Font size</div>
+            <div class="fmt-head">Size</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="size" data-val="1">Small</li>
-              <li class="fmt-item" data-act="size" data-val="3">Medium</li>
-              <li class="fmt-item" data-act="size" data-val="5">Large</li>
-              <li class="fmt-item" data-act="size" data-val="7">X-Large</li>
+              <li class="fmt-item" data-act="style" data-val="div" data-short="Normal">Normal text</li>
+              <li class="fmt-item" data-act="style" data-val="h1" data-short="H1">Heading 1</li>
+              <li class="fmt-item" data-act="style" data-val="h2" data-short="H2">Heading 2</li>
+              <li class="fmt-item" data-act="style" data-val="h3" data-short="H3">Heading 3</li>
+              <li class="fmt-item" data-act="style" data-val="h4" data-short="H4">Heading 4</li>
+              <li class="fmt-item" data-act="style" data-val="h5" data-short="H5">Heading 5</li>
+              <li class="fmt-item" data-act="style" data-val="h6" data-short="H6">Heading 6</li>
             </ul>
           </li>
           </ul>
@@ -315,25 +313,25 @@
           <li class="fmt-group">
             <div class="fmt-head">Font color</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="color" data-val="black"><span class="fmt-swatch" style="background:black"></span>Black</li>
-              <li class="fmt-item" data-act="color" data-val="gray"><span class="fmt-swatch" style="background:gray"></span>Gray</li>
-              <li class="fmt-item" data-act="color" data-val="red"><span class="fmt-swatch" style="background:red"></span>Red</li>
-              <li class="fmt-item" data-act="color" data-val="orange"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
-              <li class="fmt-item" data-act="color" data-val="green"><span class="fmt-swatch" style="background:green"></span>Green</li>
-              <li class="fmt-item" data-act="color" data-val="blue"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
-              <li class="fmt-item" data-act="color" data-val="purple"><span class="fmt-swatch" style="background:purple"></span>Purple</li>
+              <li class="fmt-item" data-act="color" data-val="black" data-short="Color: Black"><span class="fmt-swatch" style="background:black"></span>Black</li>
+              <li class="fmt-item" data-act="color" data-val="gray" data-short="Color: Gray"><span class="fmt-swatch" style="background:gray"></span>Gray</li>
+              <li class="fmt-item" data-act="color" data-val="red" data-short="Color: Red"><span class="fmt-swatch" style="background:red"></span>Red</li>
+              <li class="fmt-item" data-act="color" data-val="orange" data-short="Color: Orange"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
+              <li class="fmt-item" data-act="color" data-val="green" data-short="Color: Green"><span class="fmt-swatch" style="background:green"></span>Green</li>
+              <li class="fmt-item" data-act="color" data-val="blue" data-short="Color: Blue"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
+              <li class="fmt-item" data-act="color" data-val="purple" data-short="Color: Purple"><span class="fmt-swatch" style="background:purple"></span>Purple</li>
             </ul>
           </li>
           <li class="fmt-group">
             <div class="fmt-head">Highlight color</div>
             <ul class="fmt-sub">
-              <li class="fmt-item" data-act="hilite" data-val="yellow"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
-              <li class="fmt-item" data-act="hilite" data-val="orange"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
-              <li class="fmt-item" data-act="hilite" data-val="red"><span class="fmt-swatch" style="background:red"></span>Red</li>
-              <li class="fmt-item" data-act="hilite" data-val="green"><span class="fmt-swatch" style="background:green"></span>Green</li>
-              <li class="fmt-item" data-act="hilite" data-val="blue"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
-              <li class="fmt-item" data-act="hilite" data-val="pink"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
-              <li class="fmt-item" data-act="hilite" data-val="none"><span class="fmt-swatch fmt-swatch-none"></span>None</li>
+              <li class="fmt-item" data-act="hilite" data-val="yellow" data-short="Highlight: Yellow"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
+              <li class="fmt-item" data-act="hilite" data-val="orange" data-short="Highlight: Orange"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
+              <li class="fmt-item" data-act="hilite" data-val="red" data-short="Highlight: Red"><span class="fmt-swatch" style="background:red"></span>Red</li>
+              <li class="fmt-item" data-act="hilite" data-val="green" data-short="Highlight: Green"><span class="fmt-swatch" style="background:green"></span>Green</li>
+              <li class="fmt-item" data-act="hilite" data-val="blue" data-short="Highlight: Blue"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
+              <li class="fmt-item" data-act="hilite" data-val="pink" data-short="Highlight: Pink"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
+              <li class="fmt-item" data-act="hilite" data-val="none" data-short="Highlight: None"><span class="fmt-swatch fmt-swatch-none"></span>None</li>
             </ul>
           </li>
           </ul>
@@ -351,6 +349,19 @@
 
       </div>
       <!-- ─── END SINGLE FORMAT TOOLBAR ──────────────────────────────── -->
+
+
+      <!-- ─── NOTE ACTION LINE — one reserved line at the top of the white note area.
+           Floating black buttons, no borders: undo, redo, then − / + (step the
+           option last chosen in the Formatting list). Add future buttons here. ── -->
+      <div class="note-action-line" id="noteActionLine">
+        <button type="button" class="note-action-btn" id="undoBtn" title="Undo" aria-label="Undo" onmousedown="event.preventDefault()" onclick="undo_note()" disabled>↶</button>
+        <button type="button" class="note-action-btn" id="redoBtn" title="Redo" aria-label="Redo" onmousedown="event.preventDefault()" onclick="redo_note()" disabled>↷</button>
+        <span class="note-action-gap"></span>
+        <button type="button" class="note-action-btn" id="stepDownBtn" title="Previous option" aria-label="Decrease" onmousedown="event.preventDefault()" onclick="step_fmt(-1)" disabled>−</button>
+        <button type="button" class="note-action-btn" id="stepUpBtn" title="Next option" aria-label="Increase" onmousedown="event.preventDefault()" onclick="step_fmt(1)" disabled>+</button>
+      </div>
+      <!-- ─── END NOTE ACTION LINE ───────────────────────────────────── -->
 
     </div>
     <!-- ─── END sticky toolbar wrap ───────────────────────────────────── -->

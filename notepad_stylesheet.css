@@ -839,56 +839,52 @@ p {
   background-image: linear-gradient(135deg, transparent 45%, #cc0000 45%, #cc0000 55%, transparent 55%);
 }
 
-/* ---- Undo / Redo buttons in the note header ---- */
+/* ---- Note action line: one reserved line at the top of the white note area ----
+   Floating black buttons with no borders: undo, redo, then − / +.
+   It sits inside the sticky toolbar block so it stays reachable while the
+   note scrolls. Room for more buttons later: add them inside .note-action-line. */
 
-/* Keep the whole note header (title, undo, redo, mic, photos, save, back) on
-   ONE line on a phone: tighter margins, no wrapping inside buttons. */
-.note-editor-sticky-toolbar .toolbar-row {
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 2px;
-}
-
-.note-editor-sticky-toolbar .toolbar-row h3 {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0 4px;
-  padding: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.note-header-action-group {
+.note-action-line {
   display: flex;
-  flex: 0 0 auto;
   align-items: center;
-  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 2px;
+  height: 36px;
+  padding: 0 6px;
+  background: #ffffff;
 }
 
-.note-editor-sticky-toolbar .toolbar-row .orange-btn {
-  margin: 4px 2px;
-  padding: 2px 5px;
-  font-size: 13px;
-  white-space: nowrap;
+.note-action-gap {
+  width: 14px;
   flex: 0 0 auto;
 }
 
-.undo-redo-btn {
-  min-width: 28px;
-  padding: 2px 5px;
-  font-size: 16px;
+.note-action-btn {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 36px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #000000;
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
   line-height: 1;
+  cursor: pointer;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.note-editor-sticky-toolbar .toolbar-row .undo-redo-btn {
-  font-size: 16px;
+.note-action-btn:active {
+  opacity: 0.5;
 }
 
-.undo-redo-btn.disabled,
-.undo-redo-btn:disabled {
-  opacity: 0.4;
+.note-action-btn:disabled,
+.note-action-btn.disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 
 /* ---- Select mode ---- */
