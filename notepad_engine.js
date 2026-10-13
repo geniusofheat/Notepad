@@ -1793,6 +1793,103 @@ function clear_all_formatting() {
   if (headings.length > 0) convert_blocks(headings, 'div');
 }
 
+// Font size in exact pixels (1-50). The browser's own fontSize command only
+// knows seven coarse steps, so it is used to wrap the text and each wrapper is
+// then swapped for <span style="font-size: Npx">. Re-sizing text that already
+// has a pixel size replaces that size instead of nesting spans deeper each time.
+function apply_font_px(px) {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+
+  // A bare caret has no text to size: use the word it sits in.
+  if (sel.isCollapsed) {
+    const range = sel.getRangeAt(0);
+    const word = range.startContainer.nodeType === 3
+      ? word_range_at(range.startContainer, range.startOffset) : null;
+    if (!word) {
+      fmt_notice('Select some text first (or tap Select).');
+      return;
+    }
+    sel.removeAllRanges();
+    sel.addRange(word);
+  }
+
+  // Older notes may already contain <font size="7">; leave those alone.
+  const before = new Set(editor.querySelectorAll('font[size="7"]'));
+  document.execCommand('fontSize', false, '7');
+
+  const wrappers = Array.from(editor.querySelectorAll('font[size="7"]'))
+    .filter((el) => !before.has(el));
+  if (wrappers.length === 0) return;
+
+  const live = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+  const saved = live ? {
+    sc: live.startContainer, so: live.startOffset,
+    ec: live.endContainer, eo: live.endOffset
+  } : null;
+  const replaced = new Map();
+
+  wrappers.forEach((font) => {
+    const span = document.createElement('span');
+    span.style.fontSize = px + 'px';
+
+    // The browser sometimes reuses an existing <font color="..."> (or face)
+    // element for the size. Keep that element so its color / font survive,
+    // and put the pixel size on a span inside it.
+    const carries_other_format =
+      font.hasAttribute('color') || font.hasAttribute('face') || font.hasAttribute('style');
+
+    if (carries_other_format) {
+      font.removeAttribute('size');
+      while (font.firstChild) span.appendChild(font.firstChild);
+      font.appendChild(span);
+    } else {
+      while (font.firstChild) span.appendChild(font.firstChild);
+      font.parentNode.replaceChild(span, font);
+    }
+    replaced.set(font, span);
+
+    // Sizes set earlier inside this text are superseded by the new one.
+    span.querySelectorAll('span').forEach((inner) => {
+      if (inner.style.fontSize) {
+        inner.style.fontSize = '';
+        if (!inner.getAttribute('style')) inner.removeAttribute('style');
+        if (inner.attributes.length === 0) {
+          while (inner.firstChild) inner.parentNode.insertBefore(inner.firstChild, inner);
+          inner.remove();
+        }
+      }
+    });
+    span.querySelectorAll('font[size]').forEach((inner) => inner.removeAttribute('size'));
+
+    // Same text already wrapped in a sized span: update that span, no nesting.
+    const parent = span.parentElement;
+    if (parent && parent !== editor && parent.tagName === 'SPAN' &&
+        parent.style.fontSize && parent.childNodes.length === 1) {
+      parent.style.fontSize = px + 'px';
+      while (span.firstChild) parent.insertBefore(span.firstChild, span);
+      span.remove();
+      replaced.set(font, parent);
+    }
+  });
+
+  // Tidy empty style="" attributes the browser leaves behind.
+  editor.querySelectorAll('[style=""]').forEach((el) => el.removeAttribute('style'));
+
+  if (saved) {
+    const mapped = (node) => replaced.get(node) || node;
+    try {
+      const restored = document.createRange();
+      restored.setStart(mapped(saved.sc), saved.so);
+      restored.setEnd(mapped(saved.ec), saved.eo);
+      sel.removeAllRanges();
+      sel.addRange(restored);
+    } catch (err) { /* keep the browser's selection */ }
+  }
+}
+window.apply_font_px = apply_font_px;
+
 // First-line indent set to an exact size (0 removes it, including any older
 // whole-paragraph indent). Used by the Indentation menu and the − / + buttons.
 function apply_indent_set(px) {
@@ -1849,12 +1946,20 @@ function apply_alignment(kind) {
 // formatting already on the text).
 
 let active_fmt_item = null;
+let active_fmt_value = null;     // current number for range options (font size)
+
+// Range options (font size) are stepped by a number: data-min / data-max /
+// data-inc. Pressing the option loads its normal value (data-val, 14 px);
+// − / + then move it one step at a time.
+function is_range_item(item) {
+  return !!item && item.hasAttribute('data-min') && item.hasAttribute('data-max');
+}
 
 // The choices − / + can move through: sibling options of the same kind
-// (e.g. H1..H6, a color list, the indent sizes). Toggle commands such as
-// Bold, and one-off actions, have nothing to step through.
+// (e.g. a color list, the indent sizes). Toggle commands such as Bold, and
+// one-off actions, have nothing to step through.
 function fmt_step_list(item) {
-  if (!item || !item.dataset.act || item.hasAttribute('data-nostep')) return [];
+  if (!item || !item.dataset.act || item.hasAttribute('data-nostep') || is_range_item(item)) return [];
   const siblings = Array.from(item.parentElement.children).filter(
     (el) => el.classList.contains('fmt-item') &&
             el.dataset.act === item.dataset.act &&
@@ -1863,20 +1968,36 @@ function fmt_step_list(item) {
   return siblings.length >= 2 ? siblings : [];
 }
 
-function fmt_item_title(item) {
+function fmt_item_title(item, value) {
+  if (is_range_item(item) && value !== null && value !== undefined && item.dataset.title) {
+    return item.dataset.title.replace('{v}', value);
+  }
   return item.dataset.short || item.dataset.label || item.textContent.trim();
 }
 
-function set_active_fmt_item(item) {
+function set_active_fmt_item(item, value) {
   active_fmt_item = item;
+  active_fmt_value = is_range_item(item)
+    ? (value !== undefined && value !== null ? value : parseInt(item.dataset.val, 10))
+    : null;
+
   const label = document.getElementById('fmtCategoryLabel');
-  if (label) label.textContent = item ? fmt_item_title(item) : 'Category';
+  if (label) label.textContent = item ? fmt_item_title(item, active_fmt_value) : 'Category';
   update_step_buttons();
 }
 
 function update_step_buttons() {
   const down = document.getElementById('stepDownBtn');
   const up = document.getElementById('stepUpBtn');
+
+  if (is_range_item(active_fmt_item)) {
+    const min = parseInt(active_fmt_item.dataset.min, 10);
+    const max = parseInt(active_fmt_item.dataset.max, 10);
+    if (down) down.disabled = !(active_fmt_value > min);
+    if (up) up.disabled = !(active_fmt_value < max);
+    return;
+  }
+
   const list = fmt_step_list(active_fmt_item);
   const idx = list.indexOf(active_fmt_item);
 
@@ -1886,6 +2007,16 @@ function update_step_buttons() {
 
 function step_fmt(direction) {
   if (nav.level !== 'note' || !active_fmt_item) return;
+
+  if (is_range_item(active_fmt_item)) {
+    const min = parseInt(active_fmt_item.dataset.min, 10);
+    const max = parseInt(active_fmt_item.dataset.max, 10);
+    const inc = parseInt(active_fmt_item.dataset.inc, 10) || 1;
+    const next = Math.min(max, Math.max(min, active_fmt_value + (direction > 0 ? inc : -inc)));
+    if (next === active_fmt_value) return;
+    run_fmt_item(active_fmt_item, next);
+    return;
+  }
 
   const list = fmt_step_list(active_fmt_item);
   const next = list[list.indexOf(active_fmt_item) + (direction > 0 ? 1 : -1)];
@@ -1898,7 +2029,7 @@ window.step_fmt = step_fmt;
 
 // ── Menu dispatcher ─────────────────────────────────────────────────────────
 
-function run_fmt_item(item) {
+function run_fmt_item(item, value_override) {
   if (nav.level !== 'note') return;
 
   lock_scroll_position();
@@ -1908,6 +2039,7 @@ function run_fmt_item(item) {
   const cmd = item.dataset.cmd;
   const act = item.dataset.act;
   const val = item.dataset.val || '';
+  let applied_value;     // for options stepped by number (font size)
 
   try {
     if (cmd) {
@@ -1934,6 +2066,8 @@ function run_fmt_item(item) {
 
         case 'indent':        adjust_indent(parseInt(val, 10)); break;
         case 'indent-set':    apply_indent_set(parseInt(val, 10)); break;
+        case 'fontpx':        applied_value = value_override !== undefined ? value_override : parseInt(val, 10);
+                              apply_font_px(applied_value); break;
         case 'indent-default': toggle_default_indent('on'); break;
         case 'indent-remove': toggle_default_indent('off'); break;
 
@@ -1941,7 +2075,14 @@ function run_fmt_item(item) {
         case 'space-before':  apply_block_style('marginTop', val + 'px'); break;
         case 'space-after':   apply_block_style('marginBottom', val + 'px'); break;
 
-        case 'style':         apply_block_tag(val); break;
+        case 'style': {
+          // Quote switches on and off: pressing it again on a quote restores normal text.
+          const chosen = get_selected_blocks();
+          const all_quotes = val === 'blockquote' && chosen.length > 0 &&
+            chosen.every((block) => block.tagName === 'BLOCKQUOTE');
+          apply_block_tag(all_quotes ? 'div' : val);
+          break;
+        }
         case 'clear':         clear_all_formatting(); break;
       }
     }
@@ -1950,7 +2091,7 @@ function run_fmt_item(item) {
   }
 
   fmt_finish(item);
-  set_active_fmt_item(item);
+  set_active_fmt_item(item, applied_value);
 }
 window.run_fmt_item = run_fmt_item;
 

@@ -840,7 +840,7 @@ p {
 }
 
 /* ---- Note action line: one reserved line at the top of the white note area ----
-   Floating black buttons with no borders: undo, redo, then − / +.
+   Black buttons with a 1px black border: undo, redo, then − / +.
    It sits inside the sticky toolbar block so it stays reachable while the
    note scrolls. Room for more buttons later: add them inside .note-action-line. */
 
@@ -848,7 +848,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2px;
+  gap: 4px;
   height: 36px;
   padding: 0 6px;
   background: #ffffff;
@@ -861,11 +861,11 @@ p {
 
 .note-action-btn {
   flex: 0 0 auto;
-  width: 38px;
-  height: 36px;
+  width: 36px;
+  height: 30px;
   padding: 0;
   margin: 0;
-  border: none;
+  border: 1px solid #000000;
   outline: none;
   background: transparent;
   color: #000000;
