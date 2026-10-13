@@ -112,13 +112,20 @@
   ═══════════════════════════════════════════════════════════════════ -->
   <div id="note-editor-view" style="display:none;">
 
+    <!-- ─── NOTE TITLE ROW — the note's title, on the white page right under the
+         "Note :" header. It is NOT part of the button toolbar, so a long title
+         can wrap here without ever changing the toolbar's height. ──────────── -->
+    <div class="note-title-row">
+      <h3 id="note-title-display"></h3>
+    </div>
+    <!-- ─── END NOTE TITLE ROW ──────────────────────────────────────── -->
+
     <p class="note-editor-description">Use the buttons in the formatting toolbar to format your text. Press the help button to get a description of what each button does.</p>
 
     <div class="note-editor-sticky-toolbar">
 
-      <!-- ─── NOTE HEADER ROW — note title, mic, photos, save, back ─────── -->
-      <div class="toolbar-row">
-        <h3 id="note-title-display"></h3>
+      <!-- ─── NOTE BUTTON ROW — mic, photos, save, back (fixed height; the title lives above) ─────── -->
+      <div class="toolbar-row note-button-row">
 
         <div class="note-header-action-group">
           <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>

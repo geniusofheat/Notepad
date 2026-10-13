@@ -339,6 +339,7 @@ p {
 
 #breadcrumb {
   width: 100%;
+  overflow-wrap: anywhere;   /* a very long note title wraps instead of widening the page */
   font-family: 'Space Mono', monospace;
   font-size: 13px;
   padding: 6px 20px 4px 20px;
@@ -925,6 +926,46 @@ p {
   padding: 2px 0 2px 10px;
   border-left: 3px solid #2f6fa3;
   color: #333333;
+}
+
+/* ---- Note title row (white page, under the "Note :" header) ---- */
+
+.note-title-row {
+  width: 100%;
+  padding: 2px 10px 0 10px;
+}
+
+.note-title-row h3 {
+  margin: 0;
+  padding: 4px 0;
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  line-height: 1.25;
+  color: #1a1a2e;
+  overflow-wrap: anywhere;      /* a long title wraps here, in the white space */
+}
+
+/* ---- Note button row: always one line, always the same height ----
+   (mic, photos, save, back). The title is no longer in this row, so nothing
+   can wrap and stretch the buttons. */
+
+.note-button-row {
+  align-items: center;          /* buttons keep their own height */
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.note-button-row .orange-btn {
+  margin: 6px 4px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.note-button-row .note-header-action-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
 }
 
 /* =====================
