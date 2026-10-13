@@ -839,6 +839,58 @@ p {
   background-image: linear-gradient(135deg, transparent 45%, #cc0000 45%, #cc0000 55%, transparent 55%);
 }
 
+/* ---- Undo / Redo buttons in the note header ---- */
+
+/* Keep the whole note header (title, undo, redo, mic, photos, save, back) on
+   ONE line on a phone: tighter margins, no wrapping inside buttons. */
+.note-editor-sticky-toolbar .toolbar-row {
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+
+.note-editor-sticky-toolbar .toolbar-row h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 4px;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-header-action-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.note-editor-sticky-toolbar .toolbar-row .orange-btn {
+  margin: 4px 2px;
+  padding: 2px 5px;
+  font-size: 13px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.undo-redo-btn {
+  min-width: 28px;
+  padding: 2px 5px;
+  font-size: 16px;
+  line-height: 1;
+  touch-action: manipulation;
+}
+
+.note-editor-sticky-toolbar .toolbar-row .undo-redo-btn {
+  font-size: 16px;
+}
+
+.undo-redo-btn.disabled,
+.undo-redo-btn:disabled {
+  opacity: 0.4;
+}
+
 /* ---- Select mode ---- */
 
 /* The Select button, while selection mode is on, uses the existing

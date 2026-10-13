@@ -121,6 +121,8 @@
         <h3 id="note-title-display"></h3>
 
         <div class="note-header-action-group">
+          <button class="orange-btn undo-redo-btn" id="undoBtn" title="Undo" aria-label="Undo" onmousedown="event.preventDefault()" onclick="undo_note()" style="display:none;" disabled>↶</button>
+          <button class="orange-btn undo-redo-btn" id="redoBtn" title="Redo" aria-label="Redo" onmousedown="event.preventDefault()" onclick="redo_note()" style="display:none;" disabled>↷</button>
           <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
           <button class="orange-btn" id="photoBtn" onclick="trigger_photo_picker()" style="display:none;">Photos +</button>
         </div>

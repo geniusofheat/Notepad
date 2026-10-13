@@ -613,6 +613,7 @@ function open_note(cat_id, item_id) {
   render_breadcrumb();
   reset_fmt_toolbar();
   document.getElementById('note-textarea').innerHTML = item.content || '';
+  reset_history();
 
   // Makes the Enter key create a real new block (a <div>) instead of
   // a line break, so formatting commands like ordered/unordered list
@@ -683,6 +684,11 @@ function show_back_btn() {
 
   const save = document.getElementById('saveBtn');
   if (save) save.style.display = 'inline-flex';
+
+  ['undoBtn', 'redoBtn'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'inline-flex';
+  });
 }
 
 function hide_back_btn() {
@@ -694,6 +700,11 @@ function hide_back_btn() {
 
   const save = document.getElementById('saveBtn');
   if (save) save.style.display = 'none';
+
+  ['undoBtn', 'redoBtn'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 }
 
 
@@ -708,6 +719,8 @@ function auto_save_current_note() {
   item.content = document.getElementById('note-textarea').innerHTML;
   item.updated = new Date().toISOString();
   save_notes();
+
+  if (typeof record_history === 'function') record_history();
 }
 
 // Manual save button handler — force-saves immediately (skips the 800ms
@@ -1060,10 +1073,18 @@ function adjust_indent(delta) {
   const blocks = get_blocks_or_wrap();
   if (blocks.length === 0) return;
 
+  // First-line indent (text-indent): only the first line of each paragraph
+  // moves, like a typed paragraph indent. Notes indented with the old
+  // toolbar used margin-left (whole paragraph); "decrease" still works on those.
   blocks.forEach((block) => {
-    const current = parseInt(block.style.marginLeft) || 0;
-    const next = Math.max(0, current + delta);   // never below 0
-    block.style.marginLeft = next + 'px';
+    const current = parseInt(block.style.textIndent) || 0;
+    const legacy = parseInt(block.style.marginLeft) || 0;
+
+    if (delta < 0 && current === 0 && legacy > 0) {
+      block.style.marginLeft = Math.max(0, legacy + delta) + 'px';
+      return;
+    }
+    block.style.textIndent = Math.max(0, current + delta) + 'px';   // never below 0
   });
 
   save_editor_selection();
@@ -1081,14 +1102,21 @@ function toggle_default_indent(force) {
   const blocks = get_blocks_or_wrap();
   if (blocks.length === 0) return;
 
-  const first = parseInt(blocks[0].style.marginLeft) || 0;
+  const first = (parseInt(blocks[0].style.textIndent) || 0) +
+                (parseInt(blocks[0].style.marginLeft) || 0);
   let indent_on;
   if (force === 'on') indent_on = true;
   else if (force === 'off') indent_on = false;
   else indent_on = first === 0;
 
   blocks.forEach((block) => {
-    block.style.marginLeft = indent_on ? '5px' : '0px';
+    if (indent_on) {
+      block.style.textIndent = '5px';            // first line only
+    } else {
+      block.style.textIndent = '';               // removes first-line AND old whole-paragraph indent
+      block.style.marginLeft = '';
+      if (!block.getAttribute('style')) block.removeAttribute('style');
+    }
   });
 }
 
@@ -1469,6 +1497,35 @@ function get_editor() {
   return document.getElementById('note-textarea');
 }
 
+// ── Soft keyboard control ───────────────────────────────────────────────────
+// Focusing a contenteditable raises the Samsung keypad. Toolbar commands must
+// focus the editor to run (execCommand needs it), so while the toolbar is in
+// use the editor is marked inputmode="none" — focus works, keypad stays down.
+// The keypad comes back only when the user taps into the note to type.
+function keyboard_off() {
+  const editor = get_editor();
+  if (editor) editor.setAttribute('inputmode', 'none');
+}
+window.keyboard_off = keyboard_off;
+
+function keyboard_on() {
+  const editor = get_editor();
+  if (!editor || select_mode) return;                 // Select mode never wants the keypad
+  if (editor.getAttribute('inputmode') !== 'none') return;
+
+  editor.removeAttribute('inputmode');
+
+  // Re-focus so the browser re-evaluates and shows the keypad, keeping the caret.
+  if (document.activeElement === editor) {
+    const sel = window.getSelection();
+    const keep = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+    editor.blur();
+    editor.focus({ preventScroll: true });
+    if (keep) { sel.removeAllRanges(); sel.addRange(keep); }
+  }
+}
+window.keyboard_on = keyboard_on;
+
 function range_in_editor(range) {
   const editor = get_editor();
   return !!range && !!editor && editor.contains(range.commonAncestorContainer);
@@ -1484,6 +1541,7 @@ function toggle_fmt_menu(force) {
 
   const open = typeof force === 'boolean' ? force : !menu.classList.contains('open');
   menu.classList.toggle('open', open);
+  if (open) keyboard_off();   // opening the menu must never leave the keypad up
 
   if (btn) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -1568,6 +1626,7 @@ function fmt_notice(message) {
 function fmt_prime_selection() {
   const editor = get_editor();
   const sel = window.getSelection();
+  keyboard_off();
 
   // Look at the live selection BEFORE focus(): focusing a blurred
   // contenteditable can drop the caret at the start of the note.
@@ -1732,7 +1791,7 @@ function insert_paragraph_break(soft) {
 
 function reset_paragraph_formatting() {
   get_selected_blocks().forEach((block) => {
-    ['marginLeft', 'marginTop', 'marginBottom', 'lineHeight', 'textAlign'].forEach((prop) => {
+    ['marginLeft', 'textIndent', 'marginTop', 'marginBottom', 'lineHeight', 'textAlign'].forEach((prop) => {
       block.style[prop] = '';
     });
     if (!block.getAttribute('style')) block.removeAttribute('style');
@@ -1994,7 +2053,7 @@ function enter_select_mode() {
   editor.classList.add('select-mode');
 
   // No soft keyboard while picking words — it would cover the toolbar.
-  editor.setAttribute('inputmode', 'none');
+  keyboard_off();
 
   const btn = document.getElementById('fmtSelectBtn');
   if (btn) {
@@ -2024,8 +2083,10 @@ function exit_select_mode(silent) {
   select_pending_first_word = false;
 
   if (editor) {
+    // inputmode stays "none" here on purpose: removing it while the note is
+    // focused would raise the keypad the moment Select is switched off.
+    // It is cleared when the user taps the note to type (keyboard_on).
     editor.classList.remove('select-mode');
-    editor.removeAttribute('inputmode');
   }
 
   paint_select_highlight();
@@ -2069,6 +2130,8 @@ window.on_editor_text_added = on_editor_text_added;
 function reset_fmt_toolbar() {
   exit_select_mode(true);
   close_fmt_menu();
+  const ed = get_editor();
+  if (ed) ed.removeAttribute('inputmode');   // a freshly opened note is typeable
 
   const label = document.getElementById('fmtCategoryLabel');
   if (label) label.textContent = 'Category';
@@ -2093,7 +2156,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // the browser has any chance to move it.
   if (bar) {
     ['pointerdown', 'touchstart'].forEach((type) => {
-      bar.addEventListener(type, () => freeze_editor_selection(), { capture: true, passive: true });
+      bar.addEventListener(type, () => {
+        keyboard_off();            // hide the keypad the instant the toolbar is touched
+        freeze_editor_selection();
+      }, { capture: true, passive: true });
     });
   }
 
@@ -2104,7 +2170,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Tapping the note means the user wants the text, not the menu.
       close_fmt_menu();
 
-      if (!select_mode) return;
+      // Tapping into the note to type: bring the keypad back.
+      if (!select_mode) { setTimeout(keyboard_on, 0); return; }
       if (e.target.tagName === 'INPUT') return;   // checkbox tap
       setTimeout(select_word_at_caret, 0);
     });
@@ -2130,6 +2197,154 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+
+// ── SECTION 14C: UNDO / REDO ────────────────────────────────────────────────
+// The browser's own undo does not know about formatting done by this toolbar
+// (indent, spacing, styles, checkboxes), so the note keeps its own history of
+// snapshots. A snapshot is recorded every time the note is saved — after
+// typing pauses, after each toolbar command, and after photo changes.
+
+let undo_stack = [];
+let redo_stack = [];
+let history_busy = false;
+const HISTORY_MAX_ENTRIES = 100;
+const HISTORY_MAX_CHARS = 30000000;   // photos are large base64 strings
+
+// Caret position as a character count of text before it (survives innerHTML swaps).
+function caret_text_offset() {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (!editor || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  if (!range_in_editor(range)) return null;
+
+  const before = document.createRange();
+  before.selectNodeContents(editor);
+  before.setEnd(range.endContainer, range.endOffset);
+  return before.toString().length;
+}
+
+function restore_caret_text_offset(offset) {
+  const editor = get_editor();
+  if (!editor || offset === null || offset === undefined) return;
+
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+  let remaining = offset;
+  let node;
+  let last = null;
+  while ((node = walker.nextNode())) {
+    last = node;
+    if (remaining <= node.data.length) {
+      const range = document.createRange();
+      range.setStart(node, remaining);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      return;
+    }
+    remaining -= node.data.length;
+  }
+  if (last) {
+    const range = document.createRange();
+    range.setStart(last, last.data.length);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+}
+
+function history_total_chars() {
+  return undo_stack.reduce((sum, entry) => sum + entry.html.length, 0);
+}
+
+function update_undo_redo_buttons() {
+  const undo = document.getElementById('undoBtn');
+  const redo = document.getElementById('redoBtn');
+  if (undo) {
+    undo.disabled = undo_stack.length < 2;
+    undo.classList.toggle('disabled', undo_stack.length < 2);
+  }
+  if (redo) {
+    redo.disabled = redo_stack.length === 0;
+    redo.classList.toggle('disabled', redo_stack.length === 0);
+  }
+}
+
+// Records the editor's current HTML if it differs from the latest snapshot.
+function record_history() {
+  if (history_busy) return;
+  const editor = get_editor();
+  if (!editor) return;
+
+  const html = editor.innerHTML;
+  const top = undo_stack[undo_stack.length - 1];
+  if (top && top.html === html) return;
+
+  undo_stack.push({ html, caret: caret_text_offset() });
+  redo_stack = [];
+
+  while (undo_stack.length > HISTORY_MAX_ENTRIES ||
+         (undo_stack.length > 2 && history_total_chars() > HISTORY_MAX_CHARS)) {
+    undo_stack.shift();
+  }
+  update_undo_redo_buttons();
+}
+
+// Starts a fresh history for the note that was just opened.
+function reset_history() {
+  undo_stack = [];
+  redo_stack = [];
+  const editor = get_editor();
+  if (editor) undo_stack.push({ html: editor.innerHTML, caret: null });
+  update_undo_redo_buttons();
+}
+window.reset_history = reset_history;
+
+function apply_history_entry(entry) {
+  const editor = get_editor();
+  if (!editor) return;
+
+  history_busy = true;
+  try {
+    keyboard_off();                       // undo/redo must not raise the keypad
+    if (typeof clear_photo_selection === 'function') clear_photo_selection();
+    if (select_mode) exit_select_mode(true);
+
+    editor.innerHTML = entry.html;
+    restore_caret_text_offset(entry.caret);
+    save_editor_selection();
+
+    clearTimeout(auto_save_timer);
+    auto_save_current_note();             // saves the restored note (not recorded: history_busy)
+  } finally {
+    history_busy = false;
+  }
+  update_undo_redo_buttons();
+}
+
+function undo_note() {
+  if (nav.level !== 'note') return;
+  record_history();                        // capture edits made in the last moment
+
+  if (undo_stack.length < 2) return;
+  const current = undo_stack.pop();
+  redo_stack.push(current);
+  apply_history_entry(undo_stack[undo_stack.length - 1]);
+}
+window.undo_note = undo_note;
+
+function redo_note() {
+  if (nav.level !== 'note') return;
+  if (redo_stack.length === 0) return;
+
+  const entry = redo_stack.pop();
+  undo_stack.push(entry);
+  apply_history_entry(entry);
+}
+window.redo_note = redo_note;
 
 
 // ── SECTION 15: HELP MODAL ──────────────────────────────────────────────────
