@@ -289,6 +289,10 @@ function get_latest_note_update(notesData) {
 
   (notesData || []).forEach((category) => {
 
+    // Renaming a list stamps the list itself.
+    const category_time = Date.parse(category.updated || '');
+    if (!Number.isNaN(category_time) && category_time > latest) latest = category_time;
+
     (category.items || []).forEach((item) => {
 
       const time = Date.parse(item.updated || '');
@@ -513,6 +517,100 @@ window.toggle_category = toggle_category;
 
 // ── SECTION 12: MAIN LIST RENDER ────────────────────────────────────────────
 
+// ── RENAMING TITLES ──────────────────────────────────────────────────────────
+// [ edit ] in the toolbar turns Edit mode on. While it is on, tapping a list
+// title or a note title (instead of opening it) turns that title into a text
+// box. Enter or ✓ saves the new name, ✕ cancels. Tap [ done ] to leave Edit mode.
+
+let edit_mode = false;
+let rename_target = null;      // { cat_id, item_id | null }
+
+function esc_attr(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function current_title_of(target) {
+  const cat = notes.find((c) => c.id === target.cat_id);
+  if (!cat) return '';
+  if (!target.item_id) return cat.title;
+  const item = (cat.items || []).find((i) => i.id === target.item_id);
+  return item ? item.title : '';
+}
+
+function rename_row_html() {
+  return `
+    <input class="text-input rename-input" id="renameInput" value="${esc_attr(current_title_of(rename_target))}"
+           aria-label="New title" onkeydown="if(event.key==='Enter'){commit_rename();}else if(event.key==='Escape'){cancel_rename();}">
+    <button class="orange-btn" onmousedown="event.preventDefault()" onclick="commit_rename()" aria-label="Save name">✓</button>
+    <button class="orange-btn" onmousedown="event.preventDefault()" onclick="cancel_rename()" aria-label="Cancel">✕</button>`;
+}
+
+function toggle_edit_mode() {
+  if (nav.level === 'note') return;
+  if (rename_target) commit_rename();       // finish the title being typed first
+
+  edit_mode = !edit_mode;
+  rename_target = null;
+
+  const btn = document.getElementById('editBtn');
+  if (btn) {
+    btn.textContent = edit_mode ? 'done' : 'edit';
+    btn.classList.toggle('active', edit_mode);
+    btn.setAttribute('aria-pressed', edit_mode ? 'true' : 'false');
+  }
+  redraw_list();
+}
+window.toggle_edit_mode = toggle_edit_mode;
+
+// Tapping a title: rename it in Edit mode, otherwise open / close it as usual.
+function title_tap(cat_id, item_id) {
+  if (edit_mode) {
+    if (rename_target) commit_rename();
+    rename_target = { cat_id, item_id: item_id || null };
+    redraw_list();
+    return;
+  }
+  if (item_id) open_note(cat_id, item_id);
+  else toggle_category(cat_id);
+}
+window.title_tap = title_tap;
+
+function by_title(a, b) {
+  const x = a.title.trim().toLowerCase();
+  const y = b.title.trim().toLowerCase();
+  return x < y ? -1 : (x > y ? 1 : 0);
+}
+
+function commit_rename() {
+  if (!rename_target) return;
+  const box = document.getElementById('renameInput');
+  const target = rename_target;
+  const title = box ? box.value.trim() : '';
+  rename_target = null;
+
+  const cat = notes.find((c) => c.id === target.cat_id);
+  const entry = cat
+    ? (target.item_id ? (cat.items || []).find((i) => i.id === target.item_id) : cat)
+    : null;
+
+  // An empty name, or no change, leaves the title as it was.
+  if (entry && title && title !== entry.title) {
+    entry.title = title;
+    entry.updated = new Date().toISOString();       // so other devices pick up the new name
+    if (target.item_id) cat.items.sort(by_title);   // keep the A-Z order
+    else notes.sort(by_title);
+    save_notes();
+  }
+  redraw_list();
+}
+window.commit_rename = commit_rename;
+
+function cancel_rename() {
+  rename_target = null;
+  redraw_list();
+}
+window.cancel_rename = cancel_rename;
+
 function redraw_list() {
   render_breadcrumb();
 
@@ -534,7 +632,9 @@ function redraw_list() {
     html += `
       <li class="note-list-item">
         <div class="row-content">
-          <span class="note-list-title" onclick="toggle_category('${cat.id}')">${cat.title}</span>
+          ${rename_target && rename_target.cat_id === cat.id && !rename_target.item_id
+            ? rename_row_html()
+            : `<span class="note-list-title" onclick="title_tap('${cat.id}')">${cat.title}</span>`}
           <span class="bracket-action" onclick="show_add_note_row('${cat.id}')">[ add note + ]</span>
           <button class="orange-btn" onclick="delete_category('${cat.id}')">✕</button>
         </div>
@@ -562,7 +662,9 @@ function redraw_list() {
           html += `
             <li class="note-item-row">
               <div class="row-content">
-                <span class="note-list-title" onclick="open_note('${cat.id}', '${item.id}')">${item.title}</span>
+                ${rename_target && rename_target.item_id === item.id
+                  ? rename_row_html()
+                  : `<span class="note-list-title" onclick="title_tap('${cat.id}', '${item.id}')">${item.title}</span>`}
                 <button class="orange-btn" onclick="delete_note_item('${cat.id}', '${item.id}')">✕</button>
               </div>
             </li>
@@ -581,6 +683,14 @@ function redraw_list() {
 
   html += '</ol>';
   list.innerHTML = html;
+  list.classList.toggle('editing-titles', edit_mode);
+
+  // A title being renamed gets the cursor right away.
+  const box = document.getElementById('renameInput');
+  if (box) {
+    box.focus();
+    box.select();
+  }
 }
 
 
@@ -3273,6 +3383,13 @@ const HELP_TOPICS_MAIN = [
     'Type a title for the note and confirm to add it.',
     'Tap the note title to open the writing screen.',
     'Use the ← Back button on the note screen to return here.'
+  ]},
+  { title: 'Renaming lists and notes', items: [
+    'Tap [ edit ] in the toolbar to turn Edit mode on; the button now reads [ done ].',
+    'While Edit mode is on, tap any list title or note title and it turns into a text box with a cursor.',
+    'Type the new name, then press Enter or ✓ to save it (✕ cancels).',
+    'The renamed list or note moves to its new alphabetical place, and the change syncs to your other devices.',
+    'Tapping titles does not open them while Edit mode is on; tap [ done ] when you are finished.'
   ]},
   { title: 'Deleting lists and notes', items: [
     'The ✕ next to a list deletes that whole list and every note in it, after asking you to confirm.',

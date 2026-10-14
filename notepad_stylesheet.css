@@ -1187,3 +1187,25 @@ p {
 .help-topic.open > .help-topic-body {
   display: block;
 }
+
+
+/* =====================
+   RENAMING TITLES (Edit mode)
+===================== */
+
+#editBtn.active {
+  background: #a8d4f5;
+  color: #000000;
+}
+
+.editing-titles .note-list-title {
+  text-decoration: underline dashed;
+  text-underline-offset: 4px;
+}
+
+.rename-input {
+  flex: 1 1 140px;
+  width: auto;
+  min-width: 100px;
+  box-sizing: border-box;
+}
