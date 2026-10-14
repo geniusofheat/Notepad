@@ -2408,6 +2408,117 @@ function on_photo_deselected() {
 window.on_photo_deselected = on_photo_deselected;
 
 
+// ── Cut / Copy / Paste / Clear (Effects) ────────────────────────────────────
+// They work on the selected text (including a Select-mode selection). Copy and
+// Cut also keep their own copy inside the app: phones often refuse to let a
+// web page read the system clipboard, and Paste then uses this copy.
+
+let internal_clip = null;      // { html, text }
+
+function selection_clip() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0 || sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return null;
+  const box = document.createElement('div');
+  box.appendChild(sel.getRangeAt(0).cloneContents());
+  return { html: box.innerHTML, text: sel.toString() };
+}
+
+function copy_selection() {
+  const clip = selection_clip();
+  if (!clip) { fmt_notice('Select some text first (or tap Select).'); return false; }
+  internal_clip = clip;
+
+  let done = false;
+  try { done = document.execCommand('copy'); } catch (err) { done = false; }
+  if (!done && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(clip.text).catch(() => { /* the in-app copy still works */ });
+  }
+  fmt_notice('Copied');
+  return true;
+}
+
+function cut_selection() {
+  if (!copy_selection()) return;
+  document.execCommand('delete');
+}
+
+// Delete the selected text (nothing goes to the clipboard).
+function clear_selected_text() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0 || sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) {
+    fmt_notice('Select some text first (or tap Select).');
+    return;
+  }
+  document.execCommand('delete');
+}
+
+// Pasted web content must never bring scripts or event handlers along.
+function clean_pasted_html(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script, style, iframe, object, embed, link, meta, form, base').forEach((el) => el.remove());
+  doc.body.querySelectorAll('*').forEach((el) => {
+    Array.from(el.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on') || ((name === 'href' || name === 'src') && /^\s*javascript:/i.test(attr.value))) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+  return doc.body.innerHTML;
+}
+
+function escape_html(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+}
+
+// Reads the system clipboard if the phone allows it: { html, text } or null.
+async function read_system_clipboard() {
+  if (!navigator.clipboard) return null;
+  try {
+    if (navigator.clipboard.read) {
+      const items = await navigator.clipboard.read();
+      let html = '', text = '';
+      for (const item of items) {
+        if (item.types.includes('text/html')) html = await (await item.getType('text/html')).text();
+        if (item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+      }
+      if (html || text) return { html, text };
+    }
+  } catch (err) { /* fall through to readText */ }
+  try {
+    if (navigator.clipboard.readText) {
+      const text = await navigator.clipboard.readText();
+      if (text) return { html: '', text };
+    }
+  } catch (err) { /* blocked */ }
+  return null;
+}
+
+async function paste_clipboard() {
+  const editor = get_editor();
+  const from_system = await read_system_clipboard();
+  const clip = from_system || internal_clip;
+
+  if (!clip) {
+    fmt_notice('Nothing to paste yet. Copy some text first.');
+    return false;
+  }
+
+  // The permission prompt can take focus away: put the selection back.
+  keyboard_off();
+  editor.focus({ preventScroll: true });
+  const sel = window.getSelection();
+  const target = (select_mode && select_range && !select_range.collapsed) ? select_range : (saved_range || frozen_range);
+  if (target) {
+    sel.removeAllRanges();
+    sel.addRange(target.cloneRange());
+  }
+
+  const html = clip.html ? clean_pasted_html(clip.html) : escape_html(clip.text || '');
+  document.execCommand('insertHTML', false, html);
+  return true;
+}
+
 // ── Active option + − / + stepping + action-row title ──────────────────────
 // The last option chosen in the Formatting list is the "active option". Its
 // name stays in the list's title, and the − / + buttons step ONLY what that
@@ -2702,6 +2813,12 @@ function run_fmt_item(item, value_override) {
         case 'space-after':   apply_block_style('marginBottom', val + 'px'); break;
 
         case 'css':           applied_value = apply_css_item(item, stepping ? value_override : undefined); break;
+        case 'clip-copy':     copy_selection(); break;
+        case 'clip-cut':      cut_selection(); break;
+        case 'clip-paste':
+          paste_clipboard().then(() => { fmt_finish(null); update_undo_redo_buttons(); });
+          break;
+        case 'clear-text':    clear_selected_text(); break;
         case 'decor-none':    remove_text_decoration(); break;
         case 'valign-baseline': remove_vertical_align(); break;
         case 'list-pos':      apply_list_position(val); break;
@@ -3452,7 +3569,13 @@ const HELP_TOPICS_NOTE = [
     'Making a new change after undoing clears what ↷ could redo.'
   ]},
   { title: 'Effects', items: [
+    'Clear: deletes the selected text.',
     'Clear formatting: removes quotes, indent, spacing, alignment and character formatting (lists stay).',
+    'Copy: copies the selected text so it can be pasted.',
+    'Cut: copies the selected text and removes it from the note.',
+    'Paste: puts the copied text at the cursor, replacing any selected text.',
+    'Select a word or words first (tap Select, or drag the handles); Copy, Cut and Paste work on that selection.',
+    'If your phone asks permission to paste from the clipboard, allow it; otherwise Paste uses what you last copied inside the note.',
     'Glow: None, Soft, Medium or Strong light around the letters.',
     'Outline: None, Thin, Medium or Thick line around the letters.'
   ]},
