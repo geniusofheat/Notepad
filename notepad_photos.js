@@ -213,12 +213,17 @@ function select_note_photo(image) {
   image.classList.add('note-photo-selected');
 
   show_photo_resize_handle(image);
+
+  // Tell the Formatting list a photo is active (title "Photo", − / + resize it).
+  if (typeof on_photo_selected === 'function') on_photo_selected(image);
 }
 
 
 // ─── § PHOTO SELECTION — clear current selection ─────────────────────────
 
 function clear_photo_selection() {
+
+  const had_photo = !!selected_note_photo;
 
   if (selected_note_photo) {
     selected_note_photo.classList.remove('note-photo-selected');
@@ -231,6 +236,8 @@ function clear_photo_selection() {
 
   selected_note_photo = null;
   photo_resize_state = null;
+
+  if (had_photo && typeof on_photo_deselected === 'function') on_photo_deselected();
 }
 
 
@@ -432,6 +439,12 @@ function handle_photo_document_click(event) {
   }
 
   if (event.target.closest('.photo-resize-handle')) {
+    return;
+  }
+
+  // Using the Formatting list or the action row (−, +, ...) is how the photo
+  // is changed, so those taps keep it selected.
+  if (event.target.closest('#formatToolbarSingle, #noteActionLine')) {
     return;
   }
 

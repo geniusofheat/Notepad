@@ -656,6 +656,7 @@ function open_note(cat_id, item_id) {
   reset_fmt_toolbar();
   document.getElementById('note-textarea').innerHTML = item.content || '';
   wrap_loose_top_level();
+  if (typeof load_fonts_in_html === 'function') load_fonts_in_html(item.content);
   reset_history();
 
   // Makes the Enter key create a real new block (a <div>) instead of
@@ -767,6 +768,18 @@ function hide_back_btn() {
 
 // ── AUTO SAVE ────────────────────────────────────────────────────────────────
 
+// The note's HTML for saving / undo: a photo's blue "selected" outline is only
+// a temporary look and must not be stored.
+function editor_clean_html() {
+  const editor = document.getElementById('note-textarea');
+  if (!editor.querySelector('.note-photo-selected')) return editor.innerHTML;
+  const copy = editor.cloneNode(true);
+  copy.querySelectorAll('.note-photo-selected').forEach((el) => {
+    el.classList.remove('note-photo-selected');
+  });
+  return copy.innerHTML;
+}
+
 function auto_save_current_note() {
   if (nav.level !== 'note' || !nav.item_id) return;
 
@@ -782,7 +795,7 @@ function auto_save_current_note() {
     else box.removeAttribute('checked');
   });
 
-  item.content = editor.innerHTML;
+  item.content = editor_clean_html();
   item.updated = new Date().toISOString();
   const stored = save_notes();
 
@@ -1652,6 +1665,10 @@ function toggle_fmt_branch(li) {
 function handle_fmt_menu_click(event) {
   const head = event.target.closest('.fmt-head');
   if (head) {
+    // Font family groups (Serif, Display, ...) fill in the first time they open.
+    if (head.parentElement.hasAttribute('data-font-style') && typeof populate_font_group === 'function') {
+      populate_font_group(head.parentElement);
+    }
     toggle_fmt_branch(head.parentElement);
     return;
   }
@@ -1863,8 +1880,66 @@ function apply_block_tag(tag) {
 // Clear formatting: removes character formatting (bold, color, size, font,
 // highlight, ...) AND paragraph formatting (headings, quotes, indent,
 // spacing, alignment) from the selection. Lists are left as lists.
+// Character styles from the Font / Text / Effects menus that the browser's own
+// "remove format" leaves behind.
+const CLEARABLE_SPAN_STYLES = ['textShadow', 'webkitTextStroke', 'letterSpacing', 'wordSpacing', 'textTransform',
+  'textDecorationLine', 'fontKerning', 'fontVariantCaps', 'fontStyle', 'fontWeight', 'fontSize', 'fontFamily', 'color', 'backgroundColor'];
+
+// Spans touched by a range (collected BEFORE the browser's own remove-format
+// reshuffles the note).
+function spans_touching(range) {
+  const editor = get_editor();
+  if (!range || range.collapsed) return [];
+  return Array.from(editor.querySelectorAll('span')).filter((span) => range.intersectsNode(span));
+}
+
+function clear_span_styles(spans) {
+  spans.forEach((span) => {
+    if (!span.isConnected) return;
+    CLEARABLE_SPAN_STYLES.forEach((prop) => { span.style[prop] = ''; });
+    if (!span.getAttribute('style')) span.removeAttribute('style');
+    if (span.attributes.length === 0) {
+      while (span.firstChild) span.parentNode.insertBefore(span.firstChild, span);
+      span.remove();
+    }
+  });
+}
+
 function clear_all_formatting() {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  const chosen = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+  const spans = spans_touching(chosen);
+
+  // Remember the selection by text position; unwrapping spans can collapse it.
+  let keep = null;
+  if (chosen && !chosen.collapsed) {
+    const pre = document.createRange();
+    pre.selectNodeContents(editor);
+    pre.setEnd(chosen.startContainer, chosen.startOffset);
+    keep = { start: pre.toString().length, length: chosen.toString().length };
+  }
+
   document.execCommand('removeFormat');
+  clear_span_styles(spans);
+
+  if (keep) {
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+    let pos = 0, node, start = null, end = null;
+    while ((node = walker.nextNode())) {
+      const next = pos + node.data.length;
+      if (!start && keep.start <= next) start = [node, keep.start - pos];
+      if (!end && keep.start + keep.length <= next) { end = [node, keep.start + keep.length - pos]; break; }
+      pos = next;
+    }
+    if (start && end) {
+      const r = document.createRange();
+      r.setStart(start[0], start[1]);
+      r.setEnd(end[0], end[1]);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+  }
 
   const blocks = get_selected_blocks();
   reset_paragraph_formatting();
@@ -2029,7 +2104,7 @@ function insert_paragraph_break(soft) {
 
 function reset_paragraph_formatting() {
   get_selected_blocks().forEach((block) => {
-    ['marginLeft', 'textIndent', 'marginTop', 'marginBottom', 'lineHeight', 'textAlign'].forEach((prop) => {
+    ['marginLeft', 'textIndent', 'marginTop', 'marginBottom', 'lineHeight', 'textAlign', 'direction', 'whiteSpace', 'wordBreak'].forEach((prop) => {
       block.style[prop] = '';
     });
     if (!block.getAttribute('style')) block.removeAttribute('style');
@@ -2052,6 +2127,177 @@ function apply_alignment(kind) {
 }
 
 
+// ── CSS options from the Font / Text / Effects categories ───────────────────
+// An item with data-act="css" sets one CSS property. data-scope="block" puts it
+// on the paragraph(s); otherwise it goes on a span around the selected text (or
+// the word the cursor is in). Items with data-min / data-max / data-inc are
+// numbers that − / + step through.
+
+function css_value_for(item, override) {
+  const unit = item.dataset.unit || '';
+  const raw = override !== undefined ? override : item.dataset.val;
+  if (!item.hasAttribute('data-min') && override === undefined) return { shown: raw, css: raw };
+  const num = typeof raw === 'number' ? raw : parseFloat(raw);
+  return { shown: num, css: String(num) + unit };
+}
+
+// Returns the number applied (for range items) so the title can show it.
+function apply_css_item(item, override) {
+  const prop = item.dataset.prop;
+  const v = css_value_for(item, override);
+  if (item.dataset.scope === 'block') {
+    apply_block_style(prop, v.css);
+  } else if (!apply_span_style({ [prop]: v.css })) {
+    fmt_notice('Select some text first (or tap Select).');
+  }
+  return item.hasAttribute('data-min') ? v.shown : undefined;
+}
+
+// Decoration > None: take off underline and line-through, whichever way they were set.
+function remove_text_decoration() {
+  ['underline', 'strikeThrough'].forEach((command) => {
+    try { if (document.queryCommandState(command)) document.execCommand(command); } catch (err) { /* ignore */ }
+  });
+  apply_span_style({ textDecorationLine: 'none' });
+}
+
+// Vertical align > Baseline: take off superscript / subscript.
+function remove_vertical_align() {
+  ['superscript', 'subscript'].forEach((command) => {
+    try { if (document.queryCommandState(command)) document.execCommand(command); } catch (err) { /* ignore */ }
+  });
+}
+
+// Lists > Marker position: markers inside or outside the text block.
+function apply_list_position(where) {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  const lists = Array.from(editor.querySelectorAll('ul, ol')).filter((list) => range.intersectsNode(list));
+  if (lists.length === 0) { fmt_notice('The cursor is not inside a list.'); return; }
+  lists.forEach((list) => { list.style.listStylePosition = where; });
+}
+
+
+// ── Photo options (the Photo category) ──────────────────────────────────────
+// They act on the photo that is selected (tap a photo: blue border). Choosing
+// a photo selects it, puts "Photo" in the Formatting list's title and gives
+// − / + the photo's size.
+
+function selected_photo() {
+  return (typeof selected_note_photo !== 'undefined' && selected_note_photo && get_editor().contains(selected_note_photo))
+    ? selected_note_photo : null;
+}
+
+// filter / transform are made of several functions; set one without losing the others.
+function photo_function_set(img, prop, name, text) {
+  const map = {};
+  const re = /([\w-]+)\(([^)]*)\)/g;
+  let m;
+  while ((m = re.exec(img.style[prop] || ''))) map[m[1]] = m[2];
+  if (text === null) delete map[name]; else map[name] = text;
+  const joined = Object.keys(map).map((k) => k + '(' + map[k] + ')').join(' ');
+  img.style[prop] = joined;
+  if (!img.getAttribute('style')) img.removeAttribute('style');
+}
+
+const PHOTO_FILTER_NEUTRAL = { blur: 0, brightness: 100, contrast: 100, grayscale: 0, 'hue-rotate': 0, invert: 0, saturate: 100, sepia: 0 };
+
+function photo_current_percent(img) {
+  const box = img.parentElement ? img.parentElement.clientWidth : 0;
+  return box > 0 ? Math.round(img.getBoundingClientRect().width / box * 100) : 100;
+}
+
+function apply_photo_item(item, override) {
+  const img = selected_photo();
+  if (!img) { fmt_notice('Tap a photo first.'); return override; }
+
+  const unit = item.dataset.unit || '';
+  const ranged = item.hasAttribute('data-min');
+  const raw = override !== undefined ? override : item.dataset.val;
+  const num = ranged ? (typeof raw === 'number' ? raw : parseFloat(raw)) : null;
+  const prop = item.dataset.prop;
+  const fn = item.dataset.fn;
+
+  if (fn) {
+    const [target, name] = fn.split(':');            // filter:blur, transform:rotate
+    if (target === 'filter') {
+      const neutral = PHOTO_FILTER_NEUTRAL[name];
+      photo_function_set(img, 'filter', name, num === neutral ? null : num + unit);
+    } else if (target === 'transform') {
+      photo_function_set(img, 'transform', name, num === 0 ? null : num + 'deg');
+    }
+  } else if (prop === 'align') {
+    const side = String(raw);
+    ['float', 'marginLeft', 'marginRight'].forEach((k) => { img.style[k] = ''; });
+    if (side === 'center') { img.style.marginLeft = 'auto'; img.style.marginRight = 'auto'; }
+    else if (side === 'right') { img.style.marginLeft = 'auto'; img.style.marginRight = '0'; }
+    else if (side === 'left') { img.style.marginLeft = '0'; img.style.marginRight = 'auto'; }
+    else if (side === 'wrap-left') { img.style.float = 'left'; img.style.marginRight = '12px'; }
+    else if (side === 'wrap-right') { img.style.float = 'right'; img.style.marginLeft = '12px'; }
+  } else if (prop === 'flip') {
+    photo_function_set(img, 'transform', 'scaleX', raw === 'h' ? '-1' : null);
+    photo_function_set(img, 'transform', 'scaleY', raw === 'v' ? '-1' : null);
+  } else if (prop === 'height') {
+    img.style.height = num === 0 ? 'auto' : num + 'px';
+  } else if (prop === 'opacity') {
+    img.style.opacity = num >= 100 ? '' : String(num / 100);
+  } else if (prop === 'width') {
+    img.style.width = num + '%';
+  } else if (ranged) {
+    img.style[prop] = num + unit;
+    // A border needs a style and a color to show up.
+    if (prop === 'borderWidth' && num > 0) {
+      if (!img.style.borderStyle || img.style.borderStyle === 'none') img.style.borderStyle = 'solid';
+      if (!img.style.borderColor) img.style.borderColor = 'black';
+    }
+  } else {
+    img.style[prop] = String(raw);
+    if (prop === 'borderColor' && !img.style.borderStyle) img.style.borderStyle = 'solid';
+  }
+
+  if (!img.getAttribute('style')) img.removeAttribute('style');
+  if (typeof position_photo_resize_handle === 'function') position_photo_resize_handle();
+  return ranged ? num : undefined;
+}
+
+function photo_operation(kind) {
+  const img = selected_photo();
+  if (!img) { fmt_notice('Tap a photo first.'); return; }
+
+  if (kind === 'alt') {
+    const text = window.prompt('Describe this photo (alt text):', img.alt || '');
+    if (text !== null) img.alt = text;
+  } else if (kind === 'reset') {
+    img.removeAttribute('style');
+    img.style.height = 'auto';
+    if (typeof position_photo_resize_handle === 'function') position_photo_resize_handle();
+  } else if (kind === 'remove') {
+    if (typeof clear_photo_selection === 'function') clear_photo_selection();
+    img.remove();
+  }
+}
+
+// Called by the photo code when a photo becomes selected / deselected.
+let photo_label_active = false;   // list title reads "Photo" until another photo option is chosen
+
+function on_photo_selected(img) {
+  keyboard_off();
+  photo_label_active = true;
+  const size_item = document.querySelector('#fmtMenu .fmt-item[data-act="photo"][data-prop="width"]');
+  if (size_item) set_active_fmt_item(size_item, photo_current_percent(img), 'Photo');
+}
+window.on_photo_selected = on_photo_selected;
+
+function on_photo_deselected() {
+  if (active_fmt_item && active_fmt_item.dataset.act && /^photo/.test(active_fmt_item.dataset.act)) {
+    set_active_fmt_item(null);
+  }
+}
+window.on_photo_deselected = on_photo_deselected;
+
+
 // ── Active option + − / + stepping + action-row title ──────────────────────
 // The last option chosen in the Formatting list is the "active option". Its
 // name stays in the list's title, and the − / + buttons step ONLY what that
@@ -2072,6 +2318,7 @@ const CONTROL_TITLES = {
 
 function control_title(item) {
   if (!item) return '';
+  if (item.dataset.ctl) return item.dataset.ctl;
   if (item.dataset.cmd === 'bold') return 'Weight';
   return CONTROL_TITLES[item.dataset.act] || '';
 }
@@ -2080,11 +2327,21 @@ function control_title(item) {
 //  - Bold: weight 100-900 in steps of 100
 //  - Font Size: 1-50 px
 //  - List options: the space after each list item (0-50 px), default 6 px
+//  - CSS options with data-min / data-max / data-inc (letter spacing, line
+//    height, photo size, opacity, ...)
 function range_spec(item) {
   if (!item) return null;
   if (item.dataset.act === 'list') return { min: 0, max: 50, inc: 1, kind: 'listgap' };
   if (item.dataset.act === 'fontpx') return { min: 1, max: 50, inc: 1, kind: 'fontpx' };
   if (item.dataset.cmd === 'bold') return { min: 100, max: 900, inc: 100, kind: 'weight' };
+  if (item.hasAttribute('data-min') && item.hasAttribute('data-max')) {
+    return {
+      min: parseFloat(item.dataset.min),
+      max: parseFloat(item.dataset.max),
+      inc: parseFloat(item.dataset.inc) || 1,
+      kind: item.dataset.act === 'photo' ? 'photo' : 'css'
+    };
+  }
   return null;
 }
 
@@ -2110,6 +2367,11 @@ function fmt_item_title(item, value) {
   if (spec && value !== null && value !== undefined) {
     if (spec.kind === 'fontpx') return 'Size: ' + value + ' px';
     if (spec.kind === 'weight') return 'Weight: ' + value;
+    if (spec.kind === 'css' || spec.kind === 'photo') {
+      const unit = item.dataset.unit || '';
+      const shown = unit === '%' || unit === '°' ? value + unit : (unit ? value + ' ' + unit.trim() : String(value));
+      return (item.dataset.ctl || '') + ': ' + shown;
+    }
   }
   return item.dataset.short || item.dataset.label || item.textContent.trim();
 }
@@ -2168,7 +2430,7 @@ function update_action_title() {
     : text);
 }
 
-function set_active_fmt_item(item, value) {
+function set_active_fmt_item(item, value, label_override) {
   active_fmt_item = item;
   const spec = range_spec(item);
   if (item) select_controls_selection = false;     // a chosen option takes over − / +
@@ -2180,11 +2442,11 @@ function set_active_fmt_item(item, value) {
   } else if (spec.kind === 'listgap') {
     active_fmt_value = list_gap_at_selection();
   } else {
-    active_fmt_value = parseInt(item.dataset.val, 10);
+    active_fmt_value = parseFloat(item.dataset.val);
   }
 
   const label = document.getElementById('fmtCategoryLabel');
-  if (label) label.textContent = item ? fmt_item_title(item, active_fmt_value) : 'Category';
+  if (label) label.textContent = label_override || (item ? fmt_item_title(item, active_fmt_value) : 'Category');
   update_step_buttons();
 }
 
@@ -2227,7 +2489,7 @@ function step_fmt(direction) {
 
   const spec = range_spec(active_fmt_item);
   if (spec) {
-    const next = Math.min(spec.max, Math.max(spec.min, active_fmt_value + (direction > 0 ? spec.inc : -spec.inc)));
+    const next = Math.round(Math.min(spec.max, Math.max(spec.min, active_fmt_value + (direction > 0 ? spec.inc : -spec.inc))) * 100) / 100;
     if (next === active_fmt_value) return;
     run_fmt_item(active_fmt_item, next);
     return;
@@ -2285,7 +2547,10 @@ function run_fmt_item(item, value_override) {
     } else {
       switch (act) {
         case 'size':          apply_font_choice('size:' + val); break;
-        case 'fontname':      apply_font_choice('name:' + val); break;
+        case 'fontname':
+          if (typeof load_google_font === 'function') load_google_font(val);   // download it from Google Fonts if needed
+          apply_font_choice('name:' + val);
+          break;
         case 'color':         apply_font_choice('color:' + val); break;
         case 'hilite':        apply_highlight_choice('bg:' + val); break;
 
@@ -2318,9 +2583,21 @@ function run_fmt_item(item, value_override) {
         case 'indent-default': toggle_default_indent('on'); break;
         case 'indent-remove': toggle_default_indent('off'); break;
 
-        case 'linespace':     apply_block_style('lineHeight', val === 'single' ? '' : val); break;
+        case 'linespace': {
+          applied_value = stepping ? value_override : parseFloat(val);
+          apply_block_style('lineHeight', applied_value === 1 ? '' : String(applied_value));
+          break;
+        }
         case 'space-before':  apply_block_style('marginTop', val + 'px'); break;
         case 'space-after':   apply_block_style('marginBottom', val + 'px'); break;
+
+        case 'css':           applied_value = apply_css_item(item, stepping ? value_override : undefined); break;
+        case 'decor-none':    remove_text_decoration(); break;
+        case 'valign-baseline': remove_vertical_align(); break;
+        case 'list-pos':      apply_list_position(val); break;
+
+        case 'photo':         applied_value = apply_photo_item(item, stepping ? value_override : undefined); break;
+        case 'photo-op':      photo_operation(val); break;
 
         case 'style': {
           // Quote switches on and off: pressing it again on a quote restores normal text.
@@ -2338,7 +2615,11 @@ function run_fmt_item(item, value_override) {
   }
 
   fmt_finish(item);
-  set_active_fmt_item(item, applied_value);
+
+  // Stepping the photo's size keeps the word "Photo" in the list's title.
+  const keep_photo_label = stepping && photo_label_active && !!selected_photo();
+  if (!stepping) photo_label_active = false;
+  set_active_fmt_item(item, applied_value, keep_photo_label ? 'Photo' : undefined);
 }
 window.run_fmt_item = run_fmt_item;
 
@@ -2903,7 +3184,7 @@ function record_history() {
   const editor = get_editor();
   if (!editor) return;
 
-  const html = editor.innerHTML;
+  const html = editor_clean_html();
   const top = undo_stack[undo_stack.length - 1];
   if (top && top.html === html) return;
 
@@ -3053,66 +3334,74 @@ const HELP_TOPICS_NOTE = [
     'Each note starts with fresh undo history when you open it.',
     'Making a new change after undoing clears what ↷ could redo.'
   ]},
-  { title: 'Text', items: [
-    'Bold: makes the text bold; − and + change its Weight from 100 (thin) to 900 (heaviest) in steps of 100.',
-    'Italic and Underline: switch on and off.',
-    'Strikethrough, Superscript and Subscript also appear here and under Effects.',
-    'Text size: Small, Medium, Large or X-Large; − and + move through them.',
-    'Highlight: puts a color behind the text.'
+  { title: 'Effects', items: [
+    'Clear formatting: removes quotes, indent, spacing, alignment and character formatting (lists stay).',
+    'Glow: None, Soft, Medium or Strong light around the letters.',
+    'Outline: None, Thin, Medium or Thick line around the letters.'
+  ]},
+  { title: 'Font', items: [
+    'Family: Google Fonts, grouped as Display, Handwriting, Monospace, Sans Serif and Serif, plus System (Monospace, Sans-serif, Serif).',
+    'Open a Family group to see its fonts A to Z; a font downloads from Google the first time you use it, so you need internet for that.',
+    'After you choose a font, − and + move to the previous or next font in the same group.',
+    'Kerning: Auto, Normal or None (spacing between letter pairs).',
+    'Size: 1 px to 50 px; everything you type starts at 18 px, and − and + change it 1 px at a time.',
+    'Style: Italic, Normal or Oblique.',
+    'Variant: Normal, Small caps, All small caps, Petite caps or Titling caps.',
+    'Weight: Thin, Extra light, Light, Normal, Medium, Semi bold, Bold, Extra bold or Black; − and + step it by 100.',
+    'With the cursor in a word the change applies to that word; between words, select text first.'
+  ]},
+  { title: 'Lists', items: [
+    'Bulleted: Bullet, Circle or Square markers.',
+    'Numbered: Lowercase letters (a, b, c), Lowercase Roman (i, ii, iii), Numbers (1, 2, 3), Numbers with zero (01, 02, 03), Uppercase letters (A, B, C) or Uppercase Roman (I, II, III).',
+    'Checkboxes: Insert checkbox puts a tick box at the cursor, and ticks are saved with the note.',
+    'Marker position: Inside or Outside the text block.',
+    'Pressing Enter at the end of an item starts the next item.',
+    'After you choose a list, the action row title reads Spacing and − / + change the space after each list item (6 px to start).',
+    'Remove list: turns the list back into plain lines.'
   ]},
   { title: 'Paragraph', items: [
     'Pressing Enter starts a new paragraph, with 12 px of space after it.',
     'New paragraph: starts a new paragraph at the cursor.',
-    'Line break: starts a new line inside the same paragraph.',
-    'Reset paragraph formatting: removes indent, spacing and alignment from the paragraph.'
-  ]},
-  { title: 'Lists', items: [
-    'Bulleted: Bullet, Circle or Square markers.',
-    'Numbered: Numbers (1, 2, 3), lowercase letters (a, b, c) or Uppercase Roman (I, II, III).',
-    'Pressing Enter at the end of an item starts the next item.',
-    'After you choose a list, the action row title reads Spacing and − / + change the space after each list item (6 px to start).',
-    'Checkboxes: Insert checkbox puts a tick box at the cursor, and ticks are saved with the note.',
-    'Remove list: turns the list back into plain lines.'
-  ]},
-  { title: 'Alignment', items: [
-    'Align left, Center, Align right and Justify.',
-    '− and + move through the four choices.',
-    'Alignment applies to the whole paragraph the cursor is in.'
-  ]},
-  { title: 'Indentation', items: [
-    'Choose None, 5, 10, 15, 20, 25, 30, 40 or 50 px.',
-    'Indent moves only the first line of the paragraph.',
-    '− and + step through the sizes.',
-    'None removes the indent.'
-  ]},
-  { title: 'Spacing', items: [
-    'Line spacing: Single, 1.5 lines or Double.',
-    'Space before paragraph: None, 6, 12 or 24 px.',
-    'Space after paragraph: None, 6, 12 or 24 px (every paragraph starts with 12 px).',
-    '− and + move through the choices in the group you used last.'
-  ]},
-  { title: 'Font', items: [
-    'Font family: Crimson Pro (the default), Playfair Display, Space Mono, Sans-serif, Serif or Monospace.',
-    'Size: 1 px to 50 px; everything you type starts at 18 px.',
-    'After you choose a size, − and + change it 1 px at a time.',
-    'With the cursor in a word, the size applies to that word; between words, select text first.'
-  ]},
-  { title: 'Color', items: [
-    'Font color: Black, Gray, Red, Orange, Green, Blue or Purple.',
-    'Highlight color: Yellow, Orange, Red, Green, Blue, Pink or None.',
-    '− and + step through the colors in the same group.'
-  ]},
-  { title: 'Effects', items: [
-    'Strikethrough, Superscript and Subscript.',
+    'Line break (same paragraph): starts a new line inside the same paragraph.',
     'Quote: sets the paragraph off as a quotation; tap it again to turn it off.',
-    'Clear formatting: removes quotes, indent, spacing, alignment and character formatting (lists stay).'
+    'Reset paragraph formatting: removes indent, spacing, alignment and the other paragraph settings.',
+    'Space after and Space before: None, 6, 12, 18, 24, 36 or 48 px; − and + change it 1 px at a time.'
   ]},
-  { title: 'Photos', items: [
+  { title: 'Photo (formatting a photo)', items: [
+    'Tap a photo in the note: it gets a blue border and the Formatting list title reads Photo.',
+    'While a photo is selected, − and + make it smaller or larger (the action row title reads Size).',
+    'Open the Photo category to change anything else about the selected photo; tap away from the photo to let go of it.',
+    'Align: Center, Left, Right, Wrap text around left side or Wrap text around right side.',
+    'Alt text: Edit alt text… describes the photo.',
+    'Background color: a color behind the photo (or None).',
+    'Border color, Border style (Dashed, Dotted, Double, Groove, None, Ridge, Solid), Border width and Border radius.',
+    'Filters: Blur, Brightness, Contrast, Grayscale, Hue rotate, Invert, Saturate and Sepia.',
+    'Flip: Horizontal, None or Vertical; Rotate turns the photo by degrees.',
+    'Height: Auto or a set height; Object fit (Contain, Cover, Fill, None, Scale down) decides how the picture fills that height.',
+    'Margin bottom, Margin left, Margin right and Margin top: space around the photo.',
+    'Opacity: how see-through the photo is; Padding: space between the photo and its border.',
+    'Shadow: Hard, Medium, None, Soft or Strong.',
+    'Size (width): the photo\'s width as a percent of the note, 5% to 100%.',
+    'Remove photo: Delete this photo; Reset photo: Remove all photo styling.'
+  ]},
+  { title: 'Text', items: [
+    'Align: Center, Justify, Left or Right.',
+    'Background color: the color behind the letters (also None).',
+    'Color: Black, Blue, Brown, Cyan, Gold, Gray, Green, Magenta, Navy, Orange, Pink, Purple, Red, Teal, White or Yellow.',
+    'Decoration: Line through, None, Overline or Underline.',
+    'Direction: Left to right or Right to left.',
+    'Indent: None, or 5 to 50 px, on the first line of the paragraph only.',
+    'Letter spacing and Word spacing: Normal, or more or less space in px; − and + change it 1 px at a time.',
+    'Line height: Single, 1.15 lines, 1.5 lines, Double, 2.5 lines or Triple; − and + change it by 0.1.',
+    'Shadow: Hard, Medium, None or Soft shadow behind the letters.',
+    'Transform: Capitalize, Lowercase, None or Uppercase.',
+    'Vertical align: Baseline, Subscript or Superscript.',
+    'White space: Normal, No wrap, Pre or Pre wrap; Word break: Break all, Keep all or Normal.'
+  ]},
+  { title: 'Adding photos', items: [
     'Photos + opens your picture library; you can pick several photos at once.',
-    'Photos are inserted at the cursor.',
-    'Tap a photo to select it; an orange ↘ handle appears on its corner.',
-    'Drag the handle to resize the photo, then tap elsewhere to let go.',
-    'Very large photos make a note heavy and can slow syncing, so a few at a time works best.'
+    'Photos are shrunk to a sensible size and inserted at the cursor.',
+    'The orange ↘ handle on a selected photo can also be dragged to resize it.'
   ]},
   { title: 'Typing and the keypad', items: [
     'The keypad appears only when you tap into the note itself.',
