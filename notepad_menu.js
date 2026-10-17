@@ -548,6 +548,12 @@
     m.classList.toggle('ctx-image', !!selected_photo());
     m.classList.toggle('active-on', !!select_mode);
     if (select_mode) m.classList.add('view-active');
+    else {
+      // The list opens on the options for what is being worked on: Image for a
+      // selected image, otherwise Text.
+      const cat = active_category();
+      if (cat) cat.classList.add('open');
+    }
     nav_update();
     m.scrollTop = 0;
     refresh_states();
@@ -562,6 +568,7 @@
   };
 
   window.fmt_refresh_states = function () { refresh_states(); };
+  window.fmt_nav_update = nav_update;
 
   // Active button pressed on / off.
   window.fmt_active_changed = function (on) {
@@ -570,7 +577,7 @@
     if (on) {
       toggle_fmt_menu(true);          // opens on the Active list
     } else if (m.classList.contains('open')) {
-      window.fmt_menu_opened();       // back to the normal main list
+      toggle_fmt_menu(false);         // Active off hides the list again
     }
   };
 
@@ -578,8 +585,8 @@
     const t = event.target;
     const m = menu_el();
 
+    if (m.classList.contains('view-active') && !t.closest('.fmt-active-row')) return;   // Active list: no navigation
     if (t.closest('#fmtBack')) { fmt_back(); return; }
-    if (t.closest('#fmtActiveLink')) { show_active_view(true); return; }
 
     const row = t.closest('.fmt-active-row');
     if (row) { turn_off_entry(row); return; }
@@ -615,6 +622,7 @@
       close_fmt_menu();
       save_editor_selection();
       if (!photo_cursor_ready()) { show_photo_message('Please place the cursor in the notepad area where you would like the photo to be placed.'); return; }
+      capture_photo_insert_point();
       if (typeof open_photo_input === 'function') open_photo_input('files');
       return;
     }

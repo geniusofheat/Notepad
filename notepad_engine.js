@@ -2335,7 +2335,7 @@ function photo_current_percent(img) {
 
 function apply_photo_item(item, override) {
   const img = selected_photo();
-  if (!img) { fmt_notice('Tap a photo first.'); return override; }
+  if (!img) { fmt_notice('Tap an image first.'); return override; }
 
   const unit = item.dataset.unit || '';
   const ranged = item.hasAttribute('data-min');
@@ -2388,7 +2388,8 @@ function apply_photo_item(item, override) {
 
 function photo_operation(kind) {
   const img = selected_photo();
-  if (!img) { fmt_notice('Tap a photo first.'); return; }
+  if (kind === 'move') { start_photo_move(img); return; }
+  if (!img) { fmt_notice('Tap an image first.'); return; }
 
   if (kind === 'alt') {
     const text = window.prompt('Describe this photo (alt text):', img.alt || '');
@@ -2404,13 +2405,13 @@ function photo_operation(kind) {
 }
 
 // Called by the photo code when a photo becomes selected / deselected.
-let photo_label_active = false;   // list title reads "Photo" until another photo option is chosen
+let photo_label_active = false;   // list title reads "Image" until another photo option is chosen
 
 function on_photo_selected(img) {
   keyboard_off();
   photo_label_active = true;
   const size_item = document.querySelector('#fmtMenu .fmt-item[data-act="photo"][data-prop="width"]');
-  if (size_item) set_active_fmt_item(size_item, photo_current_percent(img), 'Photo');
+  if (size_item) set_active_fmt_item(size_item, photo_current_percent(img), 'Image');
 }
 window.on_photo_selected = on_photo_selected;
 
@@ -2873,10 +2874,10 @@ function run_fmt_item(item, value_override) {
 
   fmt_finish(item);
 
-  // Stepping the photo's size keeps the word "Photo" in the list's title.
+  // Stepping the photo's size keeps the word "Image" in the list's title.
   const keep_photo_label = stepping && photo_label_active && !!selected_photo();
   if (!stepping) photo_label_active = false;
-  set_active_fmt_item(item, applied_value, keep_photo_label ? 'Photo' : undefined);
+  set_active_fmt_item(item, applied_value, keep_photo_label ? 'Image' : undefined);
 }
 window.run_fmt_item = run_fmt_item;
 
@@ -3584,10 +3585,10 @@ const HELP_TOPICS_NOTE = [
     'Press Active once: the first word of the note turns blue and the action row title reads All.',
     'Active formatting lists only the formatting that is on for the blue text, each with an On label.',
     'Tap a row there to turn that formatting off for the blue text; the row disappears.',
-    'Use Back to reach the normal list; anything you choose there changes the blue text.',
+    'While Active is on the list only shows what is on; there is no navigation. Turn Active off to pick new formatting.',
     'Tap any word to select it instead, or drag the handles to select more.',
     'With no text selected, Active formatting shows what is on for the text you will type next.',
-    'Press Active again to turn it off; the list returns to its normal main categories.',
+    'Press Active again to turn it off; the list closes.',
     'In an empty note, Active waits and picks the first word as soon as text appears.'
   ]},
   { title: 'The action row (←  →  −  +)', items: [
@@ -3666,6 +3667,7 @@ const HELP_TOPICS_NOTE = [
   { title: 'Insert', items: [
     'Image: first tap in the note where the photo should go, then Insert > Image and pick Camera, Photos or Files.',
     'Files: opens your phone\'s file browser; open folders, use its Back, and pick a picture.',
+    'Move image: tap the image first (blue border), choose Move image, then tap in the note where it should go.',
     'Only pictures can go into a note; anything else is skipped with a message.'
   ]},
   { title: 'Adding photos', items: [

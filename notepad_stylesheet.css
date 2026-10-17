@@ -875,8 +875,7 @@ p {
 }
 
 .fmt-menu.nav-1 > .fmt-back,
-.fmt-menu.nav-2 > .fmt-back,
-.fmt-menu.view-active > .fmt-back {
+.fmt-menu.nav-2 > .fmt-back {
   display: flex;
   align-items: center;
   min-height: 42px;
@@ -898,20 +897,6 @@ p {
   margin-right: 10px;
   font-size: 22px;
   line-height: 1;
-}
-
-.fmt-menu.nav-0.active-on > .fmt-active-link {
-  display: flex;
-  align-items: center;
-  min-height: 42px;
-  padding: 6px 12px;
-  font-family: 'Playfair Display', serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: #1a1a2e;
-  background: #fff6d6;
-  border-bottom: 1px solid rgba(100, 149, 237, 0.25);
-  cursor: pointer;
 }
 
 .fmt-menu.view-active > .fmt-active-view {

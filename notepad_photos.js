@@ -16,8 +16,23 @@ function photo_cursor_ready() {
   return !!(typeof saved_range !== 'undefined' && saved_range && editor.contains(saved_range.commonAncestorContainer));
 }
 
-function show_photo_message(text) {
+// Where the photo will go: the cursor (end of a selection, so no text is replaced).
+let photo_insert_range = null;
+function capture_photo_insert_point() {
+  const editor = document.getElementById('note-textarea');
+  let r = null;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) r = sel.getRangeAt(0).cloneRange();
+  else if (typeof saved_range !== 'undefined' && saved_range && editor.contains(saved_range.commonAncestorContainer)) r = saved_range.cloneRange();
+  if (r) r.collapse(false);
+  photo_insert_range = r;
+}
+window.capture_photo_insert_point = capture_photo_insert_point;
+
+function show_photo_message(text, title) {
   const t = document.getElementById('photoMsgText');
+  const h = document.getElementById('photoMsgTitle');
+  if (h) h.textContent = title || 'Place the cursor first';
   const o = document.getElementById('photoMsgOverlay');
   if (t) t.textContent = text;
   if (o) o.classList.add('open');
@@ -33,6 +48,7 @@ function trigger_photo_picker() {
     show_photo_message('Please place the cursor in the notepad area where you would like the photo to be placed.');
     return;
   }
+  capture_photo_insert_point();
   if (typeof keyboard_off === 'function') keyboard_off();
   const sheet = document.getElementById('photoSourceOverlay');
   if (sheet) sheet.classList.add('open');
@@ -180,7 +196,15 @@ function insert_note_photos(event) {
     function insert_one_photo(photo_url, photo_name) {
 
       editor.focus({ preventScroll: true });
-      restore_editor_selection();
+      // focus() can drop the caret at the top of the note: put it back where the
+      // user placed it when they chose Insert > Image.
+      if (photo_insert_range && editor.contains(photo_insert_range.commonAncestorContainer)) {
+        const s0 = window.getSelection();
+        s0.removeAllRanges();
+        s0.addRange(photo_insert_range.cloneRange());
+      } else {
+        restore_editor_selection();
+      }
 
       const sel = window.getSelection();
 
@@ -227,6 +251,7 @@ function insert_note_photos(event) {
           sel.addRange(newRange);
 
           save_editor_selection();
+          photo_insert_range = newRange.cloneRange();
         }
       }
 
@@ -349,6 +374,7 @@ function clear_photo_selection() {
   }
 
   selected_note_photo = null;
+  photo_move_img = null;
   photo_resize_state = null;
 
   if (had_photo && typeof on_photo_deselected === 'function') on_photo_deselected();
@@ -558,7 +584,7 @@ function handle_photo_document_click(event) {
 
   // Using the Formatting list or the action row (−, +, ...) is how the photo
   // is changed, so those taps keep it selected.
-  if (event.target.closest('#formatToolbarSingle, #noteActionLine')) {
+  if (event.target.closest('#formatToolbarSingle, #noteActionLine, #photoMsgOverlay')) {
     return;
   }
 
@@ -664,4 +690,72 @@ document.addEventListener('DOMContentLoaded', function() {
     attributes: true,
     attributeFilter: ['style']
   });
+});
+
+// ─── § PHOTO MOVE — Image > Size & Position > Move ──────────────────────
+// Choose Move, then tap in the note where the image should go.
+
+let photo_move_img = null;
+
+function start_photo_move(img) {
+  if (!img) {
+    photo_move_img = null;
+    show_photo_message('First tap the image you want to move until it has the blue border. Then choose Move, and tap in the note where you want the image to go.', 'Select the image first');
+    return;
+  }
+  photo_move_img = img;
+  show_photo_message('Tap in the note where you want the image moved to. The image will be placed at that spot.', 'Move image');
+}
+window.start_photo_move = start_photo_move;
+
+function caret_range_at(x, y) {
+  if (document.caretRangeFromPoint) return document.caretRangeFromPoint(x, y);
+  if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(x, y);
+    if (!pos) return null;
+    const r = document.createRange();
+    r.setStart(pos.offsetNode, pos.offset); r.collapse(true);
+    return r;
+  }
+  return null;
+}
+
+function handle_photo_move_click(event) {
+  if (!photo_move_img) return;
+  const editor = document.getElementById('note-textarea');
+  const img = photo_move_img;
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (event.target.closest('.note-photo') === img) { photo_move_img = null; return; }   // tapped itself: cancel
+
+  let range = caret_range_at(event.clientX, event.clientY);
+  if (!range || !editor.contains(range.commonAncestorContainer)) {
+    range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+  }
+  // Never drop it inside itself.
+  if (img.contains(range.commonAncestorContainer)) { photo_move_img = null; return; }
+
+  // The blank line that followed the image goes with it.
+  const next = img.nextElementSibling;
+  const lone_spacer = next && next.tagName === 'DIV' && next.children.length === 1 && next.firstElementChild.tagName === 'BR' && !next.textContent;
+  if (lone_spacer) next.remove();
+  img.remove();
+
+  range.insertNode(img);
+  const spacer = document.createElement('div');
+  spacer.appendChild(document.createElement('br'));
+  img.parentNode.insertBefore(spacer, img.nextSibling);
+
+  photo_move_img = null;
+  select_note_photo(img);
+  if (typeof keyboard_off === 'function') keyboard_off();
+  if (typeof auto_save_current_note === 'function') auto_save_current_note();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const editor = document.getElementById('note-textarea');
+  if (editor) editor.addEventListener('click', handle_photo_move_click, true);
 });
