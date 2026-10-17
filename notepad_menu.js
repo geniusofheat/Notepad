@@ -499,7 +499,7 @@
       toggles.forEach((it) => entries.push({ title: own_text(it), shown: '', off: probe(it).off, mode }));
       if (values.length || g.loose) {
         const off_probe = values.length ? probe(values[0]) : g.first.p;
-        entries.push({ title: head_text(g.group), shown, off: off_probe.off, mode });
+        entries.push({ title: head_text(g.group), shown, off: off_probe.off, mode, group: g.group });
       }
     });
     return entries;
@@ -526,6 +526,8 @@
   // ── The Active list ───────────────────────────────────────────────────────
 
   let active_entries = [];
+  let quick_open = '';      // title of the On row whose values are showing
+  let quick_items = [];
 
   function render_active_view(entries) {
     const view = document.getElementById('fmtActiveView');
@@ -557,6 +559,31 @@
         row.appendChild(v);
       }
       view.appendChild(row);
+
+      // On + quick select: the row the user opened shows its list of values right under it.
+      if (entry.group && entry.title === quick_open) {
+        row.classList.add('quick-open');
+        const box = document.createElement('div');
+        box.className = 'fmt-quick-list';
+        quick_items = [];
+        const g = entry.group;
+        if (g.hasAttribute('data-font-style') && typeof populate_font_group === 'function') populate_font_group(g);
+        Array.from(g.querySelectorAll('.fmt-item')).filter((it) => it.dataset.act || it.dataset.cmd).forEach((it) => {
+          const q = document.createElement('div');
+          q.className = 'fmt-item fmt-quick-item';
+          q.dataset.quick = String(quick_items.length);
+          if (it.querySelector(':scope > .fmt-on')) {
+            const on = document.createElement('span');
+            on.className = 'fmt-on';
+            on.textContent = 'On';
+            q.appendChild(on);
+          }
+          q.appendChild(document.createTextNode(own_text(it)));
+          quick_items.push(it);
+          box.appendChild(q);
+        });
+        view.appendChild(box);
+      }
     });
   }
 
@@ -565,6 +592,7 @@
     if (!m) return;
     m.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));
     m.classList.toggle('view-active', !!on);
+    quick_open = '';
     nav_update();
     m.scrollTop = 0;
     refresh_states();
@@ -649,11 +677,25 @@
     const t = event.target;
     const m = menu_el();
 
-    if (m.classList.contains('view-active') && !t.closest('.fmt-active-row')) return;   // Active list: no navigation
+    if (m.classList.contains('view-active')) {
+      const qi = t.closest('.fmt-quick-item');
+      if (qi) {                       // a value picked from the quick list
+        const it = quick_items[parseInt(qi.dataset.quick, 10)];
+        if (it) { run_fmt_item(it); refresh_states(); }
+        return;
+      }
+      const arow = t.closest('.fmt-active-row');
+      if (arow) {                     // an On title opens / closes its quick list
+        const entry = active_entries[parseInt(arow.dataset.entry, 10)];
+        if (entry && entry.group) {
+          quick_open = quick_open === entry.title ? '' : entry.title;
+          render_active_view(active_entries);
+        }
+      }
+      return;                         // Active list: no other navigation
+    }
     if (t.closest('#fmtBack')) { fmt_back(); return; }
 
-    const row = t.closest('.fmt-active-row');
-    if (row) return;   // Active only shows what is applied; rows do nothing
     if (t.closest('#fmtActiveView')) return;
 
     const head = t.closest('.fmt-head');

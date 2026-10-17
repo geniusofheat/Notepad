@@ -914,18 +914,19 @@ p {
   display: none;
 }
 
-.fmt-menu.nav-1 > .fmt-cat.open > .fmt-head,
-.fmt-menu.nav-2 > .fmt-cat.open > .fmt-head {
-  display: none;
-}
-
 .fmt-menu.nav-2 > .fmt-cat.open > .fmt-sub > .fmt-subcat:not(.open),
 .fmt-menu.nav-2 > .fmt-cat.open > .fmt-sub > .fmt-item {
   display: none;
 }
 
+/* the main category and the open subcategory stay on screen as the titles of what is below */
+.fmt-menu.nav-1 > .fmt-cat.open > .fmt-head,
+.fmt-menu.nav-2 > .fmt-cat.open > .fmt-head {
+  background: #cfe3f7;
+  font-size: 18px;
+}
 .fmt-menu.nav-2 > .fmt-cat.open > .fmt-sub > .fmt-subcat.open > .fmt-head {
-  display: none;
+  background: #e8f1fa;
 }
 
 /* context: a selected image shows Image, otherwise Text; Insert always */
@@ -970,6 +971,24 @@ p {
 
 .fmt-active-view .fmt-item::before {
   content: none;
+}
+
+.fmt-active-row {
+  cursor: pointer;
+}
+
+.fmt-active-row.quick-open {
+  font-weight: 700;
+}
+
+.fmt-quick-list {
+  border-left: 3px solid #444444;
+  margin: 0 0 4px 12px;
+}
+
+.fmt-quick-list .fmt-quick-item {
+  padding-left: 12px;
+  font-weight: 400;
 }
 
 .fmt-empty-row {
