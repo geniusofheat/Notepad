@@ -2824,6 +2824,71 @@ function restore_typing_style(snap, item) {
   });
 }
 
+// Where formatted typing will start. A phone tap on the note (to bring the keypad back)
+// moves the caret and the browser forgets the formats switched on for the next typed text.
+// So the spot and those formats are remembered; when the tap lands next to the spot (no
+// other text between) the caret goes back to it and the formats are switched on again.
+let typing_state = null;     // { range, on: [commands], values: { command: value } }
+
+function same_point(a, b) {
+  return a && b && a.compareBoundaryPoints(Range.START_TO_START, b) === 0;
+}
+
+function record_typing_state(item) {
+  const sel = window.getSelection();
+  if (select_mode || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return;
+  if (!is_character_item(item)) return;
+
+  const here = sel.getRangeAt(0).cloneRange();
+  const carried = typing_state && same_point(typing_state.range, here) ? typing_state : null;
+  const state = { range: here, on: [], values: carried ? Object.assign({}, carried.values) : {} };
+
+  TYPING_TOGGLES.forEach((c) => { try { if (document.queryCommandState(c)) state.on.push(c); } catch (err) { /* ignore */ } });
+  const own = { color: 'foreColor', hilite: 'backColor', fontname: 'fontName' }[item.dataset.act];
+  if (own) { try { state.values[own] = document.queryCommandValue(own); } catch (err) { /* ignore */ } }
+  typing_state = state;
+}
+
+// Returns true when the caret was put back on the remembered spot.
+function snap_to_typing_state() {
+  const st = typing_state;
+  const sel = window.getSelection();
+  if (!st || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return false;
+  if (!range_in_editor(st.range)) { typing_state = null; return false; }
+  const r = sel.getRangeAt(0);
+  if (same_point(r, st.range)) return true;
+
+  const block_of = (n) => { const el = n.nodeType === 3 ? n.parentElement : n; return el && el.closest ? el.closest('div, p, li, blockquote') : null; };
+  if (block_of(r.startContainer) !== block_of(st.range.startContainer)) return false;
+
+  const between = document.createRange();
+  if (r.compareBoundaryPoints(Range.START_TO_START, st.range) <= 0) {
+    between.setStart(r.startContainer, r.startOffset);
+    between.setEnd(st.range.startContainer, st.range.startOffset);
+  } else {
+    between.setStart(st.range.startContainer, st.range.startOffset);
+    between.setEnd(r.startContainer, r.startOffset);
+  }
+  if (between.toString().replace(/\u200b/g, '') !== '') return false;   // tapped somewhere else
+
+  sel.removeAllRanges();
+  sel.addRange(st.range.cloneRange());
+  save_editor_selection();
+  return true;
+}
+
+function reapply_typing_state() {
+  const st = typing_state;
+  const sel = window.getSelection();
+  if (!st || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return;
+  st.on.forEach((c) => { try { if (!document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ } });
+  Object.keys(st.values).forEach((c) => {
+    try {
+      if (document.queryCommandValue(c) !== st.values[c]) document.execCommand(c === 'backColor' ? 'hiliteColor' : c, false, st.values[c]);
+    } catch (err) { /* ignore */ }
+  });
+}
+
 function run_fmt_item(item, value_override) {
   if (nav.level !== 'note') return;
 
@@ -2931,6 +2996,7 @@ function run_fmt_item(item, value_override) {
   }
 
   restore_typing_style(typing_snapshot, item);
+  record_typing_state(item);
   fmt_finish(item);
 
   // Stepping the photo's size keeps the word "Image" in the list's title.
@@ -3396,7 +3462,7 @@ document.addEventListener('DOMContentLoaded', () => {
       close_fmt_menu();
 
       // Tapping into the note to type: bring the keypad back.
-      if (!select_mode) { setTimeout(keyboard_on, 0); return; }
+      if (!select_mode) { setTimeout(() => { const snapped = snap_to_typing_state(); keyboard_on(); if (snapped) reapply_typing_state(); }, 0); return; }
       if (e.target.tagName === 'INPUT') return;   // checkbox tap
       setTimeout(select_word_at_caret, 0);
     });
