@@ -3527,6 +3527,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    editor.addEventListener('beforeinput', () => { ensure_typing_span(); });
     editor.addEventListener('compositionstart', () => { typing_composing = true; });
     editor.addEventListener('compositionend', () => { typing_composing = false; });
     editor.addEventListener('focus', () => setTimeout(ensure_typing_span, 0));
