@@ -2054,6 +2054,14 @@ function apply_pending_span_style(styles) {
   if (sel.rangeCount === 0 || !range_in_editor(sel.getRangeAt(0))) return false;
   if (!sel.isCollapsed) sel.collapseToEnd();
 
+  // Moving the caret into the new span would drop formats that were switched on for
+  // the next typed text (Bold, Italic, colors ...). Remember them and switch them back on.
+  const toggles = ['bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript'];
+  const was_on = toggles.filter((c) => { try { return document.queryCommandState(c); } catch (err) { return false; } });
+  const values = ['foreColor', 'backColor', 'fontName'].map((c) => {
+    try { return [c, document.queryCommandValue(c)]; } catch (err) { return [c, '']; }
+  });
+
   const range = sel.getRangeAt(0);
   const node = range.startContainer;
   const here = node.nodeType === 3 ? node.parentElement : node;
@@ -2073,6 +2081,15 @@ function apply_pending_span_style(styles) {
   caret.collapse(true);
   sel.removeAllRanges();
   sel.addRange(caret);
+
+  was_on.forEach((c) => {
+    try { if (!document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ }
+  });
+  values.forEach(([c, v]) => {
+    try {
+      if (v && document.queryCommandValue(c) !== v) document.execCommand(c === 'backColor' ? 'hiliteColor' : c, false, v);
+    } catch (err) { /* ignore */ }
+  });
   return true;
 }
 
@@ -2409,6 +2426,7 @@ let photo_label_active = false;   // list title reads "Image" until another phot
 
 function on_photo_selected(img) {
   keyboard_off();
+  if (typeof fmt_update_label === 'function') fmt_update_label(true);
   photo_label_active = true;
   const size_item = document.querySelector('#fmtMenu .fmt-item[data-act="photo"][data-prop="width"]');
   if (size_item) set_active_fmt_item(size_item, photo_current_percent(img), 'Image');
@@ -2416,6 +2434,7 @@ function on_photo_selected(img) {
 window.on_photo_selected = on_photo_selected;
 
 function on_photo_deselected() {
+  if (typeof fmt_update_label === 'function') fmt_update_label(true);
   if (active_fmt_item && active_fmt_item.dataset.act && /^photo/.test(active_fmt_item.dataset.act)) {
     set_active_fmt_item(null);
   }
@@ -2681,8 +2700,8 @@ function set_active_fmt_item(item, value, label_override) {
     active_fmt_value = parseFloat(item.dataset.val);
   }
 
-  const label = document.getElementById('fmtCategoryLabel');
-  if (label) label.textContent = label_override || (item ? fmt_item_title(item, active_fmt_value) : 'Category');
+  // The list's title stays a main category; the option's name shows in the action row.
+  if (typeof fmt_update_label === 'function') fmt_update_label();
   update_step_buttons();
 }
 
@@ -2767,9 +2786,48 @@ function is_character_item(item) {
   return CHARACTER_ACTS.indexOf(item.dataset.act) !== -1;
 }
 
+// Formats switched on for the text typed next (Bold, Italic, a color ...) live only in the
+// browser's "typing style", and putting the caret back for the next menu choice wipes it.
+// Remember them before a choice and switch back on whatever the choice did not change.
+const TYPING_TOGGLES = ['bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript'];
+const TYPING_VALUES = ['foreColor', 'backColor', 'fontName'];
+
+function snapshot_typing_style() {
+  const sel = window.getSelection();
+  if (select_mode || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return null;
+  const snap = { on: [], values: [] };
+  TYPING_TOGGLES.forEach((c) => { try { if (document.queryCommandState(c)) snap.on.push(c); } catch (err) { /* ignore */ } });
+  TYPING_VALUES.forEach((c) => { try { snap.values.push([c, document.queryCommandValue(c)]); } catch (err) { /* ignore */ } });
+  return snap;
+}
+
+function restore_typing_style(snap, item) {
+  if (!snap) return;
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return;
+  const own_cmd = (item.dataset.cmd || '').toLowerCase();
+  const own_act = item.dataset.act || '';
+  snap.on.forEach((c) => {
+    if (c.toLowerCase() === own_cmd) {
+      // Pressing it again turns it off (the caret reset made the press look like a first one).
+      try { if (document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ }
+      return;
+    }
+    try { if (!document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ }
+  });
+  snap.values.forEach(([c, v]) => {
+    if (!v) return;
+    if ((c === 'foreColor' && own_act === 'color') || (c === 'backColor' && own_act === 'hilite') || (c === 'fontName' && own_act === 'fontname')) return;
+    try {
+      if (document.queryCommandValue(c) !== v) document.execCommand(c === 'backColor' ? 'hiliteColor' : c, false, v);
+    } catch (err) { /* ignore */ }
+  });
+}
+
 function run_fmt_item(item, value_override) {
   if (nav.level !== 'note') return;
 
+  const typing_snapshot = snapshot_typing_style();
   lock_scroll_position();
   fmt_prime_selection();
   freeze_editor_selection();   // keeps the legacy frozen-selection helpers in step
@@ -2872,6 +2930,7 @@ function run_fmt_item(item, value_override) {
     console.error('Formatting command failed:', act || cmd, err);
   }
 
+  restore_typing_style(typing_snapshot, item);
   fmt_finish(item);
 
   // Stepping the photo's size keeps the word "Image" in the list's title.
@@ -3276,6 +3335,7 @@ function reset_fmt_toolbar() {
   const ed = get_editor();
   if (ed) ed.removeAttribute('inputmode');   // a freshly opened note is typeable
 
+  if (typeof clear_photo_selection === 'function') clear_photo_selection();   // nothing is selected in a freshly opened note
   set_active_fmt_item(null);
   document.querySelectorAll('#fmtMenu .open').forEach((el) => el.classList.remove('open'));
 }
