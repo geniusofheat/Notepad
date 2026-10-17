@@ -2054,14 +2054,6 @@ function apply_pending_span_style(styles) {
   if (sel.rangeCount === 0 || !range_in_editor(sel.getRangeAt(0))) return false;
   if (!sel.isCollapsed) sel.collapseToEnd();
 
-  // Moving the caret into the new span would drop formats that were switched on for
-  // the next typed text (Bold, Italic, colors ...). Remember them and switch them back on.
-  const toggles = ['bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript'];
-  const was_on = toggles.filter((c) => { try { return document.queryCommandState(c); } catch (err) { return false; } });
-  const values = ['foreColor', 'backColor', 'fontName'].map((c) => {
-    try { return [c, document.queryCommandValue(c)]; } catch (err) { return [c, '']; }
-  });
-
   const range = sel.getRangeAt(0);
   const node = range.startContainer;
   const here = node.nodeType === 3 ? node.parentElement : node;
@@ -2082,14 +2074,6 @@ function apply_pending_span_style(styles) {
   sel.removeAllRanges();
   sel.addRange(caret);
 
-  was_on.forEach((c) => {
-    try { if (!document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ }
-  });
-  values.forEach(([c, v]) => {
-    try {
-      if (v && document.queryCommandValue(c) !== v) document.execCommand(c === 'backColor' ? 'hiliteColor' : c, false, v);
-    } catch (err) { /* ignore */ }
-  });
   return true;
 }
 
@@ -2786,49 +2770,11 @@ function is_character_item(item) {
   return CHARACTER_ACTS.indexOf(item.dataset.act) !== -1;
 }
 
-// Formats switched on for the text typed next (Bold, Italic, a color ...) live only in the
-// browser's "typing style", and putting the caret back for the next menu choice wipes it.
-// Remember them before a choice and switch back on whatever the choice did not change.
-const TYPING_TOGGLES = ['bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript'];
-const TYPING_VALUES = ['foreColor', 'backColor', 'fontName'];
-
-function snapshot_typing_style() {
-  const sel = window.getSelection();
-  if (select_mode || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return null;
-  const snap = { on: [], values: [] };
-  TYPING_TOGGLES.forEach((c) => { try { if (document.queryCommandState(c)) snap.on.push(c); } catch (err) { /* ignore */ } });
-  TYPING_VALUES.forEach((c) => { try { snap.values.push([c, document.queryCommandValue(c)]); } catch (err) { /* ignore */ } });
-  return snap;
-}
-
-function restore_typing_style(snap, item) {
-  if (!snap) return;
-  const sel = window.getSelection();
-  if (sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return;
-  const own_cmd = (item.dataset.cmd || '').toLowerCase();
-  const own_act = item.dataset.act || '';
-  snap.on.forEach((c) => {
-    if (c.toLowerCase() === own_cmd) {
-      // Pressing it again turns it off (the caret reset made the press look like a first one).
-      try { if (document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ }
-      return;
-    }
-    try { if (!document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ }
-  });
-  snap.values.forEach(([c, v]) => {
-    if (!v) return;
-    if ((c === 'foreColor' && own_act === 'color') || (c === 'backColor' && own_act === 'hilite') || (c === 'fontName' && own_act === 'fontname')) return;
-    try {
-      if (document.queryCommandValue(c) !== v) document.execCommand(c === 'backColor' ? 'hiliteColor' : c, false, v);
-    } catch (err) { /* ignore */ }
-  });
-}
-
 // Where formatted typing will start. A phone tap on the note (to bring the keypad back)
 // moves the caret and the browser forgets the formats switched on for the next typed text.
 // So the spot and those formats are remembered; when the tap lands next to the spot (no
 // other text between) the caret goes back to it and the formats are switched on again.
-let typing_state = null;     // { range, on: [commands], values: { command: value } }
+let typing_state = null;     // { range }: the spot where the formatted span waits for text
 
 function same_point(a, b) {
   return a && b && a.compareBoundaryPoints(Range.START_TO_START, b) === 0;
@@ -2838,15 +2784,7 @@ function record_typing_state(item) {
   const sel = window.getSelection();
   if (select_mode || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return;
   if (!is_character_item(item)) return;
-
-  const here = sel.getRangeAt(0).cloneRange();
-  const carried = typing_state && same_point(typing_state.range, here) ? typing_state : null;
-  const state = { range: here, on: [], values: carried ? Object.assign({}, carried.values) : {} };
-
-  TYPING_TOGGLES.forEach((c) => { try { if (document.queryCommandState(c)) state.on.push(c); } catch (err) { /* ignore */ } });
-  const own = { color: 'foreColor', hilite: 'backColor', fontname: 'fontName' }[item.dataset.act];
-  if (own) { try { state.values[own] = document.queryCommandValue(own); } catch (err) { /* ignore */ } }
-  typing_state = state;
+  typing_state = { range: sel.getRangeAt(0).cloneRange() };
 }
 
 // Returns true when the caret was put back on the remembered spot.
@@ -2877,22 +2815,63 @@ function snap_to_typing_state() {
   return true;
 }
 
-function reapply_typing_state() {
-  const st = typing_state;
+// Formats for the text typed next are written into the note as an empty (zero-width) span
+// at the cursor. The browser's own "typing style" (execCommand with no selection) is ignored
+// by many phone keyboards, so Italic, Bold, colors and fonts would never reach the typed
+// text. Returns true when the choice was handled here.
+function apply_typing_span(item, val) {
+  const editor = get_editor();
   const sel = window.getSelection();
-  if (!st || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return;
-  st.on.forEach((c) => { try { if (!document.queryCommandState(c)) document.execCommand(c); } catch (err) { /* ignore */ } });
-  Object.keys(st.values).forEach((c) => {
-    try {
-      if (document.queryCommandValue(c) !== st.values[c]) document.execCommand(c === 'backColor' ? 'hiliteColor' : c, false, st.values[c]);
-    } catch (err) { /* ignore */ }
-  });
+  if (select_mode || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return false;
+
+  const node = sel.getRangeAt(0).startContainer;
+  const el = node.nodeType === 3 ? node.parentElement : node;
+  if (!el || !el.closest) return false;
+  const cs = getComputedStyle(el);
+  const cmd = item.dataset.cmd;
+  const act = item.dataset.act;
+
+  // Underline / line through cannot be switched off from inside a run that has them.
+  const decorated = (word) => {
+    for (let n = el; n && n !== editor.parentElement; n = n.parentElement) {
+      if ((getComputedStyle(n).textDecorationLine || '').indexOf(word) !== -1) return true;
+    }
+    return false;
+  };
+  const own_span = (el !== editor && el.tagName === 'SPAN' && el.textContent === ZWSP) ? el : null;
+  const own_decor = own_span ? (own_span.style.textDecorationLine || '').split(/\s+/).filter((t) => t && t !== 'none') : [];
+
+  let styles = null;
+  if (cmd === 'bold') {
+    styles = { fontWeight: parseInt(cs.fontWeight, 10) >= 600 ? '400' : '700' };
+  } else if (cmd === 'italic') {
+    styles = { fontStyle: (cs.fontStyle === 'italic' || cs.fontStyle === 'oblique') ? 'normal' : 'italic' };
+  } else if (cmd === 'underline' || cmd === 'strikeThrough') {
+    const word = cmd === 'underline' ? 'underline' : 'line-through';
+    if (decorated(word)) {
+      if (!own_decor.includes(word)) return false;                 // from an outer run: leave it to the browser
+      const rest = own_decor.filter((t) => t !== word);
+      styles = { textDecorationLine: rest.length ? rest.join(' ') : 'none' };
+    } else {
+      styles = { textDecorationLine: own_decor.concat(word).join(' ') };
+    }
+  } else if (cmd === 'superscript' || cmd === 'subscript') {
+    const want = cmd === 'superscript' ? 'super' : 'sub';
+    styles = { verticalAlign: cs.verticalAlign === want ? 'baseline' : want };
+  } else if (act === 'color') {
+    styles = { color: val };
+  } else if (act === 'fontname') {
+    styles = { fontFamily: val };
+  } else if (act === 'hilite') {
+    styles = { backgroundColor: val === 'none' ? 'transparent' : val };
+  }
+  if (!styles) return false;
+  return apply_pending_span_style(styles);
 }
 
 function run_fmt_item(item, value_override) {
   if (nav.level !== 'note') return;
 
-  const typing_snapshot = snapshot_typing_style();
   lock_scroll_position();
   fmt_prime_selection();
   freeze_editor_selection();   // keeps the legacy frozen-selection helpers in step
@@ -2910,8 +2889,13 @@ function run_fmt_item(item, value_override) {
   let applied_value;     // for options stepped by number (font size, weight, list spacing)
   const stepping = value_override !== undefined;
 
+  const typed_as_span = !stepping && (cmd || act === 'color' || act === 'fontname' || act === 'hilite') && apply_typing_span(item, val);
+  if (act === 'fontname' && typed_as_span && typeof load_google_font === 'function') load_google_font(val);
+
   try {
-    if (cmd === 'bold' && stepping) {
+    if (typed_as_span) {
+      if (cmd === 'bold') applied_value = current_weight();
+    } else if (cmd === 'bold' && stepping) {
       // − / + on Bold: exact weight (100-900) on the selected text
       if (apply_weight(value_override)) applied_value = value_override;
       else { applied_value = active_fmt_value; fmt_notice('Select some text first (or press Active).'); }
@@ -2995,7 +2979,6 @@ function run_fmt_item(item, value_override) {
     console.error('Formatting command failed:', act || cmd, err);
   }
 
-  restore_typing_style(typing_snapshot, item);
   record_typing_state(item);
   fmt_finish(item);
 
@@ -3310,6 +3293,12 @@ function enter_select_mode() {
   const editor = get_editor();
   if (!editor) return;
 
+  // Where the cursor is when Active is pressed: that word is the one inspected.
+  let caret = null;
+  const live = window.getSelection();
+  if (live.rangeCount > 0 && range_in_editor(live.getRangeAt(0))) caret = live.getRangeAt(0).cloneRange();
+  else if (saved_range && range_in_editor(saved_range)) caret = saved_range.cloneRange();
+
   select_mode = true;
   select_controls_selection = true;      // − / + stretch the selection; title reads "All"
   select_pending_first_word = false;
@@ -3324,8 +3313,19 @@ function enter_select_mode() {
     btn.setAttribute('aria-pressed', 'true');
   }
 
-  const first = find_first_word_range();
-  if (first) {
+  let picked = false;
+  if (caret && caret.collapsed) {
+    const s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(caret);
+    select_word_at_caret();
+    picked = !!select_range;
+  }
+
+  const first = picked ? null : find_first_word_range();
+  if (picked) {
+    // the word at the cursor is already selected
+  } else if (first) {
     set_select_range(first, true);
   } else {
     // Empty note: stay in Select mode; the first word is picked once text
@@ -3462,7 +3462,7 @@ document.addEventListener('DOMContentLoaded', () => {
       close_fmt_menu();
 
       // Tapping into the note to type: bring the keypad back.
-      if (!select_mode) { setTimeout(() => { const snapped = snap_to_typing_state(); keyboard_on(); if (snapped) reapply_typing_state(); }, 0); return; }
+      if (!select_mode) { setTimeout(() => { snap_to_typing_state(); keyboard_on(); }, 0); return; }
       if (e.target.tagName === 'INPUT') return;   // checkbox tap
       setTimeout(select_word_at_caret, 0);
     });
