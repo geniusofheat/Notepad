@@ -883,7 +883,7 @@ function hide_back_btn() {
 function editor_clean_html() {
   const editor = document.getElementById('note-textarea');
   const has_photo_mark = !!editor.querySelector('.note-photo-selected');
-  if (!has_photo_mark && editor.innerHTML.indexOf('\u200b') === -1) return editor.innerHTML;
+  if (!has_photo_mark && editor.innerHTML.indexOf('\u200b') === -1 && editor.innerHTML.indexOf('data-tf') === -1) return editor.innerHTML;
   const copy = editor.cloneNode(true);
   copy.querySelectorAll('.note-photo-selected').forEach((el) => {
     el.classList.remove('note-photo-selected');
@@ -892,7 +892,8 @@ function editor_clean_html() {
   copy.querySelectorAll('span').forEach((el) => {
     if (el.textContent === '\u200b' && !el.querySelector('img, input')) el.remove();
   });
-  return copy.innerHTML;
+  copy.querySelectorAll('[data-tf]').forEach((el) => el.removeAttribute('data-tf'));
+  return copy.innerHTML.replace(/\u200b/g, '');
 }
 
 function auto_save_current_note() {
@@ -2657,7 +2658,7 @@ function update_action_title() {
     text = 'All';                 // press it to select the whole note
     pressable = true;
   } else {
-    text = control_title(active_fmt_item);
+    text = active_fmt_item ? fmt_item_title(active_fmt_item, active_fmt_value).replace(/^[^:]+:\s*/, '') : '';
     pressable = select_mode && !!text;   // press it to go back to stretching the selection
   }
 
@@ -2770,107 +2771,173 @@ function is_character_item(item) {
   return CHARACTER_ACTS.indexOf(item.dataset.act) !== -1;
 }
 
-// Where formatted typing will start. A phone tap on the note (to bring the keypad back)
-// moves the caret and the browser forgets the formats switched on for the next typed text.
-// So the spot and those formats are remembered; when the tap lands next to the spot (no
-// other text between) the caret goes back to it and the formats are switched on again.
-let typing_state = null;     // { range }: the spot where the formatted span waits for text
+// ── Formatting for newly typed text ─────────────────────────────────────────
+// Choosing a character format in the list (Active off) never touches words already in the
+// note. It is added to "the format for new text", which stays on until it is switched off.
+// That format is written into the note as an empty zero-width span at the cursor, and the
+// cursor sits inside it, so whatever is typed next picks it up. It works the same whether the
+// format is chosen before or after the cursor is put in the note, and it does not depend on
+// the keyboard (phone keyboards ignore the browser's own "typing style").
 
-function same_point(a, b) {
-  return a && b && a.compareBoundaryPoints(Range.START_TO_START, b) === 0;
+let typing_format = {};          // { cssProperty: value }
+let typing_composing = false;    // a phone keyboard is in the middle of composing a word
+let typing_ensuring = false;
+
+function typing_key(obj) {
+  return JSON.stringify(Object.keys(obj).sort().map((k) => [k, obj[k]]));
 }
 
-function record_typing_state(item) {
+function caret_element() {
   const sel = window.getSelection();
-  if (select_mode || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return;
-  if (!is_character_item(item)) return;
-  typing_state = { range: sel.getRangeAt(0).cloneRange() };
-}
-
-// Returns true when the caret was put back on the remembered spot.
-function snap_to_typing_state() {
-  const st = typing_state;
-  const sel = window.getSelection();
-  if (!st || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return false;
-  if (!range_in_editor(st.range)) { typing_state = null; return false; }
-  const r = sel.getRangeAt(0);
-  if (same_point(r, st.range)) return true;
-
-  const block_of = (n) => { const el = n.nodeType === 3 ? n.parentElement : n; return el && el.closest ? el.closest('div, p, li, blockquote') : null; };
-  if (block_of(r.startContainer) !== block_of(st.range.startContainer)) return false;
-
-  const between = document.createRange();
-  if (r.compareBoundaryPoints(Range.START_TO_START, st.range) <= 0) {
-    between.setStart(r.startContainer, r.startOffset);
-    between.setEnd(st.range.startContainer, st.range.startOffset);
-  } else {
-    between.setStart(st.range.startContainer, st.range.startOffset);
-    between.setEnd(r.startContainer, r.startOffset);
-  }
-  if (between.toString().replace(/\u200b/g, '') !== '') return false;   // tapped somewhere else
-
-  sel.removeAllRanges();
-  sel.addRange(st.range.cloneRange());
-  save_editor_selection();
-  return true;
-}
-
-// Formats for the text typed next are written into the note as an empty (zero-width) span
-// at the cursor. The browser's own "typing style" (execCommand with no selection) is ignored
-// by many phone keyboards, so Italic, Bold, colors and fonts would never reach the typed
-// text. Returns true when the choice was handled here.
-function apply_typing_span(item, val) {
-  const editor = get_editor();
-  const sel = window.getSelection();
-  if (select_mode || sel.rangeCount === 0 || !sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) return false;
-
+  if (sel.rangeCount === 0 || !range_in_editor(sel.getRangeAt(0))) return null;
   const node = sel.getRangeAt(0).startContainer;
-  const el = node.nodeType === 3 ? node.parentElement : node;
-  if (!el || !el.closest) return false;
-  const cs = getComputedStyle(el);
+  return node.nodeType === 3 ? node.parentElement : node;
+}
+
+// What a property is right now at the cursor: the new-text format if it sets it, else the note.
+function effective_style(prop) {
+  if (typing_format[prop] !== undefined) return typing_format[prop];
+  const el = caret_element();
+  return el ? getComputedStyle(el)[prop] : '';
+}
+
+function decor_tokens(value) {
+  return String(value || '').split(/\s+/).filter((t) => t && t !== 'none');
+}
+
+// Works out what a menu item does to the new-text format. Returns { handled, value }.
+function typing_format_item(item, val, override) {
   const cmd = item.dataset.cmd;
   const act = item.dataset.act;
+  let value;
 
-  // Underline / line through cannot be switched off from inside a run that has them.
-  const decorated = (word) => {
-    for (let n = el; n && n !== editor.parentElement; n = n.parentElement) {
-      if ((getComputedStyle(n).textDecorationLine || '').indexOf(word) !== -1) return true;
-    }
-    return false;
+  const set = (prop, v) => { typing_format[prop] = v; };
+  const toggle_decor = (word) => {
+    const now = decor_tokens(effective_style('textDecorationLine'));
+    const next = now.includes(word) ? now.filter((t) => t !== word) : now.concat(word);
+    if (next.length) set('textDecorationLine', next.join(' ')); else delete typing_format.textDecorationLine;
   };
-  const own_span = (el !== editor && el.tagName === 'SPAN' && el.textContent === ZWSP) ? el : null;
-  const own_decor = own_span ? (own_span.style.textDecorationLine || '').split(/\s+/).filter((t) => t && t !== 'none') : [];
 
-  let styles = null;
   if (cmd === 'bold') {
-    styles = { fontWeight: parseInt(cs.fontWeight, 10) >= 600 ? '400' : '700' };
+    if (override !== undefined) set('fontWeight', String(override));
+    else set('fontWeight', parseInt(effective_style('fontWeight'), 10) >= 600 ? '400' : '700');
+    value = parseInt(typing_format.fontWeight, 10);
   } else if (cmd === 'italic') {
-    styles = { fontStyle: (cs.fontStyle === 'italic' || cs.fontStyle === 'oblique') ? 'normal' : 'italic' };
-  } else if (cmd === 'underline' || cmd === 'strikeThrough') {
-    const word = cmd === 'underline' ? 'underline' : 'line-through';
-    if (decorated(word)) {
-      if (!own_decor.includes(word)) return false;                 // from an outer run: leave it to the browser
-      const rest = own_decor.filter((t) => t !== word);
-      styles = { textDecorationLine: rest.length ? rest.join(' ') : 'none' };
-    } else {
-      styles = { textDecorationLine: own_decor.concat(word).join(' ') };
-    }
+    const now = effective_style('fontStyle');
+    set('fontStyle', (now === 'italic' || now === 'oblique') ? 'normal' : 'italic');
+  } else if (cmd === 'underline') {
+    toggle_decor('underline');
+  } else if (cmd === 'strikeThrough') {
+    toggle_decor('line-through');
   } else if (cmd === 'superscript' || cmd === 'subscript') {
     const want = cmd === 'superscript' ? 'super' : 'sub';
-    styles = { verticalAlign: cs.verticalAlign === want ? 'baseline' : want };
+    set('verticalAlign', effective_style('verticalAlign') === want ? 'baseline' : want);
+  } else if (act === 'fontpx') {
+    value = override !== undefined ? override : parseInt(val, 10);
+    set('fontSize', value + 'px');
   } else if (act === 'color') {
-    styles = { color: val };
-  } else if (act === 'fontname') {
-    styles = { fontFamily: val };
+    set('color', val);
   } else if (act === 'hilite') {
-    styles = { backgroundColor: val === 'none' ? 'transparent' : val };
+    set('backgroundColor', val === 'none' ? 'transparent' : val);
+  } else if (act === 'fontname') {
+    if (typeof load_google_font === 'function') load_google_font(val);
+    set('fontFamily', val);
+  } else if (act === 'decor-none') {
+    delete typing_format.textDecorationLine;
+    set('textDecorationLine', 'none');
+    delete typing_format.textDecorationLine;
+  } else if (act === 'valign-baseline') {
+    delete typing_format.verticalAlign;
+  } else if (act === 'css' && item.dataset.scope !== 'block') {
+    const v = css_value_for(item, override);
+    set(item.dataset.prop, v.css);
+    value = item.hasAttribute('data-min') ? v.shown : undefined;
+  } else {
+    return { handled: false };
   }
-  if (!styles) return false;
-  return apply_pending_span_style(styles);
+  return { handled: true, value };
+}
+
+function style_typing_span(span, fmt) {
+  span.removeAttribute('style');
+  Object.keys(fmt).forEach((prop) => { span.style[prop] = fmt[prop]; });
+}
+
+function put_caret_in(span) {
+  const caret = document.createRange();
+  caret.setStart(span.firstChild, span.firstChild.data.length);
+  caret.collapse(true);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(caret);
+}
+
+// Makes sure the cursor is inside a span carrying the current new-text format.
+function ensure_typing_span() {
+  if (typing_ensuring || typing_composing || select_mode) return;
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (!editor || document.activeElement !== editor || sel.rangeCount === 0 || !sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  if (!range_in_editor(range)) return;
+
+  typing_ensuring = true;
+  try {
+    const want = typing_key(typing_format);
+    const nothing = Object.keys(typing_format).length === 0;
+    const el = caret_element();
+    const cur = el && el.closest ? el.closest('span[data-tf]') : null;
+    const here = cur && editor.contains(cur) ? cur : null;
+    const blank = (s) => s.textContent.replace(/​/g, '') === '' && !s.querySelector('img, input, br');
+
+    // Spans left behind where the cursor used to be (never typed into) go away.
+    editor.querySelectorAll('span[data-tf]').forEach((s) => { if (s !== here && blank(s)) s.remove(); });
+
+    if (here && here.dataset.tf === want) return;
+    if (!here && nothing) return;
+
+    if (here && blank(here)) {
+      // waiting for text: change it in place
+      if (nothing) {
+        const caret = document.createRange();
+        caret.setStartBefore(here);
+        caret.collapse(true);
+        here.remove();
+        sel.removeAllRanges();
+        sel.addRange(caret);
+        return;
+      }
+      style_typing_span(here, typing_format);
+      here.dataset.tf = want;
+      put_caret_in(here);
+      return;
+    }
+
+    const span = document.createElement('span');
+    span.dataset.tf = want;
+    span.appendChild(document.createTextNode(ZWSP));
+    style_typing_span(span, typing_format);
+
+    if (here) {
+      // The cursor is inside text that has an older format: put back the surrounding look first.
+      const old = {};
+      try { JSON.parse(here.dataset.tf).forEach(([k]) => { old[k] = true; }); } catch (err) { /* ignore */ }
+      const outside = here.parentElement ? getComputedStyle(here.parentElement) : null;
+      Object.keys(old).forEach((prop) => {
+        if (typing_format[prop] === undefined && outside && prop !== 'textDecorationLine') span.style[prop] = outside[prop];
+      });
+    }
+    range.insertNode(span);
+    put_caret_in(span);
+  } finally {
+    typing_ensuring = false;
+  }
 }
 
 function run_fmt_item(item, value_override) {
   if (nav.level !== 'note') return;
+
+  const had_caret = !!caret_element();
 
   lock_scroll_position();
   fmt_prime_selection();
@@ -2889,12 +2956,16 @@ function run_fmt_item(item, value_override) {
   let applied_value;     // for options stepped by number (font size, weight, list spacing)
   const stepping = value_override !== undefined;
 
-  const typed_as_span = !stepping && (cmd || act === 'color' || act === 'fontname' || act === 'hilite') && apply_typing_span(item, val);
-  if (act === 'fontname' && typed_as_span && typeof load_google_font === 'function') load_google_font(val);
+  // Character formats (Active off) go into the format for new text; existing words never change.
+  let typed_as_span = false;
+  if (!select_mode && is_character_item(item)) {
+    const r = typing_format_item(item, val, stepping ? value_override : undefined);
+    if (r.handled) { typed_as_span = true; applied_value = r.value; }
+  }
 
   try {
     if (typed_as_span) {
-      if (cmd === 'bold') applied_value = current_weight();
+      // stored as the format for new text (see ensure_typing_span)
     } else if (cmd === 'bold' && stepping) {
       // − / + on Bold: exact weight (100-900) on the selected text
       if (apply_weight(value_override)) applied_value = value_override;
@@ -2979,7 +3050,7 @@ function run_fmt_item(item, value_override) {
     console.error('Formatting command failed:', act || cmd, err);
   }
 
-  record_typing_state(item);
+  if (typed_as_span && had_caret) ensure_typing_span();
   fmt_finish(item);
 
   // Stepping the photo's size keeps the word "Image" in the list's title.
@@ -3402,6 +3473,7 @@ function reset_fmt_toolbar() {
   if (ed) ed.removeAttribute('inputmode');   // a freshly opened note is typeable
 
   if (typeof clear_photo_selection === 'function') clear_photo_selection();   // nothing is selected in a freshly opened note
+  typing_format = {};                  // a freshly opened note starts with no new-text format
   set_active_fmt_item(null);
   document.querySelectorAll('#fmtMenu .open').forEach((el) => el.classList.remove('open'));
 }
@@ -3455,6 +3527,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    editor.addEventListener('compositionstart', () => { typing_composing = true; });
+    editor.addEventListener('compositionend', () => { typing_composing = false; });
+    editor.addEventListener('focus', () => setTimeout(ensure_typing_span, 0));
+    document.addEventListener('selectionchange', ensure_typing_span);
+
     editor.addEventListener('click', (e) => {
       if (e.target.closest && e.target.closest('.note-photo')) return;
 
@@ -3462,7 +3539,7 @@ document.addEventListener('DOMContentLoaded', () => {
       close_fmt_menu();
 
       // Tapping into the note to type: bring the keypad back.
-      if (!select_mode) { setTimeout(() => { snap_to_typing_state(); keyboard_on(); }, 0); return; }
+      if (!select_mode) { setTimeout(() => { keyboard_on(); ensure_typing_span(); }, 0); return; }
       if (e.target.tagName === 'INPUT') return;   // checkbox tap
       setTimeout(select_word_at_caret, 0);
     });
@@ -3710,7 +3787,6 @@ const HELP_TOPICS_NOTE = [
     'Active ON: it works on the words you have selected, and the list opens on Active formatting.',
     'Press Active once: the first word of the note turns blue and the action row title reads All.',
     'Active formatting lists only the formatting that is on for the blue text, each with an On label.',
-    'Tap a row there to turn that formatting off for the blue text; the row disappears.',
     'While Active is on the list only shows what is on; there is no navigation. Turn Active off to pick new formatting.',
     'Tap any word to select it instead, or drag the handles to select more.',
     'With no text selected, Active formatting shows what is on for the text you will type next.',

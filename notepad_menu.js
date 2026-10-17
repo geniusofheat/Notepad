@@ -653,7 +653,7 @@
     if (t.closest('#fmtBack')) { fmt_back(); return; }
 
     const row = t.closest('.fmt-active-row');
-    if (row) { turn_off_entry(row); return; }
+    if (row) return;   // Active only shows what is applied; rows do nothing
     if (t.closest('#fmtActiveView')) return;
 
     const head = t.closest('.fmt-head');
