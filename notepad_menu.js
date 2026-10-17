@@ -35,6 +35,47 @@
     return h ? own_text(h) : '';
   }
 
+  // The Formatting list's title is always a main category (Text, Image or Insert):
+  // the one being browsed, or the one that fits what is selected. Option names go in
+  // the action row, never here.
+  let last_cat_name = null;
+  let browsing = false;      // the user has navigated since the list opened: show the category they are in
+  function ctx_name() { return (typeof selected_photo === 'function' && selected_photo()) ? 'Image' : 'Text'; }
+
+  // The list the last chosen option belongs to (Resize for 50%, Weight for Bold, ...).
+  function value_item() {
+    const item = (typeof active_fmt_item !== 'undefined') ? active_fmt_item : null;
+    if (!item || !document.contains(item) || !item.closest('#fmtMenu')) return null;
+    if (typeof photo_label_active !== 'undefined' && photo_label_active && selected_photo()) return null;
+    const cat = item.closest('.fmt-cat');
+    if (!cat || cat.dataset.cat !== ctx_name()) return null;
+    return item;
+  }
+  function value_list_of(item) {
+    let li = item.parentElement.closest('li');
+    if (li && li.hasAttribute('data-font-style')) li = li.parentElement.closest('li');   // Serif, Display ... -> Family
+    return li;
+  }
+  function update_label() {
+    const l = document.getElementById('fmtCategoryLabel');
+    if (!l) return;
+    const item = browsing ? null : value_item();
+    const li = item && value_list_of(item);
+    l.textContent = (li && head_text(li)) || last_cat_name || ctx_name();
+  }
+  window.fmt_update_label = function (reset) {
+    if (reset) last_cat_name = null;
+    update_label();
+  };
+
+  // The open value list inside a subcategory (Resize inside Size & Position), if any.
+  function sub_of(cat, sub) { return sub; }
+  function deepest_open_group(sub) {
+    if (!sub) return null;
+    const open = sub.querySelectorAll('.fmt-group.open');
+    return open.length ? open[open.length - 1] : null;
+  }
+
   function nav_update() {
     const m = menu_el();
     if (!m) return;
@@ -46,10 +87,16 @@
     m.classList.add('nav-' + level);
     m.classList.toggle('active-on', !!select_mode);
 
+    if (cat) last_cat_name = head_text(cat);
+    update_label();
+
     const back = document.getElementById('fmtBack');
     if (back) {
       if (m.classList.contains('view-active')) back.textContent = 'Back to main list';
-      else if (level === 2) back.textContent = 'Back to ' + head_text(cat) + '  (' + head_text(sub) + ')';
+      else if (level === 2) {
+        const g = deepest_open_group(sub_of(cat, sub));
+        back.textContent = g ? 'Back to ' + head_text(g.parentElement.closest('li')) : 'Back to ' + head_text(cat);
+      }
       else if (level === 1) back.textContent = 'Back to main list';
       else back.textContent = '';
     }
@@ -58,6 +105,7 @@
   function fmt_back() {
     const m = menu_el();
     if (!m) return;
+    browsing = true;
 
     if (m.classList.contains('view-active')) {
       m.classList.remove('view-active');
@@ -69,7 +117,10 @@
     const cat = current_cat(m);
     const sub = current_sub(cat);
 
-    if (sub) {
+    const group = deepest_open_group(sub);
+    if (group) {
+      group.classList.remove('open');          // one step back: from Resize to Size & Position
+    } else if (sub) {
       sub.classList.remove('open');
       sub.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));
     } else if (cat) {
@@ -547,12 +598,23 @@
     m.classList.remove('view-active');
     m.classList.toggle('ctx-image', !!selected_photo());
     m.classList.toggle('active-on', !!select_mode);
+    last_cat_name = null;
+    browsing = false;
     if (select_mode) m.classList.add('view-active');
     else {
-      // The list opens on the options for what is being worked on: Image for a
-      // selected image, otherwise Text.
-      const cat = active_category();
-      if (cat) cat.classList.add('open');
+      // The list opens on the options for what is being worked on. After a value was
+      // chosen it reopens on that same list (Resize: 10% 25% 50% ...) so another value
+      // can be picked; otherwise Image for a selected image, or Text.
+      const item = value_item();
+      if (item) {
+        for (let li = item.parentElement.closest('li'); li && li !== m; li = li.parentElement.closest('li')) {
+          if (li.hasAttribute('data-font-style') && typeof populate_font_group === 'function') populate_font_group(li);
+          li.classList.add('open');
+        }
+      } else {
+        const cat = active_category();
+        if (cat) cat.classList.add('open');
+      }
     }
     nav_update();
     m.scrollTop = 0;
@@ -562,8 +624,10 @@
   window.fmt_menu_closed = function () {
     const m = menu_el();
     if (!m) return;
+    browsing = false;          // collapsed: the title names the list of the last chosen value
     m.classList.remove('view-active');
     nav_update();
+    update_label();
     clear_labels(m);
   };
 
@@ -594,8 +658,18 @@
 
     const head = t.closest('.fmt-head');
     if (head) {
+      browsing = true;
       const li = head.parentElement;
       if (li.hasAttribute('data-font-style') && typeof populate_font_group === 'function') populate_font_group(li);
+
+      if (li.classList.contains('fmt-cat') && li.classList.contains('open')) {
+        const sub = current_sub(li);
+        if (sub) { sub.classList.remove('open'); sub.querySelectorAll('.open').forEach((el) => el.classList.remove('open')); }
+        nav_update();
+        m.scrollTop = 0;
+        return;
+      }
+      if (li.classList.contains('fmt-subcat') && li.classList.contains('open')) return;
 
       if (li.classList.contains('fmt-cat') || li.classList.contains('fmt-subcat')) {
         Array.from(li.parentElement.children).forEach((sib) => { if (sib !== li) sib.classList.remove('open'); });
