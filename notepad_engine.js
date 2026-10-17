@@ -3563,7 +3563,6 @@ const HELP_TOPICS_NOTE = [
   { title: 'The note screen', items: [
     'The title of the note is shown on its own line above the buttons.',
     '🎤 types what you say into the note at the cursor.',
-    'Photos + opens a small sheet: Camera, Photos or Files.',
     '💾 Save saves right now; the note also saves by itself a moment after you stop typing.',
     '← Back saves and returns to your lists.',
     'Touch the note to scroll the note; touch anywhere else to scroll the whole page.'
@@ -3665,13 +3664,14 @@ const HELP_TOPICS_NOTE = [
     'Tap away from the photo to let go of it.'
   ]},
   { title: 'Insert', items: [
-    'Image: opens the Add a picture sheet with Camera, Photos and Files.',
+    'Image: first tap in the note where the photo should go, then Insert > Image and pick Camera, Photos or Files.',
     'Files: opens your phone\'s file browser; open folders, use its Back, and pick a picture.',
     'Only pictures can go into a note; anything else is skipped with a message.'
   ]},
   { title: 'Adding photos', items: [
-    'Photos + (or Insert > Image) opens a sheet: 📷 Camera, 🖼 Photos, 📁 Files.',
-    'Camera opens your phone\'s camera; the picture you take goes straight into the note at the cursor.',
+    'Put the cursor in the note, then Insert > Image: 📷 Camera, 🖼 Photos or 📁 Files.',
+    'Camera opens inside Notepad; Take photo puts the picture in the note at the cursor.',
+    'If the cursor is not in the note, a message asks you to place it first.',
     'Photos opens your picture library; you can pick several at once.',
     'Files opens the phone\'s file browser, where you can open internal storage and any folder.',
     'Photos are shrunk to a sensible size and inserted at the cursor.',

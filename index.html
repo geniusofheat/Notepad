@@ -125,12 +125,11 @@
 
     <div class="note-editor-sticky-toolbar">
 
-      <!-- ─── NOTE BUTTON ROW — mic, photos, save, back (fixed height; the title lives above) ─────── -->
+      <!-- ─── NOTE BUTTON ROW — mic, save, back (fixed height; the title lives above) ─────── -->
       <div class="toolbar-row note-button-row">
 
         <div class="note-header-action-group">
           <button class="orange-btn" id="micBtn" onclick="voiceInputToNote()" style="display:none;">🎤</button>
-          <button class="orange-btn" id="photoBtn" onclick="trigger_photo_picker()" style="display:none;">Photos +</button>
         </div>
 
         <button class="orange-btn" id="saveBtn" onclick="manual_save_click(this)" style="display:none;">💾 Save</button>
@@ -974,6 +973,24 @@
     <button type="button" id="photoSrcPhotos" onmousedown="event.preventDefault()" onclick="choose_photo_source('photos')">🖼 Photos</button>
     <button type="button" id="photoSrcFiles" onmousedown="event.preventDefault()" onclick="choose_photo_source('files')">📁 Files</button>
     <button type="button" class="cancel" onmousedown="event.preventDefault()" onclick="close_photo_sheet()">Cancel</button>
+  </div>
+</div>
+<!-- Pop-up shown when Insert > Image is used with no cursor in the note. -->
+<div class="photo-source-overlay" id="photoMsgOverlay" onclick="if (event.target === this) close_photo_message()">
+  <div class="photo-source-sheet" role="alertdialog" aria-label="Place the cursor">
+    <h3>Place the cursor first</h3>
+    <p id="photoMsgText" style="margin:0 0 12px;font-size:16px;"></p>
+    <button type="button" class="cancel" onmousedown="event.preventDefault()" onclick="close_photo_message()">OK</button>
+  </div>
+</div>
+
+<!-- In-app camera: takes the picture without leaving the page. -->
+<div class="camera-overlay" id="cameraOverlay">
+  <video id="cameraVideo" playsinline muted autoplay></video>
+  <div class="camera-bar">
+    <button type="button" id="cameraCancel" onclick="close_camera()">Cancel</button>
+    <button type="button" id="cameraShutter" onclick="take_camera_photo()">📷 Take photo</button>
+    <button type="button" id="cameraFlip" onclick="flip_camera()">Flip</button>
   </div>
 </div>
 <!-- ═══ END PHOTO FILE PICKER ═══ -->

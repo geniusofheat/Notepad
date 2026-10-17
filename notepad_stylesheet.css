@@ -1401,3 +1401,11 @@ p {
   min-width: 100px;
   box-sizing: border-box;
 }
+
+/* ---- In-app camera ---- */
+.camera-overlay { position: fixed; inset: 0; z-index: 110; display: none; flex-direction: column; background: #000000; }
+.camera-overlay.open { display: flex; }
+.camera-overlay video { flex: 1 1 auto; min-height: 0; width: 100%; object-fit: contain; background: #000000; }
+.camera-bar { display: flex; gap: 8px; padding: 12px; background: #000000; }
+.camera-bar button { flex: 1 1 0; min-height: 52px; border: 1px solid #ffffff; background: #222222; color: #ffffff; font-size: 17px; }
+.camera-bar #cameraShutter { flex: 2 1 0; background: #ff8c00; color: #000000; font-weight: 700; }

@@ -613,6 +613,8 @@
     }
     if (act === 'insert-files') {
       close_fmt_menu();
+      save_editor_selection();
+      if (!photo_cursor_ready()) { show_photo_message('Please place the cursor in the notepad area where you would like the photo to be placed.'); return; }
       if (typeof open_photo_input === 'function') open_photo_input('files');
       return;
     }

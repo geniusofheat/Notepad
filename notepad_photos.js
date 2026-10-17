@@ -6,11 +6,34 @@
 
 // ─── § PHOTO PICKER — open the device's normal file picker ──────────────
 
-// The Photos + button and Insert > Image open a small sheet: Camera, Photos or Files.
+// Insert > Image comes here. The photo goes where the cursor is, so a cursor must be in the note.
+function photo_cursor_ready() {
+  const editor = document.getElementById('note-textarea');
+  const view = document.getElementById('note-editor-view');
+  if (!editor || (view && view.style.display === 'none')) return false;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) return true;
+  return !!(typeof saved_range !== 'undefined' && saved_range && editor.contains(saved_range.commonAncestorContainer));
+}
+
+function show_photo_message(text) {
+  const t = document.getElementById('photoMsgText');
+  const o = document.getElementById('photoMsgOverlay');
+  if (t) t.textContent = text;
+  if (o) o.classList.add('open');
+}
+function close_photo_message() {
+  const o = document.getElementById('photoMsgOverlay');
+  if (o) o.classList.remove('open');
+}
+
 function trigger_photo_picker() {
   save_editor_selection();
+  if (!photo_cursor_ready()) {
+    show_photo_message('Please place the cursor in the notepad area where you would like the photo to be placed.');
+    return;
+  }
   if (typeof keyboard_off === 'function') keyboard_off();
-
   const sheet = document.getElementById('photoSourceOverlay');
   if (sheet) sheet.classList.add('open');
 }
@@ -20,11 +43,10 @@ function close_photo_sheet() {
   if (sheet) sheet.classList.remove('open');
 }
 
-// 'camera' = take a new picture, 'photos' = gallery / pictures, 'files' = any file
-// (the phone's file browser, so internal storage and its folders can be opened).
+// 'camera' = take a picture inside the app, 'photos' = gallery / pictures, 'files' = any file.
 function choose_photo_source(kind) {
   close_photo_sheet();
-  open_photo_input(kind);
+  if (kind === 'camera') open_camera(); else open_photo_input(kind);
 }
 
 function open_photo_input(kind) {
@@ -34,6 +56,72 @@ function open_photo_input(kind) {
   if (input) input.click();
 }
 
+// ─── In-app camera (no trip to the phone's camera app, so the note stays open) ───
+let camera_stream = null;
+let camera_facing = 'environment';
+
+function stop_camera_stream() {
+  if (camera_stream) camera_stream.getTracks().forEach((t) => t.stop());
+  camera_stream = null;
+}
+
+function start_camera_stream() {
+  stop_camera_stream();
+  return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: camera_facing } }, audio: false })
+    .then((stream) => {
+      camera_stream = stream;
+      const v = document.getElementById('cameraVideo');
+      v.srcObject = stream;
+      return v.play().catch(() => {});
+    });
+}
+
+function open_camera() {
+  save_editor_selection();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    open_photo_input('camera');         // very old browsers: the phone's camera app
+    return;
+  }
+  const o = document.getElementById('cameraOverlay');
+  start_camera_stream().then(() => { o.classList.add('open'); })
+    .catch(() => {
+      stop_camera_stream();
+      if (typeof fmt_notice === 'function') fmt_notice('The camera could not be opened. Allow camera access for this site and try again.');
+    });
+}
+
+function close_camera() {
+  stop_camera_stream();
+  const o = document.getElementById('cameraOverlay');
+  if (o) o.classList.remove('open');
+}
+
+function flip_camera() {
+  camera_facing = camera_facing === 'environment' ? 'user' : 'environment';
+  start_camera_stream().catch(() => {});
+}
+
+function take_camera_photo() {
+  const v = document.getElementById('cameraVideo');
+  if (!v || !v.videoWidth) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+  canvas.getContext('2d').drawImage(v, 0, 0);
+  close_camera();
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const file = new File([blob], 'camera-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+    insert_note_photos({ target: { files: [file], value: '' } });
+  }, 'image/jpeg', 0.92);
+}
+
+window.open_camera = open_camera;
+window.close_camera = close_camera;
+window.flip_camera = flip_camera;
+window.take_camera_photo = take_camera_photo;
+window.show_photo_message = show_photo_message;
+window.close_photo_message = close_photo_message;
+window.photo_cursor_ready = photo_cursor_ready;
 window.close_photo_sheet = close_photo_sheet;
 window.choose_photo_source = choose_photo_source;
 window.open_photo_input = open_photo_input;
