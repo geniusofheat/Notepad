@@ -6,16 +6,37 @@
 
 // ─── § PHOTO PICKER — open the device's normal file picker ──────────────
 
+// The Photos + button and Insert > Image open a small sheet: Camera, Photos or Files.
 function trigger_photo_picker() {
   save_editor_selection();
+  if (typeof keyboard_off === 'function') keyboard_off();
 
-  const input = document.getElementById('photoFileInput');
-
-  if (input) {
-    input.click();
-  }
+  const sheet = document.getElementById('photoSourceOverlay');
+  if (sheet) sheet.classList.add('open');
 }
 
+function close_photo_sheet() {
+  const sheet = document.getElementById('photoSourceOverlay');
+  if (sheet) sheet.classList.remove('open');
+}
+
+// 'camera' = take a new picture, 'photos' = gallery / pictures, 'files' = any file
+// (the phone's file browser, so internal storage and its folders can be opened).
+function choose_photo_source(kind) {
+  close_photo_sheet();
+  open_photo_input(kind);
+}
+
+function open_photo_input(kind) {
+  save_editor_selection();
+  const ids = { camera: 'photoCameraInput', photos: 'photoFileInput', files: 'photoFilesInput' };
+  const input = document.getElementById(ids[kind]);
+  if (input) input.click();
+}
+
+window.close_photo_sheet = close_photo_sheet;
+window.choose_photo_source = choose_photo_source;
+window.open_photo_input = open_photo_input;
 window.trigger_photo_picker = trigger_photo_picker;
 
 
@@ -40,14 +61,18 @@ function insert_note_photos(event) {
   restore_editor_selection();
 
   let remaining = files.length;
+  let skipped = 0;
+  const looks_like_image = (file) =>
+    file.type.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp|heic|heif|avif)$/i.test(file.name || '');
 
   files.forEach((file) => {
 
-    if (!file.type.startsWith('image/')) {
+    if (!looks_like_image(file)) {
       remaining--;
+      skipped++;
 
       if (remaining === 0) {
-        finish_photo_insert();
+        finish_photo_insert(skipped);
       }
 
       return;
@@ -120,15 +145,16 @@ function insert_note_photos(event) {
       remaining--;
 
       if (remaining === 0) {
-        finish_photo_insert();
+        finish_photo_insert(skipped);
       }
     }
 
     reader.onerror = function() {
       remaining--;
+      skipped++;
 
       if (remaining === 0) {
-        finish_photo_insert();
+        finish_photo_insert(skipped);
       }
     };
 
@@ -461,7 +487,7 @@ function handle_photo_position_change() {
 
 // ─── § PHOTO SAVE — use the engine's existing note save system ──────────
 
-function finish_photo_insert() {
+function finish_photo_insert(skipped) {
 
   save_editor_selection();
 
@@ -470,10 +496,14 @@ function finish_photo_insert() {
   // of the normal note HTML.
   auto_save_current_note();
 
-  const input = document.getElementById('photoFileInput');
+  ['photoFileInput', 'photoCameraInput', 'photoFilesInput'].forEach((id) => {
+    const input = document.getElementById(id);
+    if (input) input.value = '';
+  });
 
-  if (input) {
-    input.value = '';
+  if (skipped > 0 && typeof fmt_notice === 'function') {
+    fmt_notice(skipped === 1 ? 'That file is not a picture, so it was skipped.'
+                             : skipped + ' files were not pictures and were skipped.');
   }
 }
 

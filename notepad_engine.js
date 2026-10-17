@@ -882,10 +882,15 @@ function hide_back_btn() {
 // a temporary look and must not be stored.
 function editor_clean_html() {
   const editor = document.getElementById('note-textarea');
-  if (!editor.querySelector('.note-photo-selected')) return editor.innerHTML;
+  const has_photo_mark = !!editor.querySelector('.note-photo-selected');
+  if (!has_photo_mark && editor.innerHTML.indexOf('\u200b') === -1) return editor.innerHTML;
   const copy = editor.cloneNode(true);
   copy.querySelectorAll('.note-photo-selected').forEach((el) => {
     el.classList.remove('note-photo-selected');
+  });
+  // Formatting that was chosen but never typed into leaves an empty span; do not store it.
+  copy.querySelectorAll('span').forEach((el) => {
+    if (el.textContent === '\u200b' && !el.querySelector('img, input')) el.remove();
   });
   return copy.innerHTML;
 }
@@ -1738,7 +1743,7 @@ function toggle_fmt_menu(force) {
   menu.classList.toggle('open', open);
   if (open) keyboard_off();   // opening the menu must never leave the keypad up
   if (!open) {
-    // Closing leaves a clean list: next time only the ten categories show.
+    // Closing leaves a clean list: next time it starts at the main categories.
     menu.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));
   }
 
@@ -1746,7 +1751,8 @@ function toggle_fmt_menu(force) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     btn.classList.toggle('active', open);
   }
-  if (open) refresh_fmt_menu_state();
+  if (open) fmt_menu_opened();     // notepad_menu.js: context, Active view, On labels
+  else fmt_menu_closed();
 }
 window.toggle_fmt_menu = toggle_fmt_menu;
 
@@ -1773,41 +1779,13 @@ function toggle_fmt_branch(li) {
 }
 
 function handle_fmt_menu_click(event) {
-  const head = event.target.closest('.fmt-head');
-  if (head) {
-    // Font family groups (Serif, Display, ...) fill in the first time they open.
-    if (head.parentElement.hasAttribute('data-font-style') && typeof populate_font_group === 'function') {
-      populate_font_group(head.parentElement);
-    }
-    toggle_fmt_branch(head.parentElement);
-    return;
-  }
-
-  const item = event.target.closest('.fmt-item');
-  if (item) {
-    run_fmt_item(item);
-    close_fmt_menu();          // list contracts; the title shows the chosen option
-  }
+  fmt_menu_click(event);           // notepad_menu.js: Back, drill-down, items
 }
 
 // Marks bold / italic / underline / strikethrough / superscript / subscript
 // items as active when the current selection already has that format.
 function refresh_fmt_menu_state() {
-  const menu = document.getElementById('fmtMenu');
-  const editor = get_editor();
-  if (!menu || !editor) return;
-
-  const sel = window.getSelection();
-  const in_editor = sel.rangeCount > 0 && range_in_editor(sel.getRangeAt(0));
-
-  menu.querySelectorAll('.fmt-item[data-cmd]').forEach((el) => {
-    if (!TOGGLE_COMMANDS.includes(el.dataset.cmd)) return;
-    let on = false;
-    if (in_editor) {
-      try { on = document.queryCommandState(el.dataset.cmd); } catch (err) { on = false; }
-    }
-    el.classList.toggle('active', on);
-  });
+  fmt_refresh_states();            // notepad_menu.js: On labels and values
 }
 
 // Short message under the toolbar row (for things that could not be applied).
@@ -2065,10 +2043,44 @@ function clear_all_formatting() {
 // text that already has that style replaces it instead of nesting spans
 // deeper each time. A bare caret inside a word styles that word.
 // Returns false when there was nothing to style.
+// Active is off: formatting is for the text typed next. An empty span (holding an
+// invisible zero-width space) is put at the caret and the caret goes inside it, so the
+// words already in the note never change.
+const ZWSP = '\u200b';
+
+function apply_pending_span_style(styles) {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0 || !range_in_editor(sel.getRangeAt(0))) return false;
+  if (!sel.isCollapsed) sel.collapseToEnd();
+
+  const range = sel.getRangeAt(0);
+  const node = range.startContainer;
+  const here = node.nodeType === 3 ? node.parentElement : node;
+
+  let span = null;
+  if (here && here !== editor && here.tagName === 'SPAN' && here.textContent === ZWSP) {
+    span = here;                                   // already waiting for text: just change its style
+  } else {
+    span = document.createElement('span');
+    span.appendChild(document.createTextNode(ZWSP));
+    range.insertNode(span);
+  }
+  Object.keys(styles).forEach((prop) => { span.style[prop] = styles[prop]; });
+
+  const caret = document.createRange();
+  caret.setStart(span.firstChild, 1);
+  caret.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(caret);
+  return true;
+}
+
 function apply_span_style(styles) {
   const editor = get_editor();
   const sel = window.getSelection();
   if (sel.rangeCount === 0) return false;
+  if (!select_mode) return apply_pending_span_style(styles);
   const props = Object.keys(styles);
 
   if (sel.isCollapsed) {
@@ -2161,7 +2173,7 @@ function apply_span_style(styles) {
 // Font size in exact pixels (1-50).
 function apply_font_px(px) {
   if (!apply_span_style({ fontSize: px + 'px' })) {
-    fmt_notice('Select some text first (or tap Select).');
+    fmt_notice('Select some text first (or press Active).');
   }
 }
 window.apply_font_px = apply_font_px;
@@ -2179,6 +2191,8 @@ function current_weight() {
 function apply_weight(weight) {
   const sel = window.getSelection();
   if (sel.rangeCount === 0) return false;
+
+  if (!select_mode) return apply_span_style({ fontWeight: String(weight) });
 
   // A bare caret between words has no text to thicken.
   const caret = sel.getRangeAt(0);
@@ -2258,7 +2272,7 @@ function apply_css_item(item, override) {
   if (item.dataset.scope === 'block') {
     apply_block_style(prop, v.css);
   } else if (!apply_span_style({ [prop]: v.css })) {
-    fmt_notice('Select some text first (or tap Select).');
+    fmt_notice('Select some text first (or press Active).');
   }
   return item.hasAttribute('data-min') ? v.shown : undefined;
 }
@@ -2425,7 +2439,7 @@ function selection_clip() {
 
 function copy_selection() {
   const clip = selection_clip();
-  if (!clip) { fmt_notice('Select some text first (or tap Select).'); return false; }
+  if (!clip) { fmt_notice('Select some text first (or press Active).'); return false; }
   internal_clip = clip;
 
   let done = false;
@@ -2446,7 +2460,7 @@ function cut_selection() {
 function clear_selected_text() {
   const sel = window.getSelection();
   if (sel.rangeCount === 0 || sel.isCollapsed || !range_in_editor(sel.getRangeAt(0))) {
-    fmt_notice('Select some text first (or tap Select).');
+    fmt_notice('Select some text first (or press Active).');
     return;
   }
   document.execCommand('delete');
@@ -2743,12 +2757,28 @@ window.action_title_click = action_title_click;
 
 // ── Menu dispatcher ─────────────────────────────────────────────────────────
 
+const CHARACTER_COMMANDS = ['bold', 'italic', 'underline', 'strikeThrough', 'superscript', 'subscript'];
+const CHARACTER_ACTS = ['size', 'fontname', 'color', 'hilite', 'fontpx', 'decor-none', 'valign-baseline'];
+
+function is_character_item(item) {
+  if (item.dataset.cmd) return CHARACTER_COMMANDS.indexOf(item.dataset.cmd) !== -1;
+  if (item.dataset.act === 'css') return item.dataset.scope !== 'block';
+  return CHARACTER_ACTS.indexOf(item.dataset.act) !== -1;
+}
+
 function run_fmt_item(item, value_override) {
   if (nav.level !== 'note') return;
 
   lock_scroll_position();
   fmt_prime_selection();
   freeze_editor_selection();   // keeps the legacy frozen-selection helpers in step
+
+  // Active is off: character formatting is for the text typed next, never for the words
+  // already there, so a highlighted range collapses to its end first.
+  if (!select_mode && is_character_item(item)) {
+    const live = window.getSelection();
+    if (live.rangeCount > 0 && range_in_editor(live.getRangeAt(0)) && !live.isCollapsed) live.collapseToEnd();
+  }
 
   const cmd = item.dataset.cmd;
   const act = item.dataset.act;
@@ -2760,7 +2790,7 @@ function run_fmt_item(item, value_override) {
     if (cmd === 'bold' && stepping) {
       // − / + on Bold: exact weight (100-900) on the selected text
       if (apply_weight(value_override)) applied_value = value_override;
-      else { applied_value = active_fmt_value; fmt_notice('Select some text first (or tap Select).'); }
+      else { applied_value = active_fmt_value; fmt_notice('Select some text first (or press Active).'); }
     } else if (cmd) {
       // bold, italic, underline, strikethrough, superscript, subscript, checkbox
       handle_fmt_click(item);
@@ -3179,6 +3209,7 @@ function enter_select_mode() {
     paint_select_highlight();
   }
   update_step_buttons();
+  if (typeof fmt_active_changed === 'function') fmt_active_changed(true);   // opens the Active list
 }
 
 // silent = true skips collapsing the native selection (used when leaving a note).
@@ -3214,6 +3245,7 @@ function exit_select_mode(silent) {
       save_editor_selection();
     }
   }
+  if (was_on && !silent && typeof fmt_active_changed === 'function') fmt_active_changed(false);
 }
 
 function toggle_select_mode() {
@@ -3531,36 +3563,43 @@ const HELP_TOPICS_NOTE = [
   { title: 'The note screen', items: [
     'The title of the note is shown on its own line above the buttons.',
     '🎤 types what you say into the note at the cursor.',
-    'Photos + adds one or more pictures at the cursor.',
+    'Photos + opens a small sheet: Camera, Photos or Files.',
     '💾 Save saves right now; the note also saves by itself a moment after you stop typing.',
     '← Back saves and returns to your lists.',
     'Touch the note to scroll the note; touch anywhere else to scroll the whole page.'
   ]},
   { title: 'The Formatting list', items: [
-    'The top row reads "Formatting :", then the list, then the Select button.',
-    'Tap the list to open it, tap a category, and tap an option (some categories have groups inside them).',
+    'The top row reads "Formatting :", then the list, then the Active button.',
+    'Three levels: main categories (Text, Image, Insert), then subcategories, then options.',
+    'Tap a category or subcategory to open it; the Back row at the top takes you up one level.',
+    'Text shows while you work with text; tap a photo and Image shows instead. Insert is always there.',
     'An option applies right away; there is no Apply button.',
-    'After you choose, the list closes and its title shows the option you chose.',
+    'A black On label on the left of an option or group shows that it is on; the current value is on the right.',
+    'After you choose an option the list closes and its title shows what you chose.',
     'The list floats over the note and never pushes it down; tap the note to close it.',
     'Choosing a formatting option never brings up the keypad.'
   ]},
-  { title: 'The Select button', items: [
-    'Select lets you pick text without the keypad getting in the way.',
-    'Press Select once: the first word of the note turns blue and the action row title reads All.',
+  { title: 'The Active button', items: [
+    'Active OFF: the formatting you choose is for the text you type next; the words already in the note do not change.',
+    'Active ON: it works on the words you have selected, and the list opens on Active formatting.',
+    'Press Active once: the first word of the note turns blue and the action row title reads All.',
+    'Active formatting lists only the formatting that is on for the blue text, each with an On label.',
+    'Tap a row there to turn that formatting off for the blue text; the row disappears.',
+    'Use Back to reach the normal list; anything you choose there changes the blue text.',
     'Tap any word to select it instead, or drag the handles to select more.',
-    'Pick as many formatting options as you like; they all apply to the blue text.',
-    'Press Select again to turn it off.',
-    'In an empty note, Select waits and picks the first word as soon as text appears.'
+    'With no text selected, Active formatting shows what is on for the text you will type next.',
+    'Press Active again to turn it off; the list returns to its normal main categories.',
+    'In an empty note, Active waits and picks the first word as soon as text appears.'
   ]},
   { title: 'The action row (←  →  −  +)', items: [
     'The action row is the line at the top right of the white note area.',
     'The title on its left says what − and + are changing: Weight, Size, Spacing, Indent, Color, and so on.',
     '− and + step only the option you chose last, and never change other formatting.',
-    'With Select on and the title reading All, tap All to select the whole note.',
-    'With Select on, + adds the next word to the selection and − takes the last word off.',
-    'After you choose a formatting option while Select is on, − and + control that option; tap the title to give them back to the selection.',
+    'With Active on and the title reading All, tap All to select the whole note.',
+    'With Active on, + adds the next word to the selection and − takes the last word off.',
+    'After you choose a formatting option while Active is on, − and + control that option; tap the title to give them back to the selection.',
     '← and → move the cursor one letter left or right.',
-    'With Select on, ← and → move the blue highlight to the next word in that direction.'
+    'With Active on, ← and → move the blue highlight to the next word in that direction.'
   ]},
   { title: 'Undo and redo (↶ ↷)', items: [
     '↶ undoes the last change, including formatting.',
@@ -3568,89 +3607,84 @@ const HELP_TOPICS_NOTE = [
     'Each note starts with fresh undo history when you open it.',
     'Making a new change after undoing clears what ↷ could redo.'
   ]},
-  { title: 'Effects', items: [
-    'Clear: deletes the selected text.',
-    'Clear formatting: removes quotes, indent, spacing, alignment and character formatting (lists stay).',
-    'Copy: copies the selected text so it can be pasted.',
-    'Cut: copies the selected text and removes it from the note.',
-    'Paste: puts the copied text at the cursor, replacing any selected text.',
-    'Select a word or words first (tap Select, or drag the handles); Copy, Cut and Paste work on that selection.',
-    'If your phone asks permission to paste from the clipboard, allow it; otherwise Paste uses what you last copied inside the note.',
-    'Glow: None, Soft, Medium or Strong light around the letters.',
-    'Outline: None, Thin, Medium or Thick line around the letters.'
-  ]},
-  { title: 'Font', items: [
+  { title: 'Text > Font', items: [
     'Family: Google Fonts, grouped as Display, Handwriting, Monospace, Sans Serif and Serif, plus System (Monospace, Sans-serif, Serif).',
     'Open a Family group to see its fonts A to Z; a font downloads from Google the first time you use it, so you need internet for that.',
     'After you choose a font, − and + move to the previous or next font in the same group.',
-    'Kerning: Auto, Normal or None (spacing between letter pairs).',
     'Size: 1 px to 50 px; everything you type starts at 18 px, and − and + change it 1 px at a time.',
     'Style: Italic, Normal or Oblique.',
     'Variant: Normal, Small caps, All small caps, Petite caps or Titling caps.',
     'Weight: Thin, Extra light, Light, Normal, Medium, Semi bold, Bold, Extra bold or Black; − and + step it by 100.',
-    'With the cursor in a word the change applies to that word; between words, select text first.'
+    'Kerning: Auto, Normal or None (spacing between letter pairs).'
   ]},
-  { title: 'Lists', items: [
+  { title: 'Text > Appearance', items: [
+    'Color: Black, Blue, Brown, Cyan, Gold, Gray, Green, Magenta, Navy, Orange, Pink, Purple, Red, Teal, White or Yellow.',
+    'Background color: the color behind the letters (also None).',
+    'Decoration: Line through, None, Overline or Underline.',
+    'Shadow: Hard, Medium, None or Soft shadow behind the letters.',
+    'Glow: None, Soft, Medium or Strong light around the letters.',
+    'Outline: None, Thin, Medium or Thick line around the letters.'
+  ]},
+  { title: 'Text > Alignment & Spacing', items: [
+    'Align: Center, Justify, Left or Right.',
+    'Direction: Left to right or Right to left.',
+    'Indent: None, or 5 to 50 px, on the first line of the paragraph only.',
+    'Line height: Single, 1.15 lines, 1.5 lines, Double, 2.5 lines or Triple; − and + change it by 0.1.',
+    'Letter spacing and Word spacing: Normal, or more or less space in px; − and + change it 1 px at a time.',
+    'Vertical align: Baseline, Subscript or Superscript.',
+    'White space: Normal, No wrap, Pre or Pre wrap.',
+    'Space Before and Space After: None, 6, 12, 18, 24, 36 or 48 px; − and + change it 1 px at a time.',
+    'Pressing Enter starts a new paragraph, with 12 px of space after it.'
+  ]},
+  { title: 'Text > Lists', items: [
     'Bulleted: Bullet, Circle or Square markers.',
-    'Numbered: Lowercase letters (a, b, c), Lowercase Roman (i, ii, iii), Numbers (1, 2, 3), Numbers with zero (01, 02, 03), Uppercase letters (A, B, C) or Uppercase Roman (I, II, III).',
-    'Checkboxes: Insert checkbox puts a tick box at the cursor, and ticks are saved with the note.',
+    'Numbered: Lowercase letters, Lowercase Roman, Numbers, Numbers with zero, Uppercase letters or Uppercase Roman.',
+    'Checkboxes: puts a tick box at the cursor, and ticks are saved with the note.',
     'Marker position: Inside or Outside the text block.',
     'Pressing Enter at the end of an item starts the next item.',
     'After you choose a list, the action row title reads Spacing and − / + change the space after each list item (6 px to start).',
     'Remove list: turns the list back into plain lines.'
   ]},
-  { title: 'Paragraph', items: [
-    'Pressing Enter starts a new paragraph, with 12 px of space after it.',
-    'New paragraph: starts a new paragraph at the cursor.',
-    'Line break (same paragraph): starts a new line inside the same paragraph.',
-    'Quote: sets the paragraph off as a quotation; tap it again to turn it off.',
-    'Reset paragraph formatting: removes indent, spacing, alignment and the other paragraph settings.',
-    'Space after and Space before: None, 6, 12, 18, 24, 36 or 48 px; − and + change it 1 px at a time.'
+  { title: 'Text > Word Formatting and Text Tools', items: [
+    'Word break: Break all, Keep all or Normal. Transform: Capitalize, Lowercase, None or Uppercase.',
+    'Text Tools: Clear (deletes the selected text), Clear formatting, Copy, Cut and Paste.',
+    'Text Tools also has Line break (same paragraph), New paragraph and Quote.',
+    'Copy, Cut and Paste work on the selected text (turn Active on and pick words first).',
+    'If your phone asks permission to paste from the clipboard, allow it; otherwise Paste uses what you last copied inside the note.'
   ]},
-  { title: 'Photo (formatting a photo)', items: [
-    'Tap a photo in the note: it gets a blue border and the Formatting list title reads Photo.',
-    'While a photo is selected, − and + make it smaller or larger (the action row title reads Size).',
-    'Open the Photo category to change anything else about the selected photo; tap away from the photo to let go of it.',
+  { title: 'Image (formatting a photo)', items: [
+    'Tap a photo in the note: it gets a blue border and the Formatting list shows Image.',
+    'While a photo is selected, − and + make it smaller or larger (the action row title reads Resize).',
+    'Appearance: Brightness, Contrast, Saturate, Sepia, Grayscale, Invert, Hue rotate, Blur and Opacity.',
+    'Size & Position: Resize (the photo\'s width as a percent of the note), Height, Object fit, Align, Rotate and Flip.',
     'Align: Center, Left, Right, Wrap text around left side or Wrap text around right side.',
-    'Alt text: Edit alt text… describes the photo.',
-    'Background color: a color behind the photo (or None).',
-    'Border color, Border style (Dashed, Dotted, Double, Groove, None, Ridge, Solid), Border width and Border radius.',
-    'Filters: Blur, Brightness, Contrast, Grayscale, Hue rotate, Invert, Saturate and Sepia.',
-    'Flip: Horizontal, None or Vertical; Rotate turns the photo by degrees.',
-    'Height: Auto or a set height; Object fit (Contain, Cover, Fill, None, Scale down) decides how the picture fills that height.',
-    'Margin bottom, Margin left, Margin right and Margin top: space around the photo.',
-    'Opacity: how see-through the photo is; Padding: space between the photo and its border.',
-    'Shadow: Hard, Medium, None, Soft or Strong.',
-    'Size (width): the photo\'s width as a percent of the note, 5% to 100%.',
-    'Remove photo: Delete this photo; Reset photo: Remove all photo styling.'
+    'Object fit: Contain, Cover, Fill, None or Scale down; Flip: Horizontal, None or Vertical.',
+    'Border & Background: Border color, Border style (None, Solid, Dashed, Dotted, Double, Groove, Ridge), Border width, Border radius, Background color and Shadow.',
+    'Spacing: Margin top, Margin bottom, Margin left, Margin right and Padding.',
+    'Other: Alt text, Remove image and Reset image.',
+    'Tap away from the photo to let go of it.'
   ]},
-  { title: 'Text', items: [
-    'Align: Center, Justify, Left or Right.',
-    'Background color: the color behind the letters (also None).',
-    'Color: Black, Blue, Brown, Cyan, Gold, Gray, Green, Magenta, Navy, Orange, Pink, Purple, Red, Teal, White or Yellow.',
-    'Decoration: Line through, None, Overline or Underline.',
-    'Direction: Left to right or Right to left.',
-    'Indent: None, or 5 to 50 px, on the first line of the paragraph only.',
-    'Letter spacing and Word spacing: Normal, or more or less space in px; − and + change it 1 px at a time.',
-    'Line height: Single, 1.15 lines, 1.5 lines, Double, 2.5 lines or Triple; − and + change it by 0.1.',
-    'Shadow: Hard, Medium, None or Soft shadow behind the letters.',
-    'Transform: Capitalize, Lowercase, None or Uppercase.',
-    'Vertical align: Baseline, Subscript or Superscript.',
-    'White space: Normal, No wrap, Pre or Pre wrap; Word break: Break all, Keep all or Normal.'
+  { title: 'Insert', items: [
+    'Image: opens the Add a picture sheet with Camera, Photos and Files.',
+    'Files: opens your phone\'s file browser; open folders, use its Back, and pick a picture.',
+    'Only pictures can go into a note; anything else is skipped with a message.'
   ]},
   { title: 'Adding photos', items: [
-    'Photos + opens your picture library; you can pick several photos at once.',
+    'Photos + (or Insert > Image) opens a sheet: 📷 Camera, 🖼 Photos, 📁 Files.',
+    'Camera opens your phone\'s camera; the picture you take goes straight into the note at the cursor.',
+    'Photos opens your picture library; you can pick several at once.',
+    'Files opens the phone\'s file browser, where you can open internal storage and any folder.',
     'Photos are shrunk to a sensible size and inserted at the cursor.',
     'The orange ↘ handle on a selected photo can also be dragged to resize it.'
   ]},
   { title: 'Typing and the keypad', items: [
     'The keypad appears only when you tap into the note itself.',
-    'Using the Formatting list, Select or the action row keeps it hidden.',
+    'Using the Formatting list, Active or the action row keeps it hidden.',
     'Tap the note again whenever you want to type.'
   ]},
   { title: 'Tips', items: [
-    'To format one word, put the cursor in it and choose an option.',
-    'To format a few words, use Select, then + to add words.',
+    'To type in a new style, choose the option first (Active off), then type.',
+    'To change words already written, turn Active on, select them, then choose.',
     'Formatting stacks: choose several options in a row on the same selection.',
     'Not sure what you did? ↶ undoes it.'
   ]}

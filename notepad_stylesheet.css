@@ -755,7 +755,7 @@ p {
   position: absolute;
   left: 0;
   right: 0;
-  top: 100%;
+  top: calc(100% + 36px);   /* just under the action row, so its buttons stay usable */
   max-height: 45vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -830,27 +830,219 @@ p {
   display: block;
 }
 
-/* level 2: groups and direct commands inside a category */
+/* rows one level down (subcategories, options, Insert commands) */
 .fmt-cat > .fmt-sub > .fmt-item,
-.fmt-cat > .fmt-sub > .fmt-group > .fmt-head {
+.fmt-subcat > .fmt-head,
+.fmt-subcat > .fmt-sub > .fmt-item,
+.fmt-subcat > .fmt-sub > .fmt-group > .fmt-head {
   padding-left: 32px;
 }
 
 .fmt-cat > .fmt-sub > .fmt-item::before,
-.fmt-cat > .fmt-sub > .fmt-group > .fmt-head::before {
+.fmt-subcat > .fmt-head::before,
+.fmt-subcat > .fmt-sub > .fmt-item::before,
+.fmt-subcat > .fmt-sub > .fmt-group > .fmt-head::before {
   content: '\25E6';          /* white bullet */
   margin-right: 10px;
 }
 
-/* level 3: commands inside a group */
-.fmt-group .fmt-sub .fmt-item {
+/* values inside an option (Family > Serif, Size > 18 px, ...) */
+.fmt-subcat > .fmt-sub > .fmt-group .fmt-sub .fmt-item {
   padding-left: 54px;
   font-size: 15px;
 }
 
-.fmt-group .fmt-sub .fmt-item::before {
+.fmt-subcat > .fmt-sub > .fmt-group .fmt-sub .fmt-item::before {
   content: '\2013';          /* en dash */
   margin-right: 10px;
+}
+
+.fmt-subcat > .fmt-sub > .fmt-group .fmt-group > .fmt-head {
+  padding-left: 54px;
+  font-size: 15px;
+}
+
+.fmt-subcat > .fmt-sub > .fmt-group .fmt-group .fmt-sub .fmt-item {
+  padding-left: 76px;
+}
+
+/* ---- Three-level navigation: Main categories > Subcategories > Options ---- */
+
+.fmt-back,
+.fmt-active-link,
+.fmt-active-view {
+  display: none;
+}
+
+.fmt-menu.nav-1 > .fmt-back,
+.fmt-menu.nav-2 > .fmt-back,
+.fmt-menu.view-active > .fmt-back {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+  background: #dfeaf7;
+  border-bottom: 1px solid rgba(100, 149, 237, 0.5);
+  cursor: pointer;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.fmt-back::before {
+  content: '\2039';
+  margin-right: 10px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.fmt-menu.nav-0.active-on > .fmt-active-link {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 12px;
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  background: #fff6d6;
+  border-bottom: 1px solid rgba(100, 149, 237, 0.25);
+  cursor: pointer;
+}
+
+.fmt-menu.view-active > .fmt-active-view {
+  display: block;
+}
+
+.fmt-menu.view-active > .fmt-cat,
+.fmt-menu.view-active > .fmt-active-link {
+  display: none;
+}
+
+/* inside a main category / subcategory only the chosen branch shows */
+.fmt-menu.nav-1 > .fmt-cat:not(.open),
+.fmt-menu.nav-2 > .fmt-cat:not(.open) {
+  display: none;
+}
+
+.fmt-menu.nav-1 > .fmt-cat.open > .fmt-head,
+.fmt-menu.nav-2 > .fmt-cat.open > .fmt-head {
+  display: none;
+}
+
+.fmt-menu.nav-2 > .fmt-cat.open > .fmt-sub > .fmt-subcat:not(.open),
+.fmt-menu.nav-2 > .fmt-cat.open > .fmt-sub > .fmt-item {
+  display: none;
+}
+
+.fmt-menu.nav-2 > .fmt-cat.open > .fmt-sub > .fmt-subcat.open > .fmt-head {
+  display: none;
+}
+
+/* context: a selected image shows Image, otherwise Text; Insert always */
+.fmt-menu.ctx-image > .fmt-cat[data-cat="Text"],
+.fmt-menu:not(.ctx-image) > .fmt-cat[data-cat="Image"] {
+  display: none !important;
+}
+
+/* The "On" status label: a plain indicator, never a button. */
+.fmt-on {
+  display: inline-block;
+  flex: 0 0 auto;
+  margin: 5px;
+  padding: 0 5px;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.fmt-curval {
+  margin-left: auto;
+  padding-left: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 400;
+  pointer-events: none;
+}
+
+.fmt-head.has-val::after {
+  margin-left: 0;
+}
+
+.fmt-active-view .fmt-item {
+  padding-left: 12px;
+}
+
+.fmt-active-view .fmt-item::before {
+  content: none;
+}
+
+.fmt-empty-row {
+  padding: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: #444444;
+}
+
+/* ---- Photo source sheet: Camera / Photos / Files ---- */
+.photo-source-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.photo-source-overlay.open {
+  display: flex;
+}
+
+.photo-source-sheet {
+  width: 100%;
+  max-width: 320px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  padding: 12px;
+}
+
+.photo-source-sheet h3 {
+  margin: 0 0 10px;
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+}
+
+.photo-source-sheet button {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin: 0 0 8px;
+  border: 1px solid #000000;
+  background: #f4f8fd;
+  color: #000000;
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  text-align: left;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.photo-source-sheet button.cancel {
+  margin-bottom: 0;
+  text-align: center;
+  background: #ffffff;
 }
 
 .fmt-item:active,
