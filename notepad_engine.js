@@ -2948,6 +2948,20 @@ function put_caret_in(span) {
 }
 
 // Makes sure the cursor is inside a span carrying the current new-text format.
+// A phone keyboard keeps the word being typed "in composition" (the letters are not final yet),
+// and text inside a composition cannot be restyled. Ending it first lets the new format start
+// with the very next letter typed.
+function finish_composition() {
+  const editor = get_editor();
+  if (!editor || !typing_composing || document.activeElement !== editor) return;
+  const sel = window.getSelection();
+  const keep = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+  editor.blur();
+  editor.focus({ preventScroll: true });
+  if (keep) { sel.removeAllRanges(); sel.addRange(keep); }
+  typing_composing = false;
+}
+
 function ensure_typing_span() {
   if (typing_ensuring || typing_composing || select_mode) return;
   const editor = get_editor();
@@ -3125,7 +3139,7 @@ function run_fmt_item(item, value_override) {
     console.error('Formatting command failed:', act || cmd, err);
   }
 
-  if (typed_as_span && had_caret) ensure_typing_span();
+  if (typed_as_span && had_caret) { finish_composition(); ensure_typing_span(); }
   fmt_finish(item);
 
   // Stepping the photo's size keeps the word "Image" in the list's title.
