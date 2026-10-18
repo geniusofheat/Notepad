@@ -2948,6 +2948,22 @@ function put_caret_in(span) {
 }
 
 // Makes sure the cursor is inside a span carrying the current new-text format.
+// A typing span with nothing typed in it yet (only the invisible marker character).
+function typing_span_is_blank(s) {
+  return s.textContent.replace(/\u200b/g, '') === '' && !s.querySelector('img, input, br');
+}
+
+// Removes typing spans nobody typed into (the cursor moved away). Never creates anything, so
+// moving the cursor, tapping and deleting leave the note exactly as it is.
+function tidy_typing_spans() {
+  if (typing_ensuring || typing_composing) return;
+  const editor = get_editor();
+  if (!editor) return;
+  const el = caret_element();
+  const cur = el && el.closest ? el.closest('span[data-tf]') : null;
+  editor.querySelectorAll('span[data-tf]').forEach((s) => { if (s !== cur && typing_span_is_blank(s)) s.remove(); });
+}
+
 // A phone keyboard keeps the word being typed "in composition" (the letters are not final yet),
 // and text inside a composition cannot be restyled. Ending it first lets the new format start
 // with the very next letter typed.
@@ -3000,6 +3016,19 @@ function ensure_typing_span() {
       here.dataset.tf = want;
       put_caret_in(here);
       return;
+    }
+
+    // Cursor right after a span that already has this format: carry on inside it.
+    if (range.startContainer.nodeType === 1) {
+      const prev = range.startContainer.childNodes[range.startOffset - 1];
+      if (prev && prev.nodeType === 1 && prev.matches && prev.matches('span[data-tf]') && prev.dataset.tf === want && prev.lastChild && prev.lastChild.nodeType === 3) {
+        const caret = document.createRange();
+        caret.setStart(prev.lastChild, prev.lastChild.data.length);
+        caret.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(caret);
+        return;
+      }
     }
 
     const span = document.createElement('span');
@@ -3627,16 +3656,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    editor.addEventListener('beforeinput', () => { ensure_typing_span(); });
+    editor.addEventListener('beforeinput', (ev) => {
+      const kind = ev.inputType || '';
+      if (kind === 'insertText' || kind === 'insertParagraph' || kind === 'insertFromPaste') { ensure_typing_span(); return; }
+
+      // Backspace right after a format was chosen would only delete the invisible marker: remove
+      // the marker and delete the real letter before it instead.
+      if (kind === 'deleteContentBackward' && ev.cancelable) {
+        const s = window.getSelection();
+        const el = caret_element();
+        const sp = el && el.closest ? el.closest('span[data-tf]') : null;
+        if (sp && s.isCollapsed && typing_span_is_blank(sp)) {
+          ev.preventDefault();
+          const at = document.createRange();
+          at.setStartBefore(sp);
+          at.collapse(true);
+          sp.remove();
+          s.removeAllRanges();
+          s.addRange(at);
+          document.execCommand('delete');
+        }
+      }
+    });
     // Tapping into the note raises the keypad; the page must not slide up and cover the title.
     ['pointerdown', 'touchstart'].forEach((type) => editor.addEventListener(type, hold_page_start, { capture: true, passive: true }));
     editor.addEventListener('focus', hold_page_apply_soon);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', hold_page_apply_soon);
     window.addEventListener('scroll', hold_page_apply, { passive: true });
-    editor.addEventListener('compositionstart', () => { typing_composing = true; });
+    editor.addEventListener('compositionstart', () => { ensure_typing_span(); typing_composing = true; });
     editor.addEventListener('compositionend', () => { typing_composing = false; });
-    editor.addEventListener('focus', () => setTimeout(ensure_typing_span, 0));
-    document.addEventListener('selectionchange', ensure_typing_span);
+    document.addEventListener('selectionchange', tidy_typing_spans);
 
     editor.addEventListener('click', (e) => {
       if (e.target.closest && e.target.closest('.note-photo')) return;
@@ -3645,7 +3694,7 @@ document.addEventListener('DOMContentLoaded', () => {
       close_fmt_menu();
 
       // Tapping into the note to type: bring the keypad back.
-      if (!select_mode) { setTimeout(() => { keyboard_on(); ensure_typing_span(); }, 0); return; }
+      if (!select_mode) { setTimeout(() => { keyboard_on(); tidy_typing_spans(); }, 0); return; }
       if (e.target.tagName === 'INPUT') return;   // checkbox tap
       const tap_x = e.clientX, tap_y = e.clientY;
       setTimeout(() => status_mode_tap(tap_x, tap_y), 0);
