@@ -1703,12 +1703,22 @@ function get_editor() {
 // focus the editor to run (execCommand needs it), so while the toolbar is in
 // use the editor is marked inputmode="none" — focus works, keypad stays down.
 // The keypad comes back only when the user taps into the note to type.
+// Is the soft keypad showing right now? (The visible screen is much shorter than it has been.)
+let tallest_view = 0;
+function keypad_is_up() {
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  tallest_view = Math.max(tallest_view, h);
+  return tallest_view - h > 120;
+}
+if (window.visualViewport) window.visualViewport.addEventListener('resize', keypad_is_up);
+window.addEventListener('load', keypad_is_up);
+
 function keyboard_off(force) {
   const editor = get_editor();
   if (!editor) return;
   // Active off and the user is typing (cursor in the note, keypad up): leave the keypad and
   // the blinking cursor alone, so formatting can be chosen while typing carries on.
-  if (!force && !select_mode && document.activeElement === editor && editor.getAttribute('inputmode') !== 'none') return;
+  if (!force && !select_mode && document.activeElement === editor && editor.getAttribute('inputmode') !== 'none' && keypad_is_up()) return;
   editor.setAttribute('inputmode', 'none');
 }
 window.keyboard_off = keyboard_off;
@@ -1782,6 +1792,7 @@ function toggle_fmt_menu(force) {
   menu.classList.toggle('open', open);
   if (open) keyboard_off();   // opening never raises the keypad; if it is already up while typing it stays
   if (open) place_fmt_menu();
+  lock_scroll_position();   // the page never moves when the list opens or closes
   if (!open) {
     // Closing leaves a clean list: next time it starts at the main categories.
     menu.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));

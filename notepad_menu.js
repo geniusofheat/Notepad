@@ -728,6 +728,8 @@
   window.fmt_menu_click = function (event) {
     const t = event.target;
     const m = menu_el();
+    keyboard_off();                 // tapping the list never raises the keypad
+    if (typeof lock_scroll_position === 'function') lock_scroll_position();   // and never moves the page
 
     if (m.classList.contains('view-active')) {
       const qi = t.closest('.fmt-quick-item');
