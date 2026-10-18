@@ -62,6 +62,13 @@
     const item = browsing ? null : value_item();
     const li = item && value_list_of(item);
     l.textContent = (li && head_text(li)) || last_cat_name || ctx_name();
+
+    // Active list open and the highlighted word has no formatting: say so ("None" if it does not fit).
+    const mm = menu_el();
+    if (mm && mm.classList.contains('view-active') && active_entries.length === 0) {
+      l.textContent = 'No formatting';
+      if (l.scrollWidth > l.clientWidth + 1) l.textContent = 'None';
+    }
   }
   window.fmt_update_label = function (reset) {
     if (reset) last_cat_name = null;
@@ -420,6 +427,7 @@
   function clear_labels(root) {
     root.querySelectorAll('.fmt-on, .fmt-curval').forEach((el) => el.remove());
     root.querySelectorAll('.has-val').forEach((el) => el.classList.remove('has-val'));
+    root.querySelectorAll('.is-on').forEach((el) => el.classList.remove('is-on'));
   }
 
   function add_on(el, shown) {
@@ -479,7 +487,8 @@
     const entries = [];
     info.forEach((g) => {
       if (!g.matched.length && !g.loose) return;
-      g.matched.forEach((it) => add_on(it, ''));
+      // Italic is already shown by its group head ("On Style Italic"), so the item itself gets no second On.
+      g.matched.forEach((it) => { it.classList.add('is-on'); if (it.dataset.cmd !== 'italic') add_on(it, ''); });
 
       let shown = g.first.p.shown || '';
       if (g.matched.length) {
@@ -490,17 +499,15 @@
       if (/^(Color|Background color|Border color)$/.test(head_text(g.group)) && g.matched.length) {
         shown = own_text(g.matched[0]);
       }
+      // Several options on in one list: the line only says how many; the list shows which.
+      if (g.matched.length > 1) shown = g.matched.length + ' items';
       const head = g.group.querySelector(':scope > .fmt-head');
       add_on(head, shown);
 
-      // Toggles (Bold, Underline, ...) each get their own row; values share the group's row.
-      const toggles = g.matched.filter((it) => it.dataset.cmd);
-      const values = g.matched.filter((it) => !it.dataset.cmd);
-      toggles.forEach((it) => entries.push({ title: own_text(it), shown: '', off: probe(it).off, mode }));
-      if (values.length || g.loose) {
-        const off_probe = values.length ? probe(values[0]) : g.first.p;
-        entries.push({ title: head_text(g.group), shown, off: off_probe.off, mode, group: g.group });
-      }
+      // One row per list: the list title, with what is on shown to the right (Style  Italic).
+      const first_on = g.matched.length ? g.matched[0] : null;
+      const off_probe = first_on ? probe(first_on) : g.first.p;
+      entries.push({ title: head_text(g.group), shown, off: off_probe.off, mode, group: g.group });
     });
     return entries;
   }
@@ -529,17 +536,43 @@
   let quick_open = '';      // title of the On row whose values are showing
   let quick_items = [];
 
+  // Last row of the Active list: opens the full formatting list for the highlighted word.
+  function add_choose_row(view) {
+    const r = document.createElement('div');
+    r.className = 'fmt-item fmt-choose-row';
+    r.textContent = 'Choose formatting \u203a';
+    view.appendChild(r);
+  }
+
+  // The regular list, with Active still on: whatever is chosen applies to the highlighted text.
+  function show_regular_list() {
+    const m = menu_el();
+    if (!m) return;
+    m.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));
+    m.classList.remove('view-active');
+    browsing = false;
+    last_cat_name = null;
+    const cat = active_category();
+    if (cat) cat.classList.add('open');
+    nav_update();
+    m.scrollTop = 0;
+    refresh_states();
+  }
+  window.fmt_choose_formatting = show_regular_list;
+
   function render_active_view(entries) {
     const view = document.getElementById('fmtActiveView');
     if (!view) return;
     active_entries = entries;
+    update_label();
     view.innerHTML = '';
 
     if (entries.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'fmt-empty-row';
-      empty.textContent = 'No active formatting here.';
+      empty.textContent = 'No formatting on this word.';
       view.appendChild(empty);
+      add_choose_row(view);
       return;
     }
 
@@ -568,11 +601,15 @@
         quick_items = [];
         const g = entry.group;
         if (g.hasAttribute('data-font-style') && typeof populate_font_group === 'function') populate_font_group(g);
-        Array.from(g.querySelectorAll('.fmt-item')).filter((it) => it.dataset.act || it.dataset.cmd).forEach((it) => {
+        let list_items = Array.from(g.querySelectorAll('.fmt-item')).filter((it) => it.dataset.act || it.dataset.cmd);
+        const is_on = (it) => it.classList.contains('is-on');
+        const on_count = list_items.filter(is_on).length;
+        if (on_count > 1) list_items = list_items.filter(is_on).concat(list_items.filter((it) => !is_on(it)));
+        list_items.forEach((it) => {
           const q = document.createElement('div');
           q.className = 'fmt-item fmt-quick-item';
           q.dataset.quick = String(quick_items.length);
-          if (it.querySelector(':scope > .fmt-on')) {
+          if (it.classList.contains('is-on')) {
             const on = document.createElement('span');
             on.className = 'fmt-on';
             on.textContent = 'On';
@@ -583,8 +620,23 @@
           box.appendChild(q);
         });
         view.appendChild(box);
+
+        // The list is its own scroll box under the title. One value on (26 px): it snaps to the top,
+        // right under the title; the values before it (1 to 25) sit above and show on scrolling up.
+        const menu = menu_el();
+        box.style.maxHeight = Math.max(120, Math.floor(menu.clientHeight * 0.7)) + 'px';
+        box.style.overflowY = 'auto';
+        const on_q = on_count === 1 ? Array.from(box.children).find((q) => q.querySelector(':scope > .fmt-on')) : null;
+        if (on_q) {
+          const spacer = document.createElement('div');
+          spacer.style.height = box.clientHeight + 'px';
+          box.appendChild(spacer);
+          box.scrollTop = on_q.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+        }
+        menu.scrollTop += row.getBoundingClientRect().top - menu.getBoundingClientRect().top;   // title stays in view
       }
     });
+    add_choose_row(view);
   }
 
   function show_active_view(on) {
@@ -684,6 +736,7 @@
         if (it) { run_fmt_item(it); refresh_states(); }
         return;
       }
+      if (t.closest('.fmt-choose-row')) { show_regular_list(); return; }
       const arow = t.closest('.fmt-active-row');
       if (arow) {                     // an On title opens / closes its quick list
         const entry = active_entries[parseInt(arow.dataset.entry, 10)];
@@ -752,6 +805,7 @@
     }
 
     run_fmt_item(item);
-    close_fmt_menu();            // the list contracts; the action row names the chosen option
+    if (select_mode) show_active_view(true);   // Active on: back to the status list, now showing the new format
+    else close_fmt_menu();                     // the list contracts; the action row names the chosen option
   };
 })();

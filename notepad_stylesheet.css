@@ -992,6 +992,13 @@ p {
   font-weight: 400;
 }
 
+.fmt-choose-row {
+  padding: 12px;
+  font-weight: 700;
+  border-top: 1px solid #c9d6e2;
+  cursor: pointer;
+}
+
 .fmt-empty-row {
   padding: 12px;
   font-family: 'Space Mono', monospace;

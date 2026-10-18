@@ -1771,6 +1771,13 @@ function toggle_fmt_menu(force) {
   const btn = document.getElementById('fmtCategoryBtn');
   if (!menu) return;
 
+  // Active is on and its status list is showing: the category button leads to the full list
+  // (the highlighted word stays selected); pressing it there closes the list as usual.
+  if (typeof force !== 'boolean' && select_mode && menu.classList.contains('open') && menu.classList.contains('view-active') && typeof fmt_choose_formatting === 'function') {
+    fmt_choose_formatting();
+    return;
+  }
+
   const open = typeof force === 'boolean' ? force : !menu.classList.contains('open');
   menu.classList.toggle('open', open);
   if (open) keyboard_off();   // opening never raises the keypad; if it is already up while typing it stays
