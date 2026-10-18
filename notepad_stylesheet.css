@@ -793,13 +793,13 @@ p {
   border-bottom: 1px solid rgba(100, 149, 237, 0.25);
 }
 
-/* level 1: category */
+/* level 1: category (the only hollow bullet; everything below uses solid bullets) */
 .fmt-cat > .fmt-head {
   font-weight: 700;
 }
 
 .fmt-cat > .fmt-head::before {
-  content: '\2022';          /* bullet */
+  content: '\25E6';         /* white (hollow) bullet */
   margin-right: 10px;
 }
 
@@ -831,40 +831,44 @@ p {
   display: block;
 }
 
-/* rows one level down (subcategories, options, Insert commands) */
+/* rows one level down: Insert commands and subcategory titles (Font, Color, ...) */
 .fmt-cat > .fmt-sub > .fmt-item,
-.fmt-subcat > .fmt-head,
+.fmt-subcat > .fmt-head {
+  padding-left: 32px;
+}
+
+/* the options inside a subcategory (Family, Size, Bold, ...) sit further in than its title */
 .fmt-subcat > .fmt-sub > .fmt-item,
 .fmt-subcat > .fmt-sub > .fmt-group > .fmt-head {
-  padding-left: 32px;
+  padding-left: 54px;
 }
 
 .fmt-cat > .fmt-sub > .fmt-item::before,
 .fmt-subcat > .fmt-head::before,
 .fmt-subcat > .fmt-sub > .fmt-item::before,
 .fmt-subcat > .fmt-sub > .fmt-group > .fmt-head::before {
-  content: '\25E6';          /* white bullet */
+  content: '\2022';         /* solid bullet */
   margin-right: 10px;
 }
 
-/* values inside an option (Family > Serif, Size > 18 px, ...) */
+/* values inside an option (Family > Serif, Size > 18 px, ...) sit in again */
 .fmt-subcat > .fmt-sub > .fmt-group .fmt-sub .fmt-item {
-  padding-left: 54px;
+  padding-left: 76px;
   font-size: 15px;
 }
 
 .fmt-subcat > .fmt-sub > .fmt-group .fmt-sub .fmt-item::before {
-  content: '\2013';          /* en dash */
+  content: '\2022';         /* solid bullet */
   margin-right: 10px;
 }
 
 .fmt-subcat > .fmt-sub > .fmt-group .fmt-group > .fmt-head {
-  padding-left: 54px;
+  padding-left: 76px;
   font-size: 15px;
 }
 
 .fmt-subcat > .fmt-sub > .fmt-group .fmt-group .fmt-sub .fmt-item {
-  padding-left: 76px;
+  padding-left: 98px;
 }
 
 /* ---- Three-level navigation: Main categories > Subcategories > Options ---- */

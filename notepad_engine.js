@@ -1713,6 +1713,25 @@ function keypad_is_up() {
 if (window.visualViewport) window.visualViewport.addEventListener('resize', keypad_is_up);
 window.addEventListener('load', keypad_is_up);
 
+// Keeps the page where it was when the keypad comes up (the browser likes to scroll it).
+let hold_y = 0, hold_cont = 0, hold_until = 0;
+function hold_page_start() {
+  const c = document.querySelector('.notepad-body');
+  hold_y = window.scrollY;
+  hold_cont = c ? c.scrollTop : 0;
+  hold_until = Date.now() + 1500;
+}
+function hold_page_apply() {
+  if (Date.now() > hold_until) return;
+  if (window.scrollY !== hold_y) window.scrollTo(0, hold_y);
+  const c = document.querySelector('.notepad-body');
+  if (c && c.scrollTop !== hold_cont) c.scrollTop = hold_cont;
+}
+function hold_page_apply_soon() {
+  if (Date.now() > hold_until) return;
+  [0, 50, 150, 300, 600, 1000].forEach((ms) => setTimeout(hold_page_apply, ms));
+}
+
 function keyboard_off(force) {
   const editor = get_editor();
   if (!editor) return;
@@ -2708,7 +2727,7 @@ function update_action_title() {
     text = 'All';                 // press it to select the whole note
     pressable = true;
   } else {
-    text = active_fmt_item ? fmt_item_title(active_fmt_item, active_fmt_value).replace(/^[^:]+:\s*/, '') : '';
+    text = active_fmt_item ? fmt_item_title(active_fmt_item, active_fmt_value).replace(/^[^:]+:\s*/, '') : 'None';
     pressable = select_mode && !!text;   // press it to go back to stretching the selection
   }
 
@@ -2820,6 +2839,12 @@ function is_character_item(item) {
   if (item.dataset.act === 'css') return item.dataset.scope !== 'block';
   return CHARACTER_ACTS.indexOf(item.dataset.act) !== -1;
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// NORMAL MODE — formatting for NEW text
+//   Active is off. Whatever is switched on in the select list is applied to the text typed
+//   next, anywhere in the note. Words already in the note are never touched.
+// ═════════════════════════════════════════════════════════════════════════════
 
 // ── Formatting for newly typed text ─────────────────────────────────────────
 // Choosing a character format in the list (Active off) never touches words already in the
@@ -3110,6 +3135,14 @@ function run_fmt_item(item, value_override) {
 }
 window.run_fmt_item = run_fmt_item;
 
+
+// ═════════════════════════════════════════════════════════════════════════════
+// STATUS MODE — the Active button is on
+//   Part 1 (this section and the word navigation below): the arrow buttons highlight word
+//   to word and the Active list shows the formatting of the highlighted word.
+//   Part 2 (STATUS MODE PART 2, further down): the cursor reaches blank space, so Active
+//   turns itself off and the select list is back to normal.
+// ═════════════════════════════════════════════════════════════════════════════
 
 // ── Select mode ─────────────────────────────────────────────────────────────
 // First press: mode on + first word of the note selected.
@@ -3404,6 +3437,7 @@ function move_left_right(direction) {
       word = find_first_word_range();
     }
     if (word) set_select_range(word, true);
+    else if (base && direction > 0) status_mode_leave_after_last_word();   // no more words: new text goes here
     return;
   }
 
@@ -3526,6 +3560,7 @@ function reset_fmt_toolbar() {
   if (typeof clear_photo_selection === 'function') clear_photo_selection();   // nothing is selected in a freshly opened note
   typing_format = {};                  // a freshly opened note starts with no new-text format
   set_active_fmt_item(null);
+  if (typeof fmt_update_label === 'function') fmt_update_label(true);   // the list title reads None again
   document.querySelectorAll('#fmtMenu .open').forEach((el) => el.classList.remove('open'));
 }
 window.reset_fmt_toolbar = reset_fmt_toolbar;
@@ -3579,6 +3614,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     editor.addEventListener('beforeinput', () => { ensure_typing_span(); });
+    // Tapping into the note raises the keypad; the page must not slide up and cover the title.
+    ['pointerdown', 'touchstart'].forEach((type) => editor.addEventListener(type, hold_page_start, { capture: true, passive: true }));
+    editor.addEventListener('focus', hold_page_apply_soon);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', hold_page_apply_soon);
+    window.addEventListener('scroll', hold_page_apply, { passive: true });
     editor.addEventListener('compositionstart', () => { typing_composing = true; });
     editor.addEventListener('compositionend', () => { typing_composing = false; });
     editor.addEventListener('focus', () => setTimeout(ensure_typing_span, 0));
@@ -3593,7 +3633,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Tapping into the note to type: bring the keypad back.
       if (!select_mode) { setTimeout(() => { keyboard_on(); ensure_typing_span(); }, 0); return; }
       if (e.target.tagName === 'INPUT') return;   // checkbox tap
-      setTimeout(select_word_at_caret, 0);
+      const tap_x = e.clientX, tap_y = e.clientY;
+      setTimeout(() => status_mode_tap(tap_x, tap_y), 0);
     });
 
     // Pasted text can satisfy a pending "select the first word". Ordinary
@@ -3617,6 +3658,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// STATUS MODE PART 2 — the cursor lands on blank space: Active turns off
+//   Blank space = after the last word, or a tap anywhere there is no word (same line, next
+//   line, 90 lines down). New text will be typed there, so the select list goes back to
+//   NORMAL MODE: the normal formatting options, titles reading None until a format is chosen.
+// ═════════════════════════════════════════════════════════════════════════════
+
+// Leaves status mode with the cursor at `caret` (a collapsed Range inside the note).
+function status_mode_leave(caret) {
+  const editor = get_editor();
+  if (!editor || !select_mode) return;
+
+  if (caret && range_in_editor(caret)) {
+    const sel = window.getSelection();
+    editor.focus({ preventScroll: true });
+    sel.removeAllRanges();
+    sel.addRange(caret);
+    save_editor_selection();
+  }
+
+  exit_select_mode(false);               // un-highlights, closes the Active list, Active button off
+
+  // Back to the normal list: titles read None unless a format is already on for new text.
+  if (Object.keys(typing_format).length === 0) {
+    set_active_fmt_item(null);
+    if (typeof fmt_update_label === 'function') fmt_update_label(true);
+  }
+  ensure_typing_span();                  // the new-text format (if any) goes in at the cursor
+}
+
+// Right arrow with no more words: the cursor goes right after the last word.
+function status_mode_leave_after_last_word() {
+  if (!select_range) return;
+  const caret = select_range.cloneRange();
+  caret.collapse(false);
+  status_mode_leave(caret);
+}
+
+// A tap in the note while Active is on: on a word it highlights that word; on blank space it
+// puts the cursor there and turns Active off.
+function status_mode_tap(x, y) {
+  if (!select_mode) return;
+
+  const sel = window.getSelection();
+  const live = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+  if (live && range_in_editor(live) && !live.collapsed) {   // dragged handles: adopt the selection
+    set_select_range(live, false);
+    return;
+  }
+
+  select_word_at_caret();
+
+  const over_word = !!select_range && Array.from(select_range.getClientRects()).some((r) =>
+    x >= r.left - 3 && x <= r.right + 3 && y >= r.top - 3 && y <= r.bottom + 3);
+  if (over_word) return;
+
+  // Blank space: put the cursor where the finger went (or at the end of the note).
+  let caret = null;
+  if (document.caretRangeFromPoint) caret = document.caretRangeFromPoint(x, y);
+  if (!caret || !range_in_editor(caret)) caret = live && range_in_editor(live) ? live : null;
+  if (caret) caret.collapse(true);
+  status_mode_leave(caret);
+}
 
 
 // ── SECTION 14C: UNDO / REDO ────────────────────────────────────────────────

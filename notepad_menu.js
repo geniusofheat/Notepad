@@ -41,6 +41,8 @@
   let last_cat_name = null;
   let browsing = false;      // the user has navigated since the list opened: show the category they are in
   function ctx_name() { return (typeof selected_photo === 'function' && selected_photo()) ? 'Image' : 'Text'; }
+  // The title when nothing has been chosen yet (a fresh note): None, or Image while a photo is selected.
+  function idle_name() { return (typeof selected_photo === 'function' && selected_photo()) ? 'Image' : 'None'; }
 
   // The list the last chosen option belongs to (Resize for 50%, Weight for Bold, ...).
   function value_item() {
@@ -61,13 +63,17 @@
     if (!l) return;
     const item = browsing ? null : value_item();
     const li = item && value_list_of(item);
-    l.textContent = (li && head_text(li)) || last_cat_name || ctx_name();
+    l.textContent = (li && head_text(li)) || last_cat_name || idle_name();
 
     // Active list open and the highlighted word has no formatting: say so ("None" if it does not fit).
     const mm = menu_el();
-    if (mm && mm.classList.contains('view-active') && active_entries.length === 0) {
-      l.textContent = 'No formatting';
-      if (l.scrollWidth > l.clientWidth + 1) l.textContent = 'None';
+    if (mm && mm.classList.contains('view-active')) {
+      if (active_entries.length === 0) {
+        l.textContent = 'No formatting';
+        if (l.scrollWidth > l.clientWidth + 1) l.textContent = 'None';
+      } else {
+        l.textContent = active_entries.length === 1 ? active_entries[0].title : 'Active';
+      }
     }
   }
   window.fmt_update_label = function (reset) {
@@ -691,10 +697,11 @@
           if (li.hasAttribute('data-font-style') && typeof populate_font_group === 'function') populate_font_group(li);
           li.classList.add('open');
         }
-      } else {
-        const cat = active_category();
+      } else if (selected_photo()) {
+        const cat = active_category();     // a selected image opens on the Image options
         if (cat) cat.classList.add('open');
       }
+      // otherwise the list opens on the main titles (Text, Insert)
     }
     nav_update();
     m.scrollTop = 0;
@@ -705,6 +712,7 @@
     const m = menu_el();
     if (!m) return;
     browsing = false;          // collapsed: the title names the list of the last chosen value
+    last_cat_name = null;      // browsing a category without choosing leaves the title at None
     m.classList.remove('view-active');
     nav_update();
     update_label();
