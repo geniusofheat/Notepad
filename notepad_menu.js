@@ -711,7 +711,15 @@
         m.scrollTop = 0;
         return;
       }
-      if (li.classList.contains('fmt-subcat') && li.classList.contains('open')) return;
+      if (li.classList.contains('fmt-subcat') && li.classList.contains('open')) {
+        // pressing an open title again folds its list back up to the titles
+        li.classList.remove('open');
+        li.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));
+        nav_update();
+        refresh_states();
+        m.scrollTop = 0;
+        return;
+      }
 
       if (li.classList.contains('fmt-cat') || li.classList.contains('fmt-subcat')) {
         Array.from(li.parentElement.children).forEach((sib) => { if (sib !== li) sib.classList.remove('open'); });

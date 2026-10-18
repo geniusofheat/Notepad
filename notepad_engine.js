@@ -3100,6 +3100,7 @@ function set_select_range(range, push_native) {
   }
 
   paint_select_highlight();
+  if (typeof fmt_refresh_states === 'function') fmt_refresh_states();   // the On list follows the highlighted word
 }
 
 // Two text nodes are "adjacent" for word purposes when nothing but
