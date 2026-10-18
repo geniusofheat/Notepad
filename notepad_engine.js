@@ -1703,9 +1703,13 @@ function get_editor() {
 // focus the editor to run (execCommand needs it), so while the toolbar is in
 // use the editor is marked inputmode="none" — focus works, keypad stays down.
 // The keypad comes back only when the user taps into the note to type.
-function keyboard_off() {
+function keyboard_off(force) {
   const editor = get_editor();
-  if (editor) editor.setAttribute('inputmode', 'none');
+  if (!editor) return;
+  // Active off and the user is typing (cursor in the note, keypad up): leave the keypad and
+  // the blinking cursor alone, so formatting can be chosen while typing carries on.
+  if (!force && !select_mode && document.activeElement === editor && editor.getAttribute('inputmode') !== 'none') return;
+  editor.setAttribute('inputmode', 'none');
 }
 window.keyboard_off = keyboard_off;
 
@@ -1735,6 +1739,33 @@ function range_in_editor(range) {
 
 // ── Menu open / close / expand ──────────────────────────────────────────────
 
+// The list opens upward from the Formatting bar and may use all the room above it, so the
+// note below stays in view. With almost no room above it falls back to opening downward.
+function place_fmt_menu() {
+  const menu = document.getElementById('fmtMenu');
+  const row = document.querySelector('.fmt-row');
+  const action = document.getElementById('noteActionLine');
+  if (!menu || !row || !menu.classList.contains('open')) return;
+  const view_h = document.documentElement.clientHeight;
+  const parent = menu.offsetParent || document.body;
+  const p = parent.getBoundingClientRect();
+  const row_top = row.getBoundingClientRect().top;
+  const room = row_top - 4;
+  if (room >= 140) {
+    menu.style.top = 'auto';
+    menu.style.bottom = (p.bottom - row_top + 2) + 'px';
+    menu.style.maxHeight = room + 'px';
+  } else {
+    const below = (action ? action.getBoundingClientRect().bottom : row.getBoundingClientRect().bottom) + 4;
+    menu.style.bottom = 'auto';
+    menu.style.top = (below - p.top) + 'px';
+    menu.style.maxHeight = Math.max(140, view_h - below - 8) + 'px';
+  }
+}
+window.addEventListener('resize', place_fmt_menu);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', place_fmt_menu);
+window.addEventListener('scroll', place_fmt_menu, true);
+
 function toggle_fmt_menu(force) {
   const menu = document.getElementById('fmtMenu');
   const btn = document.getElementById('fmtCategoryBtn');
@@ -1742,7 +1773,8 @@ function toggle_fmt_menu(force) {
 
   const open = typeof force === 'boolean' ? force : !menu.classList.contains('open');
   menu.classList.toggle('open', open);
-  if (open) keyboard_off();   // opening the menu must never leave the keypad up
+  if (open) keyboard_off();   // opening never raises the keypad; if it is already up while typing it stays
+  if (open) place_fmt_menu();
   if (!open) {
     // Closing leaves a clean list: next time it starts at the main categories.
     menu.querySelectorAll('.open').forEach((el) => el.classList.remove('open'));
@@ -2410,7 +2442,7 @@ function photo_operation(kind) {
 let photo_label_active = false;   // list title reads "Image" until another photo option is chosen
 
 function on_photo_selected(img) {
-  keyboard_off();
+  keyboard_off(true);
   if (typeof fmt_update_label === 'function') fmt_update_label(true);
   photo_label_active = true;
   const size_item = document.querySelector('#fmtMenu .fmt-item[data-act="photo"][data-prop="width"]');
@@ -3781,8 +3813,8 @@ const HELP_TOPICS_NOTE = [
     'An option applies right away; there is no Apply button.',
     'A black On label on the left of an option or group shows that it is on; the current value is on the right.',
     'After you choose an option the list closes and its title shows what you chose.',
-    'The list floats over the note and never pushes it down; tap the note to close it.',
-    'Choosing a formatting option never brings up the keypad.'
+    'The list floats above the bar and never covers the note; tap the note to close it.',
+    'The list opens upward over the space above the bar. If you are typing, the keypad and cursor stay while you choose; otherwise choosing never brings the keypad up.'
   ]},
   { title: 'The Active button', items: [
     'Active OFF: the formatting you choose is for the text you type next; the words already in the note do not change.',

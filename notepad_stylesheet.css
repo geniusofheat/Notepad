@@ -752,10 +752,11 @@ p {
 
 .fmt-menu {
   display: none;
-  position: absolute;
+  position: absolute;        /* opens upward from the Formatting bar; placed by place_fmt_menu() */
   left: 0;
   right: 0;
-  top: calc(100% + 36px);   /* just under the action row, so its buttons stay usable */
+  bottom: 50vh;
+  top: auto;
   max-height: 45vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;

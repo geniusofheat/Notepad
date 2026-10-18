@@ -49,7 +49,7 @@ function trigger_photo_picker() {
     return;
   }
   capture_photo_insert_point();
-  if (typeof keyboard_off === 'function') keyboard_off();
+  if (typeof keyboard_off === 'function') keyboard_off(true);
   const sheet = document.getElementById('photoSourceOverlay');
   if (sheet) sheet.classList.add('open');
 }
@@ -751,7 +751,7 @@ function handle_photo_move_click(event) {
 
   photo_move_img = null;
   select_note_photo(img);
-  if (typeof keyboard_off === 'function') keyboard_off();
+  if (typeof keyboard_off === 'function') keyboard_off(true);
   if (typeof auto_save_current_note === 'function') auto_save_current_note();
 }
 
