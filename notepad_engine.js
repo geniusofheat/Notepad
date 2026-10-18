@@ -1732,6 +1732,35 @@ function hold_page_apply_soon() {
   [0, 50, 150, 300, 600, 1000].forEach((ms) => setTimeout(hold_page_apply, ms));
 }
 
+// ── PAGE STAYS PUT ──────────────────────────────────────────────────────────
+// The page only moves when a finger is dragging it (or just let go, for the fling). Anything else
+// that tries to move it — the keypad opening or closing, typing, the cursor, a list, a tap — is
+// put straight back to where the page was.
+let page_y = 0, page_finger_down = false, page_free_until = 0;
+function page_is_free() { return page_finger_down || Date.now() < page_free_until; }
+function page_guard_start() {
+  page_y = window.scrollY;
+  ['touchstart', 'pointerdown'].forEach((t) => document.addEventListener(t, (ev) => {
+    const ed = get_editor();
+    if (ed && ev.target && ed.contains(ev.target)) return;      // a tap in the note never counts as a page drag
+    if (ev.target && ev.target.closest && ev.target.closest('.notepad-body')) return;
+    page_finger_down = true;
+  }, { capture: true, passive: true }));
+  ['touchend', 'touchcancel', 'pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, () => {
+    if (page_finger_down) { page_finger_down = false; page_free_until = Date.now() + 700; }
+  }, { capture: true, passive: true }));
+  window.addEventListener('scroll', () => {
+    if (page_is_free()) { page_y = window.scrollY; return; }
+    if (window.scrollY !== page_y) window.scrollTo(0, page_y);
+  }, { passive: true });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', () => {
+    [0, 60, 200, 500].forEach((ms) => setTimeout(() => {
+      if (!page_is_free() && window.scrollY !== page_y) window.scrollTo(0, page_y);
+    }, ms));
+  });
+}
+page_guard_start();
+
 function keyboard_off(force) {
   const editor = get_editor();
   if (!editor) return;
