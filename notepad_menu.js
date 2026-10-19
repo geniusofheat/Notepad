@@ -56,7 +56,6 @@
   // The title the select list shows for a pressed title in the pop-up list: the CSS-style name.
   // A list inside Font reads "Font Size", "Font Style", "Font Family" ...; a title with no list
   // above it (Font, Appearance, Text) is just its own name.
-  const TITLE_PREFIX = { Font: 'Font' };
   function title_of(li) {
     if (!li) return '';
     const own = head_text(li);
@@ -64,9 +63,12 @@
     let list = li;                                     // Display, Serif ... belong to Family
     while (list.parentElement && list.parentElement.closest('li') && !list.parentElement.closest('li').classList.contains('fmt-subcat')) list = list.parentElement.closest('li');
     const sub = list.parentElement && list.parentElement.closest('li.fmt-subcat');
-    const pre = sub ? (TITLE_PREFIX[head_text(sub)] || '') : '';
+    const pre = sub ? head_text(sub) : '';
     const name = head_text(list);
-    return pre && name.toLowerCase().indexOf(pre.toLowerCase()) !== 0 ? pre + ' ' + name : name;
+    const lo = name.toLowerCase(), po = pre.toLowerCase();
+    if (!pre || lo.indexOf(po) === 0) return name;       // Margin Top inside Margin
+    if (po.slice(-lo.length) === lo) return pre;         // Shadow inside Text Shadow
+    return pre + ' ' + name;                             // Size inside Font -> Font Size
   }
   function value_list_of(item) {
     let li = item.parentElement.closest('li');
@@ -473,6 +475,17 @@
 
   // Goes through one main category: puts On labels on the matching options and on
   // their option heads, and returns the list of On entries for the Active view.
+  // The lists of one main category: the lists inside an attribute that has several (Font > Size),
+  // or the attribute itself when its values sit directly inside it (Text Align).
+  function lists_of(cat) {
+    const out = [];
+    cat.querySelectorAll(':scope > .fmt-sub > .fmt-subcat').forEach((s) => {
+      const inner = s.querySelectorAll(':scope > .fmt-sub > .fmt-group');
+      if (inner.length) inner.forEach((g) => out.push(g)); else out.push(s);
+    });
+    return out;
+  }
+
   function scan(cat, mode) {
     const st = mode === 'image' ? null : read_text_state();
     const img = mode === 'image' ? selected_photo() : null;
@@ -486,7 +499,7 @@
     };
 
     const info = [];
-    cat.querySelectorAll('.fmt-subcat > .fmt-sub > .fmt-group').forEach((group) => {
+    lists_of(cat).forEach((group) => {
       const items = Array.from(group.querySelectorAll('.fmt-item')).filter((it) => it.dataset.act || it.dataset.cmd);
       const matched = [];
       let first = null;
@@ -518,7 +531,7 @@
         if (s.indexOf(': ') !== -1) shown = s.slice(s.indexOf(': ') + 2);
         else if (!shown) shown = own_text(g.matched[0]);
       }
-      if (/^(Color|Background color|Border color)$/.test(head_text(g.group)) && g.matched.length) {
+      if (/^(Color|Background|Border Color)$/.test(head_text(g.group)) && g.matched.length) {
         shown = own_text(g.matched[0]);
       }
       // Several options on in one list: the line only says how many; the list shows which.

@@ -4070,51 +4070,52 @@ const HELP_TOPICS_NOTE = [
     'Weight: Thin, Extra light, Light, Normal, Medium, Semi bold, Bold, Extra bold or Black; − and + step it by 100.',
     'Kerning: Auto, Normal or None (spacing between letter pairs).'
   ]},
-  { title: 'Text > Appearance', items: [
+  { title: 'Text > color, background and decoration', items: [
     'Color: Black, Blue, Brown, Cyan, Gold, Gray, Green, Magenta, Navy, Orange, Pink, Purple, Red, Teal, White or Yellow.',
-    'Background color: the color behind the letters (also None).',
-    'Decoration: Line through, None, Overline or Underline.',
-    'Shadow: Hard, Medium, None or Soft shadow behind the letters.',
-    'Glow: None, Soft, Medium or Strong light around the letters.',
-    'Outline: None, Thin, Medium or Thick line around the letters.'
+    'Background: the color behind the letters (also None).',
+    'Text Decoration: Line through, None, Overline or Underline.',
+    'Text Shadow: Shadow (Hard, Medium, None or Soft) and Glow (None, Soft, Medium or Strong).',
+    'Text Stroke: None, Thin, Medium or Thick line around the letters.'
   ]},
-  { title: 'Text > Alignment & Spacing', items: [
-    'Align: Center, Justify, Left or Right.',
+  { title: 'Text > alignment and spacing', items: [
+    'Text Align: Center, Justify, Left or Right.',
+    'Text Indent: None, or 5 to 50 px, on the first line of the paragraph only.',
+    'Text Transform: Capitalize, Lowercase, None or Uppercase.',
     'Direction: Left to right or Right to left.',
-    'Indent: None, or 5 to 50 px, on the first line of the paragraph only.',
-    'Line height: Single, 1.15 lines, 1.5 lines, Double, 2.5 lines or Triple; − and + change it by 0.1.',
-    'Letter spacing and Word spacing: Normal, or more or less space in px; − and + change it 1 px at a time.',
-    'Vertical align: Baseline, Subscript or Superscript.',
-    'White space: Normal, No wrap, Pre or Pre wrap.',
-    'Space Before and Space After: None, 6, 12, 18, 24, 36 or 48 px; − and + change it 1 px at a time.',
+    'Line Height: Single, 1.15 lines, 1.5 lines, Double, 2.5 lines or Triple; − and + change it by 0.1.',
+    'Letter Spacing and Word Spacing: Normal, or more or less space in px; − and + change it 1 px at a time.',
+    'Vertical Align: Baseline, Subscript or Superscript.',
+    'White Space: Normal, No wrap, Pre or Pre wrap.',
+    'Word Break: Break all, Keep all or Normal.',
+    'Margin: Margin Top and Margin Bottom, None, 6, 12, 18, 24, 36 or 48 px; − and + change it 1 px at a time.',
     'Pressing Enter starts a new paragraph, with 12 px of space after it.'
   ]},
-  { title: 'Text > Lists', items: [
+  { title: 'Text > List Style and Checkbox', items: [
     'Bulleted: Bullet, Circle or Square markers.',
     'Numbered: Lowercase letters, Lowercase Roman, Numbers, Numbers with zero, Uppercase letters or Uppercase Roman.',
-    'Checkboxes: puts a tick box at the cursor, and ticks are saved with the note.',
     'Marker position: Inside or Outside the text block.',
+    'Remove list: turns the list back into plain lines.',
+    'Checkbox: Checkboxes puts a tick box at the cursor, and ticks are saved with the note.',
     'Pressing Enter at the end of an item starts the next item.',
-    'After you choose a list, the action row title reads Spacing and − / + change the space after each list item (6 px to start).',
-    'Remove list: turns the list back into plain lines.'
+    'After you choose a list, the action row title reads Spacing and − / + change the space after each list item (6 px to start).'
   ]},
-  { title: 'Text > Word Formatting and Text Tools', items: [
-    'Word break: Break all, Keep all or Normal. Transform: Capitalize, Lowercase, None or Uppercase.',
-    'Text Tools: Clear (deletes the selected text), Clear formatting, Copy, Cut and Paste.',
-    'Text Tools also has Line break (same paragraph), New paragraph and Quote.',
-    'Copy, Cut and Paste work on the selected text (turn Active on and pick words first).',
+  { title: 'Text > All, Quotes, Line Break, Paragraph and Clipboard', items: [
+    'All: Clear (deletes the selected text) and Clear formatting.',
+    'Quotes: Quote.',
+    'Line Break: starts a new line in the same paragraph. Paragraph: starts a new paragraph.',
+    'Clipboard: Cut, Copy and Paste work on the selected text (turn Active on and pick words first).',
     'If your phone asks permission to paste from the clipboard, allow it; otherwise Paste uses what you last copied inside the note.'
   ]},
   { title: 'Image (formatting a photo)', items: [
     'Tap a photo in the note: it gets a blue border and the Formatting list shows Image.',
-    'While a photo is selected, − and + make it smaller or larger (the action row title reads Resize).',
-    'Appearance: Brightness, Contrast, Saturate, Sepia, Grayscale, Invert, Hue rotate, Blur and Opacity.',
-    'Size & Position: Resize (the photo\'s width as a percent of the note), Height, Object fit, Align, Rotate and Flip.',
-    'Align: Center, Left, Right, Wrap text around left side or Wrap text around right side.',
-    'Object fit: Contain, Cover, Fill, None or Scale down; Flip: Horizontal, None or Vertical.',
-    'Border & Background: Border color, Border style (None, Solid, Dashed, Dotted, Double, Groove, Ridge), Border width, Border radius, Background color and Shadow.',
-    'Spacing: Margin top, Margin bottom, Margin left, Margin right and Padding.',
-    'Other: Alt text, Remove image and Reset image.',
+    'While a photo is selected, − and + make it smaller or larger (the action row title reads Width).',
+    'Filter: Brightness, Contrast, Saturate, Sepia, Grayscale, Invert, Hue Rotate and Blur. Opacity has its own title.',
+    'Width (the photo\'s width as a percent of the note), Height and Object Fit: Contain, Cover, Fill, None or Scale down.',
+    'Float: Center, Left, Right, Wrap text around left side or Wrap text around right side.',
+    'Transform: Rotate and Flip (Horizontal, None or Vertical).',
+    'Border: Border Color, Border Style (None, Solid, Dashed, Dotted, Double, Groove, Ridge), Border Width and Border Radius.',
+    'Background, Box Shadow, Margin (Margin Top, Margin Bottom, Margin Left and Margin Right) and Padding.',
+    'Position: Move. Img: Alt text and Remove image. All: Reset image.',
     'Tap away from the photo to let go of it.'
   ]},
   { title: 'Insert', items: [
