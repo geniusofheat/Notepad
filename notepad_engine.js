@@ -4022,7 +4022,7 @@ const HELP_TOPICS_NOTE = [
     'Touch the note to scroll the note; touch anywhere else to scroll the whole page.'
   ]},
   { title: 'The Formatting list', items: [
-    'The top row reads "Formatting :", then the list, then the Active button.',
+    'The top row is the list (it shows the title you pressed, such as Font Size) and the Active button.',
     'Three levels: main categories (Text, Image, Insert), then subcategories, then options.',
     'Tap a category or subcategory to open it; the Back row at the top takes you up one level.',
     'Text shows while you work with text; tap a photo and Image shows instead. Insert is always there.',

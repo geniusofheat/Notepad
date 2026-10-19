@@ -53,6 +53,21 @@
     if (!cat || cat.dataset.cat !== ctx_name()) return null;
     return item;
   }
+  // The title the select list shows for a pressed title in the pop-up list: the CSS-style name.
+  // A list inside Font reads "Font Size", "Font Style", "Font Family" ...; a title with no list
+  // above it (Font, Appearance, Text) is just its own name.
+  const TITLE_PREFIX = { Font: 'Font' };
+  function title_of(li) {
+    if (!li) return '';
+    const own = head_text(li);
+    if (li.classList.contains('fmt-cat') || li.classList.contains('fmt-subcat')) return own;
+    let list = li;                                     // Display, Serif ... belong to Family
+    while (list.parentElement && list.parentElement.closest('li') && !list.parentElement.closest('li').classList.contains('fmt-subcat')) list = list.parentElement.closest('li');
+    const sub = list.parentElement && list.parentElement.closest('li.fmt-subcat');
+    const pre = sub ? (TITLE_PREFIX[head_text(sub)] || '') : '';
+    const name = head_text(list);
+    return pre && name.toLowerCase().indexOf(pre.toLowerCase()) !== 0 ? pre + ' ' + name : name;
+  }
   function value_list_of(item) {
     let li = item.parentElement.closest('li');
     if (li && li.hasAttribute('data-font-style')) li = li.parentElement.closest('li');   // Serif, Display ... -> Family
@@ -63,7 +78,7 @@
     if (!l) return;
     const item = browsing ? null : value_item();
     const li = item && value_list_of(item);
-    l.textContent = (li && head_text(li)) || last_cat_name || idle_name();
+    l.textContent = (li && title_of(li)) || last_cat_name || idle_name();
 
     // Active list open and the highlighted word has no formatting: say so ("None" if it does not fit).
     const mm = menu_el();
@@ -72,7 +87,7 @@
         l.textContent = 'No formatting';
         if (l.scrollWidth > l.clientWidth + 1) l.textContent = 'None';
       } else {
-        l.textContent = active_entries.length === 1 ? active_entries[0].title : 'Active';
+        l.textContent = active_entries.length === 1 ? (active_entries[0].full || active_entries[0].title) : 'Active';
       }
     }
   }
@@ -100,7 +115,8 @@
     m.classList.add('nav-' + level);
     m.classList.toggle('active-on', !!select_mode);
 
-    if (cat) last_cat_name = head_text(cat);
+    const top = deepest_open_group(sub_of(cat, sub)) || sub || cat;
+    if (top) last_cat_name = title_of(top);
     update_label();
 
     const back = document.getElementById('fmtBack');
@@ -513,7 +529,7 @@
       // One row per list: the list title, with what is on shown to the right (Style  Italic).
       const first_on = g.matched.length ? g.matched[0] : null;
       const off_probe = first_on ? probe(first_on) : g.first.p;
-      entries.push({ title: head_text(g.group), shown, off: off_probe.off, mode, group: g.group });
+      entries.push({ title: head_text(g.group), full: title_of(g.group), shown, off: off_probe.off, mode, group: g.group });
     });
     return entries;
   }
