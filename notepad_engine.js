@@ -1254,6 +1254,128 @@ function insert_checkbox() {
   sel.addRange(newRange);
 }
 
+// ── HTML category: things that are not text formatting but belong in a note ──────────────────
+// The top-level line of the note (a child of the editor) the cursor is in, or null.
+function caret_block() {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (!editor || sel.rangeCount === 0) return null;
+  let n = sel.getRangeAt(0).startContainer;
+  while (n && n.parentNode !== editor) n = n.parentNode;
+  return n && n.parentNode === editor ? n : null;
+}
+
+// An empty line for typing after a block that was just inserted.
+function new_empty_line() {
+  const line = document.createElement('div');
+  line.appendChild(document.createElement('br'));
+  return line;
+}
+
+// Puts a block (rule, table, code ...) under the line the cursor is in. An empty line is used up
+// by the block instead of leaving a gap. The cursor goes to `focus_in`, or to a fresh line below.
+function insert_html_block(node, focus_in) {
+  const editor = get_editor();
+  const sel = window.getSelection();
+  if (!editor) return;
+  const block = caret_block();
+  const tail = new_empty_line();
+  const empty = block && block.nodeType === 1 && !block.querySelector('img, input, hr, table') && block.textContent.replace(/[\u200b\u00a0\s]/g, '') === '';
+  if (block && empty) { block.replaceWith(node); node.after(tail); }
+  else if (block) { block.after(node); node.after(tail); }
+  else { editor.appendChild(node); editor.appendChild(tail); }
+  const r = document.createRange();
+  if (focus_in) { r.selectNodeContents(focus_in); r.collapse(true); }
+  else { r.setStart(tail, 0); r.collapse(true); }
+  sel.removeAllRanges();
+  sel.addRange(r);
+}
+
+// Horizontal rule: a divider line, for example under the title of a note.
+function insert_horizontal_rule() {
+  insert_html_block(document.createElement('hr'), null);
+}
+
+// Link: a tappable web address. The words shown are the selected words, or the address itself.
+function insert_link() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0).cloneRange();
+  const picked = range.collapsed ? '' : range.toString();
+  let url = window.prompt('Web address for the link (example: www.example.com)', 'https://');
+  if (!url) return;
+  url = url.trim();
+  if (!url || url === 'https://') return;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url;
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = picked || url.replace(/^https?:\/\//i, '');
+  const space = document.createTextNode('\u00A0');
+  range.deleteContents();
+  range.insertNode(space);
+  range.insertNode(a);
+  const after = document.createRange();
+  after.setStartAfter(space);
+  after.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(after);
+}
+
+// Table: rows x columns, typed in the note.
+function insert_table() {
+  const ans = window.prompt('Table size: rows x columns (example 3x2)', '3x2');
+  if (!ans) return;
+  const m = /^\s*(\d{1,2})\s*[x×*,]\s*(\d{1,2})\s*$/i.exec(ans);
+  if (!m) { fmt_notice('Type the size like 3x2 (rows x columns).'); return; }
+  const rows = Math.min(30, Math.max(1, parseInt(m[1], 10)));
+  const cols = Math.min(8, Math.max(1, parseInt(m[2], 10)));
+  const table = document.createElement('table');
+  table.className = 'note-table';
+  const body = document.createElement('tbody');
+  let first = null;
+  for (let r = 0; r < rows; r++) {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < cols; c++) {
+      const td = document.createElement('td');
+      td.appendChild(document.createElement('br'));
+      if (!first) first = td;
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+  table.appendChild(body);
+  insert_html_block(table, first);
+}
+
+// Code: a grey monospace block. Selected words go into it; otherwise it starts empty.
+function insert_code_block() {
+  const sel = window.getSelection();
+  const picked = sel.rangeCount && !sel.isCollapsed ? sel.toString() : '';
+  if (picked) sel.getRangeAt(0).deleteContents();
+  const pre = document.createElement('pre');
+  pre.className = 'note-code';
+  const code = document.createElement('code');
+  code.textContent = picked || '\u200b';
+  pre.appendChild(code);
+  insert_html_block(pre, code);
+}
+
+// Collapsible section: a title line that folds its text open and shut.
+function insert_details() {
+  const box = document.createElement('details');
+  box.className = 'note-details';
+  box.open = true;
+  const title = document.createElement('summary');
+  title.textContent = 'Section title';
+  const inner = document.createElement('div');
+  inner.appendChild(document.createElement('br'));
+  box.appendChild(title);
+  box.appendChild(inner);
+  insert_html_block(box, inner);
+}
+
 // Finds the list element that was just created/toggled around the cursor
 // and applies the chosen bullet/number style to it.
 // Nudges the current block's left margin by the given number of pixels
@@ -3191,6 +3313,11 @@ function run_fmt_item(item, value_override) {
           break;
         }
         case 'clear':         clear_all_formatting(); break;
+        case 'html-hr':       insert_horizontal_rule(); break;
+        case 'html-link':     insert_link(); break;
+        case 'html-table':    insert_table(); break;
+        case 'html-code':     insert_code_block(); break;
+        case 'html-details':  insert_details(); break;
       }
     }
   } catch (err) {
@@ -3717,6 +3844,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('selectionchange', tidy_typing_spans);
 
     editor.addEventListener('click', (e) => {
+      const link = e.target.closest ? e.target.closest('a[href]') : null;
+      if (link && !select_mode) { e.preventDefault(); window.open(link.href, '_blank', 'noopener'); return; }
+      const fold = e.target.closest ? e.target.closest('summary') : null;
+      if (fold && e.offsetX < 28) { e.preventDefault(); fold.parentElement.open = !fold.parentElement.open; return; }
+    });
+    editor.addEventListener('click', (e) => {
       if (e.target.closest && e.target.closest('.note-photo')) return;
 
       // Tapping the note means the user wants the text, not the menu.
@@ -4037,6 +4170,7 @@ const HELP_TOPICS_NOTE = [
     'Active ON: it works on the words you have selected, and the list opens on Active formatting.',
     'Press Active once: the first word of the note turns blue and the action row title reads All.',
     'Active formatting lists only the formatting that is on for the blue text, each with an On label.',
+    'Reset (red, above the formats that are on): turns every format off on the highlighted word and switches Active off.',
     'Active quick select menu: tap an On title (like Size) to open its values, then tap a different value to change it; the new value shows in the action row.',
     'The Active quick select menu only offers lists that are already on. Turn Active off to pick other formatting.',
     'Tap any word to select it instead, or drag the handles to select more.',
@@ -4061,50 +4195,52 @@ const HELP_TOPICS_NOTE = [
     'Making a new change after undoing clears what ↷ could redo.'
   ]},
   { title: 'Text > Font', items: [
+    'The select list reads Font plus the list you opened, such as Font Size or Font Color.',
     'Family: Google Fonts, grouped as Display, Handwriting, Monospace, Sans Serif and Serif, plus System (Monospace, Sans-serif, Serif).',
     'Open a Family group to see its fonts A to Z; a font downloads from Google the first time you use it, so you need internet for that.',
     'After you choose a font, − and + move to the previous or next font in the same group.',
     'Size: 1 px to 50 px; everything you type starts at 18 px, and − and + change it 1 px at a time.',
-    'Style: Italic, Normal or Oblique.',
-    'Variant: Normal, Small caps, All small caps, Petite caps or Titling caps.',
-    'Weight: Thin, Extra light, Light, Normal, Medium, Semi bold, Bold, Extra bold or Black; − and + step it by 100.',
-    'Kerning: Auto, Normal or None (spacing between letter pairs).'
+    'Variant: Small caps, All small caps, Petite caps or Titling caps.',
+    'Weight: Thin, Extra light, Light, Medium, Semi bold, Extra bold or Black; − and + step it by 100.',
+    'Kerning: Auto or None (spacing between letter pairs).',
+    'Color: Black, Blue, Brown, Cyan, Gold, Gray, Green, Magenta, Navy, Orange, Pink, Purple, Red, Teal, White or Yellow.'
   ]},
-  { title: 'Text > color, background and decoration', items: [
-    'Color: Black, Blue, Brown, Cyan, Gold, Gray, Green, Magenta, Navy, Orange, Pink, Purple, Red, Teal, White or Yellow.',
-    'Background: the color behind the letters (also None).',
-    'Text Decoration: Line through, None, Overline or Underline.',
-    'Text Shadow: Shadow (Hard, Medium, None or Soft) and Glow (None, Soft, Medium or Strong).',
-    'Text Stroke: None, Thin, Medium or Thick line around the letters.'
-  ]},
-  { title: 'Text > alignment and spacing', items: [
-    'Text Align: Center, Justify, Left or Right.',
-    'Text Indent: None, or 5 to 50 px, on the first line of the paragraph only.',
-    'Text Transform: Capitalize, Lowercase, None or Uppercase.',
-    'Direction: Left to right or Right to left.',
+  { title: 'Text > Text', items: [
+    'The select list reads Text plus the list you opened, such as Text Transform or Text Align.',
+    'Transform: Bold, Italic, Underline, Capitalize, Lowercase or Uppercase, and Highlight (the color behind the letters).',
+    'Decoration: Line through or Overline.',
+    'Align: Center, Justify, Left or Right.',
+    'Indent: 5 to 50 px on the first line of the paragraph only.',
     'Line Height: Single, 1.15 lines, 1.5 lines, Double, 2.5 lines or Triple; − and + change it by 0.1.',
-    'Letter Spacing and Word Spacing: Normal, or more or less space in px; − and + change it 1 px at a time.',
-    'Vertical Align: Baseline, Subscript or Superscript.',
-    'White Space: Normal, No wrap, Pre or Pre wrap.',
-    'Word Break: Break all, Keep all or Normal.',
-    'Margin: Margin Top and Margin Bottom, None, 6, 12, 18, 24, 36 or 48 px; − and + change it 1 px at a time.',
+    'Letter Spacing: -1 px or more space in px; − and + change it 1 px at a time.',
+    'Vertical Align: Subscript or Superscript.',
     'Pressing Enter starts a new paragraph, with 12 px of space after it.'
   ]},
-  { title: 'Text > List Style and Checkbox', items: [
+  { title: 'Text > Effects and Margin', items: [
+    'Effects: Shadow (Hard, Medium or Soft), Glow (Medium, Soft or Strong) and Stroke (Medium, Thick or Thin line around the letters).',
+    'Margin: Top and Bottom, 6, 12, 18, 24, 36 or 48 px of space; − and + change it 1 px at a time.'
+  ]},
+  { title: 'Text > List Style', items: [
     'Bulleted: Bullet, Circle or Square markers.',
     'Numbered: Lowercase letters, Lowercase Roman, Numbers, Numbers with zero, Uppercase letters or Uppercase Roman.',
     'Marker position: Inside or Outside the text block.',
     'Remove list: turns the list back into plain lines.',
-    'Checkbox: Checkboxes puts a tick box at the cursor, and ticks are saved with the note.',
     'Pressing Enter at the end of an item starts the next item.',
     'After you choose a list, the action row title reads Spacing and − / + change the space after each list item (6 px to start).'
   ]},
-  { title: 'Text > All, Quotes, Line Break, Paragraph and Clipboard', items: [
-    'All: Clear (deletes the selected text) and Clear formatting.',
-    'Quotes: Quote.',
-    'Line Break: starts a new line in the same paragraph. Paragraph: starts a new paragraph.',
-    'Clipboard: Cut, Copy and Paste work on the selected text (turn Active on and pick words first).',
-    'If your phone asks permission to paste from the clipboard, allow it; otherwise Paste uses what you last copied inside the note.'
+  { title: 'Text > Clipboard and Edit', items: [
+    'Clipboard: Copy, Cut and Paste work on the selected text (turn Active on and pick words first).',
+    'If your phone asks permission to paste from the clipboard, allow it; otherwise Paste uses what you last copied inside the note.',
+    'Edit: Clear formatting takes all the formatting off the selected text.'
+  ]},
+  { title: 'HTML', items: [
+    'HTML holds things a note can use that are not text formatting.',
+    'Forms: Checkboxes puts a tick box at the cursor, and ticks are saved with the note.',
+    'Horizontal Rule: Horizontal rule puts a divider line under the line you are on.',
+    'Link: Insert link asks for a web address; the selected words (or the address) become a link, and tapping it opens the page.',
+    'Table: Insert table asks for rows x columns, such as 3x2.',
+    'Code: Code block puts the selected words, or a new empty block, in grey monospace.',
+    'Collapsible Section: Collapsible section adds a title line that folds its text open and shut.'
   ]},
   { title: 'Image (formatting a photo)', items: [
     'Tap a photo in the note: it gets a blue border and the Formatting list shows Image.',
@@ -4113,9 +4249,9 @@ const HELP_TOPICS_NOTE = [
     'Width (the photo\'s width as a percent of the note), Height and Object Fit: Contain, Cover, Fill, None or Scale down.',
     'Float: Center, Left, Right, Wrap text around left side or Wrap text around right side.',
     'Transform: Rotate and Flip (Horizontal, None or Vertical).',
-    'Border: Border Color, Border Style (None, Solid, Dashed, Dotted, Double, Groove, Ridge), Border Width and Border Radius.',
-    'Background, Box Shadow, Margin (Margin Top, Margin Bottom, Margin Left and Margin Right) and Padding.',
-    'Position: Move. Img: Alt text and Remove image. All: Reset image.',
+    'Border: Color, Style (None, Solid, Dashed, Dotted, Double, Groove, Ridge), Width and Radius.',
+    'Background, Box Shadow, Margin (Top, Bottom, Left and Right) and Padding.',
+    'Position: Move. Img: Alt text and Remove image. Edit: Reset image.',
     'Tap away from the photo to let go of it.'
   ]},
   { title: 'Insert', items: [

@@ -611,6 +611,12 @@
       return;
     }
 
+    // Reset sits above the formats that are on: it turns them all off and Active with them.
+    const reset = document.createElement('div');
+    reset.className = 'fmt-item fmt-reset-row';
+    reset.textContent = 'Reset';
+    view.appendChild(reset);
+
     entries.forEach((entry, i) => {
       const row = document.createElement('div');
       row.className = 'fmt-item fmt-active-row';
@@ -704,6 +710,20 @@
     fmt_finish(null);        // saves, keeps the selection, and refreshes the labels
   }
 
+  // Reset: every format on the highlighted word goes off, then Active goes off and the list closes.
+  function reset_all() {
+    if (nav.level !== 'note') return;
+    let stuck = 0;
+    for (let k = 0; k < 30 && active_entries.length && stuck < 2; k++) {
+      const before = active_entries.length;
+      turn_off_entry({ dataset: { entry: '0' } });
+      stuck = active_entries.length >= before ? stuck + 1 : 0;   // a format that will not go off cannot loop forever
+    }
+    if (select_mode) toggle_select_mode();
+    if (typeof set_active_fmt_item === 'function') set_active_fmt_item(null);
+    if (typeof fmt_update_label === 'function') fmt_update_label(true);
+  }
+
   // ── Hooks the engine calls ────────────────────────────────────────────────
 
   window.fmt_menu_opened = function () {
@@ -775,6 +795,7 @@
         if (it) { run_fmt_item(it); refresh_states(); }
         return;
       }
+      if (t.closest('.fmt-reset-row')) { reset_all(); return; }
       if (t.closest('.fmt-choose-row')) { show_regular_list(); return; }
       const arow = t.closest('.fmt-active-row');
       if (arow) {                     // an On title opens / closes its quick list

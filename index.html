@@ -252,18 +252,9 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Style</div>
-                  <ul class="fmt-sub">
-                    <li class="fmt-item" data-cmd="italic" data-label="Italic" data-ctl="Style">Italic</li>
-                    <li class="fmt-item" data-act="css" data-prop="fontStyle" data-val="normal" data-ctl="Style" data-short="Style: Normal">Normal</li>
-                    <li class="fmt-item" data-act="css" data-prop="fontStyle" data-val="oblique" data-ctl="Style" data-short="Style: Oblique">Oblique</li>
-                  </ul>
-                </li>
-                <li class="fmt-group">
                   <div class="fmt-head">Variant</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="css" data-prop="fontVariantCaps" data-val="all-small-caps" data-ctl="Variant" data-short="Variant: All small caps">All small caps</li>
-                    <li class="fmt-item" data-act="css" data-prop="fontVariantCaps" data-val="normal" data-ctl="Variant" data-short="Variant: Normal">Normal</li>
                     <li class="fmt-item" data-act="css" data-prop="fontVariantCaps" data-val="petite-caps" data-ctl="Variant" data-short="Variant: Petite caps">Petite caps</li>
                     <li class="fmt-item" data-act="css" data-prop="fontVariantCaps" data-val="small-caps" data-ctl="Variant" data-short="Variant: Small caps">Small caps</li>
                     <li class="fmt-item" data-act="css" data-prop="fontVariantCaps" data-val="titling-caps" data-ctl="Variant" data-short="Variant: Titling caps">Titling caps</li>
@@ -273,12 +264,10 @@
                   <div class="fmt-head">Weight</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="900" data-ctl="Weight" data-short="Weight: Black" data-min="100" data-max="900" data-inc="100">Black</li>
-                    <li class="fmt-item" data-cmd="bold" data-label="Bold" data-val="700" data-ctl="Weight" data-short="Bold">Bold</li>
                     <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="800" data-ctl="Weight" data-short="Weight: Extra bold" data-min="100" data-max="900" data-inc="100">Extra bold</li>
                     <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="200" data-ctl="Weight" data-short="Weight: Extra light" data-min="100" data-max="900" data-inc="100">Extra light</li>
                     <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="300" data-ctl="Weight" data-short="Weight: Light" data-min="100" data-max="900" data-inc="100">Light</li>
                     <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="500" data-ctl="Weight" data-short="Weight: Medium" data-min="100" data-max="900" data-inc="100">Medium</li>
-                    <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="400" data-ctl="Weight" data-short="Weight: Normal" data-min="100" data-max="900" data-inc="100">Normal</li>
                     <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="600" data-ctl="Weight" data-short="Weight: Semi bold" data-min="100" data-max="900" data-inc="100">Semi bold</li>
                     <li class="fmt-item" data-act="css" data-prop="fontWeight" data-val="100" data-ctl="Weight" data-short="Weight: Thin" data-min="100" data-max="900" data-inc="100">Thin</li>
                   </ul>
@@ -288,72 +277,134 @@
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="css" data-prop="fontKerning" data-val="auto" data-ctl="Kerning" data-short="Kerning: Auto">Auto</li>
                     <li class="fmt-item" data-act="css" data-prop="fontKerning" data-val="none" data-ctl="Kerning" data-short="Kerning: None">None</li>
-                    <li class="fmt-item" data-act="css" data-prop="fontKerning" data-val="normal" data-ctl="Kerning" data-short="Kerning: Normal">Normal</li>
+                  </ul>
+                </li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Color</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-act="color" data-val="black" data-short="Color: Black" data-ctl="Color"><span class="fmt-swatch" style="background:black"></span>Black</li>
+                    <li class="fmt-item" data-act="color" data-val="blue" data-short="Color: Blue" data-ctl="Color"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
+                    <li class="fmt-item" data-act="color" data-val="brown" data-short="Color: Brown" data-ctl="Color"><span class="fmt-swatch" style="background:brown"></span>Brown</li>
+                    <li class="fmt-item" data-act="color" data-val="cyan" data-short="Color: Cyan" data-ctl="Color"><span class="fmt-swatch" style="background:cyan"></span>Cyan</li>
+                    <li class="fmt-item" data-act="color" data-val="gold" data-short="Color: Gold" data-ctl="Color"><span class="fmt-swatch" style="background:gold"></span>Gold</li>
+                    <li class="fmt-item" data-act="color" data-val="gray" data-short="Color: Gray" data-ctl="Color"><span class="fmt-swatch" style="background:gray"></span>Gray</li>
+                    <li class="fmt-item" data-act="color" data-val="green" data-short="Color: Green" data-ctl="Color"><span class="fmt-swatch" style="background:green"></span>Green</li>
+                    <li class="fmt-item" data-act="color" data-val="magenta" data-short="Color: Magenta" data-ctl="Color"><span class="fmt-swatch" style="background:magenta"></span>Magenta</li>
+                    <li class="fmt-item" data-act="color" data-val="navy" data-short="Color: Navy" data-ctl="Color"><span class="fmt-swatch" style="background:navy"></span>Navy</li>
+                    <li class="fmt-item" data-act="color" data-val="orange" data-short="Color: Orange" data-ctl="Color"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
+                    <li class="fmt-item" data-act="color" data-val="pink" data-short="Color: Pink" data-ctl="Color"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
+                    <li class="fmt-item" data-act="color" data-val="purple" data-short="Color: Purple" data-ctl="Color"><span class="fmt-swatch" style="background:purple"></span>Purple</li>
+                    <li class="fmt-item" data-act="color" data-val="red" data-short="Color: Red" data-ctl="Color"><span class="fmt-swatch" style="background:red"></span>Red</li>
+                    <li class="fmt-item" data-act="color" data-val="teal" data-short="Color: Teal" data-ctl="Color"><span class="fmt-swatch" style="background:teal"></span>Teal</li>
+                    <li class="fmt-item" data-act="color" data-val="white" data-short="Color: White" data-ctl="Color"><span class="fmt-swatch" style="background:white"></span>White</li>
+                    <li class="fmt-item" data-act="color" data-val="yellow" data-short="Color: Yellow" data-ctl="Color"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
                   </ul>
                 </li>
               </ul>
             </li>
             <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Color</div>
+              <div class="fmt-head">Text</div>
               <ul class="fmt-sub">
-                <li class="fmt-item" data-act="color" data-val="black" data-short="Color: Black" data-ctl="Color"><span class="fmt-swatch" style="background:black"></span>Black</li>
-                <li class="fmt-item" data-act="color" data-val="blue" data-short="Color: Blue" data-ctl="Color"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
-                <li class="fmt-item" data-act="color" data-val="brown" data-short="Color: Brown" data-ctl="Color"><span class="fmt-swatch" style="background:brown"></span>Brown</li>
-                <li class="fmt-item" data-act="color" data-val="cyan" data-short="Color: Cyan" data-ctl="Color"><span class="fmt-swatch" style="background:cyan"></span>Cyan</li>
-                <li class="fmt-item" data-act="color" data-val="gold" data-short="Color: Gold" data-ctl="Color"><span class="fmt-swatch" style="background:gold"></span>Gold</li>
-                <li class="fmt-item" data-act="color" data-val="gray" data-short="Color: Gray" data-ctl="Color"><span class="fmt-swatch" style="background:gray"></span>Gray</li>
-                <li class="fmt-item" data-act="color" data-val="green" data-short="Color: Green" data-ctl="Color"><span class="fmt-swatch" style="background:green"></span>Green</li>
-                <li class="fmt-item" data-act="color" data-val="magenta" data-short="Color: Magenta" data-ctl="Color"><span class="fmt-swatch" style="background:magenta"></span>Magenta</li>
-                <li class="fmt-item" data-act="color" data-val="navy" data-short="Color: Navy" data-ctl="Color"><span class="fmt-swatch" style="background:navy"></span>Navy</li>
-                <li class="fmt-item" data-act="color" data-val="orange" data-short="Color: Orange" data-ctl="Color"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
-                <li class="fmt-item" data-act="color" data-val="pink" data-short="Color: Pink" data-ctl="Color"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
-                <li class="fmt-item" data-act="color" data-val="purple" data-short="Color: Purple" data-ctl="Color"><span class="fmt-swatch" style="background:purple"></span>Purple</li>
-                <li class="fmt-item" data-act="color" data-val="red" data-short="Color: Red" data-ctl="Color"><span class="fmt-swatch" style="background:red"></span>Red</li>
-                <li class="fmt-item" data-act="color" data-val="teal" data-short="Color: Teal" data-ctl="Color"><span class="fmt-swatch" style="background:teal"></span>Teal</li>
-                <li class="fmt-item" data-act="color" data-val="white" data-short="Color: White" data-ctl="Color"><span class="fmt-swatch" style="background:white"></span>White</li>
-                <li class="fmt-item" data-act="color" data-val="yellow" data-short="Color: Yellow" data-ctl="Color"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Transform</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-cmd="bold" data-label="Bold" data-val="700" data-ctl="Weight" data-short="Bold">Bold</li>
+                    <li class="fmt-item" data-act="css" data-prop="textTransform" data-val="capitalize" data-ctl="Transform" data-short="Transform: Capitalize">Capitalize</li>
+                    <li class="fmt-group">
+                      <div class="fmt-head">Highlight</div>
+                      <ul class="fmt-sub">
+                        <li class="fmt-item" data-act="hilite" data-val="black" data-short="Background: Black" data-ctl="Background color"><span class="fmt-swatch" style="background:black"></span>Black</li>
+                        <li class="fmt-item" data-act="hilite" data-val="blue" data-short="Background: Blue" data-ctl="Background color"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
+                        <li class="fmt-item" data-act="hilite" data-val="brown" data-short="Background: Brown" data-ctl="Background color"><span class="fmt-swatch" style="background:brown"></span>Brown</li>
+                        <li class="fmt-item" data-act="hilite" data-val="cyan" data-short="Background: Cyan" data-ctl="Background color"><span class="fmt-swatch" style="background:cyan"></span>Cyan</li>
+                        <li class="fmt-item" data-act="hilite" data-val="gold" data-short="Background: Gold" data-ctl="Background color"><span class="fmt-swatch" style="background:gold"></span>Gold</li>
+                        <li class="fmt-item" data-act="hilite" data-val="gray" data-short="Background: Gray" data-ctl="Background color"><span class="fmt-swatch" style="background:gray"></span>Gray</li>
+                        <li class="fmt-item" data-act="hilite" data-val="green" data-short="Background: Green" data-ctl="Background color"><span class="fmt-swatch" style="background:green"></span>Green</li>
+                        <li class="fmt-item" data-act="hilite" data-val="magenta" data-short="Background: Magenta" data-ctl="Background color"><span class="fmt-swatch" style="background:magenta"></span>Magenta</li>
+                        <li class="fmt-item" data-act="hilite" data-val="navy" data-short="Background: Navy" data-ctl="Background color"><span class="fmt-swatch" style="background:navy"></span>Navy</li>
+                        <li class="fmt-item" data-act="hilite" data-val="orange" data-short="Background: Orange" data-ctl="Background color"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
+                        <li class="fmt-item" data-act="hilite" data-val="pink" data-short="Background: Pink" data-ctl="Background color"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
+                        <li class="fmt-item" data-act="hilite" data-val="purple" data-short="Background: Purple" data-ctl="Background color"><span class="fmt-swatch" style="background:purple"></span>Purple</li>
+                        <li class="fmt-item" data-act="hilite" data-val="red" data-short="Background: Red" data-ctl="Background color"><span class="fmt-swatch" style="background:red"></span>Red</li>
+                        <li class="fmt-item" data-act="hilite" data-val="teal" data-short="Background: Teal" data-ctl="Background color"><span class="fmt-swatch" style="background:teal"></span>Teal</li>
+                        <li class="fmt-item" data-act="hilite" data-val="white" data-short="Background: White" data-ctl="Background color"><span class="fmt-swatch" style="background:white"></span>White</li>
+                        <li class="fmt-item" data-act="hilite" data-val="yellow" data-short="Background: Yellow" data-ctl="Background color"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
+                      </ul>
+                    </li>
+                    <li class="fmt-item" data-cmd="italic" data-label="Italic" data-ctl="Style">Italic</li>
+                    <li class="fmt-item" data-act="css" data-prop="textTransform" data-val="lowercase" data-ctl="Transform" data-short="Transform: Lowercase">Lowercase</li>
+                    <li class="fmt-item" data-cmd="underline" data-label="Underline" data-ctl="Decoration">Underline</li>
+                    <li class="fmt-item" data-act="css" data-prop="textTransform" data-val="uppercase" data-ctl="Transform" data-short="Transform: Uppercase">Uppercase</li>
+                  </ul>
+                </li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Decoration</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-cmd="strikeThrough" data-label="Line through" data-ctl="Decoration">Line through</li>
+                    <li class="fmt-item" data-act="css" data-prop="textDecorationLine" data-val="overline" data-ctl="Decoration" data-short="Decoration: Overline">Overline</li>
+                  </ul>
+                </li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Align</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-act="align" data-val="center" data-short="Align: Center" data-ctl="Align">Center</li>
+                    <li class="fmt-item" data-act="align" data-val="justify" data-short="Align: Justify" data-ctl="Align">Justify</li>
+                    <li class="fmt-item" data-act="align" data-val="left" data-short="Align: Left" data-ctl="Align">Left</li>
+                    <li class="fmt-item" data-act="align" data-val="right" data-short="Align: Right" data-ctl="Align">Right</li>
+                  </ul>
+                </li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Indent</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-act="indent-set" data-val="5" data-short="Indent 5 px" data-ctl="Indent">5 px</li>
+                    <li class="fmt-item" data-act="indent-set" data-val="10" data-short="Indent 10 px" data-ctl="Indent">10 px</li>
+                    <li class="fmt-item" data-act="indent-set" data-val="15" data-short="Indent 15 px" data-ctl="Indent">15 px</li>
+                    <li class="fmt-item" data-act="indent-set" data-val="20" data-short="Indent 20 px" data-ctl="Indent">20 px</li>
+                    <li class="fmt-item" data-act="indent-set" data-val="25" data-short="Indent 25 px" data-ctl="Indent">25 px</li>
+                    <li class="fmt-item" data-act="indent-set" data-val="30" data-short="Indent 30 px" data-ctl="Indent">30 px</li>
+                    <li class="fmt-item" data-act="indent-set" data-val="40" data-short="Indent 40 px" data-ctl="Indent">40 px</li>
+                    <li class="fmt-item" data-act="indent-set" data-val="50" data-short="Indent 50 px" data-ctl="Indent">50 px</li>
+                  </ul>
+                </li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Line Height</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-act="linespace" data-val="1" data-short="Line height: Single" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">Single</li>
+                    <li class="fmt-item" data-act="linespace" data-val="1.15" data-short="Line height: 1.15 lines" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">1.15 lines</li>
+                    <li class="fmt-item" data-act="linespace" data-val="1.5" data-short="Line height: 1.5 lines" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">1.5 lines</li>
+                    <li class="fmt-item" data-act="linespace" data-val="2" data-short="Line height: Double" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">Double</li>
+                    <li class="fmt-item" data-act="linespace" data-val="2.5" data-short="Line height: 2.5 lines" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">2.5 lines</li>
+                    <li class="fmt-item" data-act="linespace" data-val="3" data-short="Line height: Triple" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">Triple</li>
+                  </ul>
+                </li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Letter Spacing</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="-1" data-ctl="Letter spacing" data-short="Letter spacing: -1 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">-1 px</li>
+                    <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="1" data-ctl="Letter spacing" data-short="Letter spacing: 1 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">1 px</li>
+                    <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="2" data-ctl="Letter spacing" data-short="Letter spacing: 2 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">2 px</li>
+                    <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="3" data-ctl="Letter spacing" data-short="Letter spacing: 3 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">3 px</li>
+                    <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="5" data-ctl="Letter spacing" data-short="Letter spacing: 5 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">5 px</li>
+                    <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="10" data-ctl="Letter spacing" data-short="Letter spacing: 10 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">10 px</li>
+                  </ul>
+                </li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Vertical Align</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-cmd="subscript" data-label="Subscript" data-ctl="Vertical align">Subscript</li>
+                    <li class="fmt-item" data-cmd="superscript" data-label="Superscript" data-ctl="Vertical align">Superscript</li>
+                  </ul>
+                </li>
               </ul>
             </li>
             <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Background</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="hilite" data-val="black" data-short="Background: Black" data-ctl="Background color"><span class="fmt-swatch" style="background:black"></span>Black</li>
-                <li class="fmt-item" data-act="hilite" data-val="blue" data-short="Background: Blue" data-ctl="Background color"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
-                <li class="fmt-item" data-act="hilite" data-val="brown" data-short="Background: Brown" data-ctl="Background color"><span class="fmt-swatch" style="background:brown"></span>Brown</li>
-                <li class="fmt-item" data-act="hilite" data-val="cyan" data-short="Background: Cyan" data-ctl="Background color"><span class="fmt-swatch" style="background:cyan"></span>Cyan</li>
-                <li class="fmt-item" data-act="hilite" data-val="gold" data-short="Background: Gold" data-ctl="Background color"><span class="fmt-swatch" style="background:gold"></span>Gold</li>
-                <li class="fmt-item" data-act="hilite" data-val="gray" data-short="Background: Gray" data-ctl="Background color"><span class="fmt-swatch" style="background:gray"></span>Gray</li>
-                <li class="fmt-item" data-act="hilite" data-val="green" data-short="Background: Green" data-ctl="Background color"><span class="fmt-swatch" style="background:green"></span>Green</li>
-                <li class="fmt-item" data-act="hilite" data-val="magenta" data-short="Background: Magenta" data-ctl="Background color"><span class="fmt-swatch" style="background:magenta"></span>Magenta</li>
-                <li class="fmt-item" data-act="hilite" data-val="navy" data-short="Background: Navy" data-ctl="Background color"><span class="fmt-swatch" style="background:navy"></span>Navy</li>
-                <li class="fmt-item" data-act="hilite" data-val="none" data-short="Background: None" data-ctl="Background color"><span class="fmt-swatch fmt-swatch-none"></span>None</li>
-                <li class="fmt-item" data-act="hilite" data-val="orange" data-short="Background: Orange" data-ctl="Background color"><span class="fmt-swatch" style="background:orange"></span>Orange</li>
-                <li class="fmt-item" data-act="hilite" data-val="pink" data-short="Background: Pink" data-ctl="Background color"><span class="fmt-swatch" style="background:pink"></span>Pink</li>
-                <li class="fmt-item" data-act="hilite" data-val="purple" data-short="Background: Purple" data-ctl="Background color"><span class="fmt-swatch" style="background:purple"></span>Purple</li>
-                <li class="fmt-item" data-act="hilite" data-val="red" data-short="Background: Red" data-ctl="Background color"><span class="fmt-swatch" style="background:red"></span>Red</li>
-                <li class="fmt-item" data-act="hilite" data-val="teal" data-short="Background: Teal" data-ctl="Background color"><span class="fmt-swatch" style="background:teal"></span>Teal</li>
-                <li class="fmt-item" data-act="hilite" data-val="white" data-short="Background: White" data-ctl="Background color"><span class="fmt-swatch" style="background:white"></span>White</li>
-                <li class="fmt-item" data-act="hilite" data-val="yellow" data-short="Background: Yellow" data-ctl="Background color"><span class="fmt-swatch" style="background:yellow"></span>Yellow</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Text Decoration</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-cmd="strikeThrough" data-label="Line through" data-ctl="Decoration">Line through</li>
-                <li class="fmt-item" data-act="decor-none" data-val="" data-ctl="Decoration" data-short="Decoration: None">None</li>
-                <li class="fmt-item" data-act="css" data-prop="textDecorationLine" data-val="overline" data-ctl="Decoration" data-short="Decoration: Overline">Overline</li>
-                <li class="fmt-item" data-cmd="underline" data-label="Underline" data-ctl="Decoration">Underline</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Text Shadow</div>
+              <div class="fmt-head">Effects</div>
               <ul class="fmt-sub">
                 <li class="fmt-group">
                   <div class="fmt-head">Shadow</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="2px 2px 0 rgba(0,0,0,.5)" data-ctl="Shadow" data-short="Shadow: Hard">Hard</li>
                     <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="2px 2px 4px rgba(0,0,0,.45)" data-ctl="Shadow" data-short="Shadow: Medium">Medium</li>
-                    <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="none" data-ctl="Shadow" data-short="Shadow: None">None</li>
                     <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="1px 1px 2px rgba(0,0,0,.35)" data-ctl="Shadow" data-short="Shadow: Soft">Soft</li>
                   </ul>
                 </li>
@@ -361,126 +412,26 @@
                   <div class="fmt-head">Glow</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="0 0 8px currentColor" data-ctl="Glow" data-short="Glow: Medium">Medium</li>
-                    <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="none" data-ctl="Glow" data-short="Glow: None">None</li>
                     <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="0 0 4px currentColor" data-ctl="Glow" data-short="Glow: Soft">Soft</li>
                     <li class="fmt-item" data-act="css" data-prop="textShadow" data-val="0 0 4px currentColor, 0 0 12px currentColor" data-ctl="Glow" data-short="Glow: Strong">Strong</li>
                   </ul>
                 </li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Text Stroke</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="css" data-prop="webkitTextStroke" data-val="2px currentColor" data-ctl="Outline" data-short="Outline: Medium">Medium</li>
-                <li class="fmt-item" data-act="css" data-prop="webkitTextStroke" data-val="0px currentColor" data-ctl="Outline" data-short="Outline: None">None</li>
-                <li class="fmt-item" data-act="css" data-prop="webkitTextStroke" data-val="3px currentColor" data-ctl="Outline" data-short="Outline: Thick">Thick</li>
-                <li class="fmt-item" data-act="css" data-prop="webkitTextStroke" data-val="1px currentColor" data-ctl="Outline" data-short="Outline: Thin">Thin</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Text Align</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="align" data-val="center" data-short="Align: Center" data-ctl="Align">Center</li>
-                <li class="fmt-item" data-act="align" data-val="justify" data-short="Align: Justify" data-ctl="Align">Justify</li>
-                <li class="fmt-item" data-act="align" data-val="left" data-short="Align: Left" data-ctl="Align">Left</li>
-                <li class="fmt-item" data-act="align" data-val="right" data-short="Align: Right" data-ctl="Align">Right</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Text Indent</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="indent-set" data-val="0" data-short="Indent: None" data-ctl="Indent">None (remove indent)</li>
-                <li class="fmt-item" data-act="indent-set" data-val="5" data-short="Indent 5 px" data-ctl="Indent">5 px</li>
-                <li class="fmt-item" data-act="indent-set" data-val="10" data-short="Indent 10 px" data-ctl="Indent">10 px</li>
-                <li class="fmt-item" data-act="indent-set" data-val="15" data-short="Indent 15 px" data-ctl="Indent">15 px</li>
-                <li class="fmt-item" data-act="indent-set" data-val="20" data-short="Indent 20 px" data-ctl="Indent">20 px</li>
-                <li class="fmt-item" data-act="indent-set" data-val="25" data-short="Indent 25 px" data-ctl="Indent">25 px</li>
-                <li class="fmt-item" data-act="indent-set" data-val="30" data-short="Indent 30 px" data-ctl="Indent">30 px</li>
-                <li class="fmt-item" data-act="indent-set" data-val="40" data-short="Indent 40 px" data-ctl="Indent">40 px</li>
-                <li class="fmt-item" data-act="indent-set" data-val="50" data-short="Indent 50 px" data-ctl="Indent">50 px</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Text Transform</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="css" data-prop="textTransform" data-val="capitalize" data-ctl="Transform" data-short="Transform: Capitalize">Capitalize</li>
-                <li class="fmt-item" data-act="css" data-prop="textTransform" data-val="lowercase" data-ctl="Transform" data-short="Transform: Lowercase">Lowercase</li>
-                <li class="fmt-item" data-act="css" data-prop="textTransform" data-val="none" data-ctl="Transform" data-short="Transform: None">None</li>
-                <li class="fmt-item" data-act="css" data-prop="textTransform" data-val="uppercase" data-ctl="Transform" data-short="Transform: Uppercase">Uppercase</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Direction</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="css" data-prop="direction" data-val="ltr" data-ctl="Direction" data-short="Direction: Left to right" data-scope="block">Left to right</li>
-                <li class="fmt-item" data-act="css" data-prop="direction" data-val="rtl" data-ctl="Direction" data-short="Direction: Right to left" data-scope="block">Right to left</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Line Height</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="linespace" data-val="1" data-short="Line height: Single" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">Single</li>
-                <li class="fmt-item" data-act="linespace" data-val="1.15" data-short="Line height: 1.15 lines" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">1.15 lines</li>
-                <li class="fmt-item" data-act="linespace" data-val="1.5" data-short="Line height: 1.5 lines" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">1.5 lines</li>
-                <li class="fmt-item" data-act="linespace" data-val="2" data-short="Line height: Double" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">Double</li>
-                <li class="fmt-item" data-act="linespace" data-val="2.5" data-short="Line height: 2.5 lines" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">2.5 lines</li>
-                <li class="fmt-item" data-act="linespace" data-val="3" data-short="Line height: Triple" data-ctl="Line height" data-min="0.8" data-max="3" data-inc="0.1">Triple</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Letter Spacing</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="-1" data-ctl="Letter spacing" data-short="Letter spacing: -1 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">-1 px</li>
-                <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="0" data-ctl="Letter spacing" data-short="Letter spacing: Normal" data-unit="px" data-min="-5" data-max="30" data-inc="1">Normal</li>
-                <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="1" data-ctl="Letter spacing" data-short="Letter spacing: 1 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">1 px</li>
-                <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="2" data-ctl="Letter spacing" data-short="Letter spacing: 2 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">2 px</li>
-                <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="3" data-ctl="Letter spacing" data-short="Letter spacing: 3 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">3 px</li>
-                <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="5" data-ctl="Letter spacing" data-short="Letter spacing: 5 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">5 px</li>
-                <li class="fmt-item" data-act="css" data-prop="letterSpacing" data-val="10" data-ctl="Letter spacing" data-short="Letter spacing: 10 px" data-unit="px" data-min="-5" data-max="30" data-inc="1">10 px</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Word Spacing</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="css" data-prop="wordSpacing" data-val="0" data-ctl="Word spacing" data-short="Word spacing: Normal" data-unit="px" data-min="0" data-max="50" data-inc="1">Normal</li>
-                <li class="fmt-item" data-act="css" data-prop="wordSpacing" data-val="2" data-ctl="Word spacing" data-short="Word spacing: 2 px" data-unit="px" data-min="0" data-max="50" data-inc="1">2 px</li>
-                <li class="fmt-item" data-act="css" data-prop="wordSpacing" data-val="5" data-ctl="Word spacing" data-short="Word spacing: 5 px" data-unit="px" data-min="0" data-max="50" data-inc="1">5 px</li>
-                <li class="fmt-item" data-act="css" data-prop="wordSpacing" data-val="10" data-ctl="Word spacing" data-short="Word spacing: 10 px" data-unit="px" data-min="0" data-max="50" data-inc="1">10 px</li>
-                <li class="fmt-item" data-act="css" data-prop="wordSpacing" data-val="20" data-ctl="Word spacing" data-short="Word spacing: 20 px" data-unit="px" data-min="0" data-max="50" data-inc="1">20 px</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Vertical Align</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="valign-baseline" data-val="" data-ctl="Vertical align" data-short="Vertical align: Baseline">Baseline</li>
-                <li class="fmt-item" data-cmd="subscript" data-label="Subscript" data-ctl="Vertical align">Subscript</li>
-                <li class="fmt-item" data-cmd="superscript" data-label="Superscript" data-ctl="Vertical align">Superscript</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">White Space</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="css" data-prop="whiteSpace" data-val="nowrap" data-ctl="White space" data-short="White space: No wrap" data-scope="block">No wrap</li>
-                <li class="fmt-item" data-act="css" data-prop="whiteSpace" data-val="normal" data-ctl="White space" data-short="White space: Normal" data-scope="block">Normal</li>
-                <li class="fmt-item" data-act="css" data-prop="whiteSpace" data-val="pre" data-ctl="White space" data-short="White space: Pre" data-scope="block">Pre</li>
-                <li class="fmt-item" data-act="css" data-prop="whiteSpace" data-val="pre-wrap" data-ctl="White space" data-short="White space: Pre wrap" data-scope="block">Pre wrap</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Word Break</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="css" data-prop="wordBreak" data-val="break-all" data-ctl="Word break" data-short="Word break: Break all" data-scope="block">Break all</li>
-                <li class="fmt-item" data-act="css" data-prop="wordBreak" data-val="keep-all" data-ctl="Word break" data-short="Word break: Keep all" data-scope="block">Keep all</li>
-                <li class="fmt-item" data-act="css" data-prop="wordBreak" data-val="normal" data-ctl="Word break" data-short="Word break: Normal" data-scope="block">Normal</li>
+                <li class="fmt-group">
+                  <div class="fmt-head">Stroke</div>
+                  <ul class="fmt-sub">
+                    <li class="fmt-item" data-act="css" data-prop="webkitTextStroke" data-val="2px currentColor" data-ctl="Outline" data-short="Outline: Medium">Medium</li>
+                    <li class="fmt-item" data-act="css" data-prop="webkitTextStroke" data-val="3px currentColor" data-ctl="Outline" data-short="Outline: Thick">Thick</li>
+                    <li class="fmt-item" data-act="css" data-prop="webkitTextStroke" data-val="1px currentColor" data-ctl="Outline" data-short="Outline: Thin">Thin</li>
+                  </ul>
+                </li>
               </ul>
             </li>
             <li class="fmt-group fmt-subcat">
               <div class="fmt-head">Margin</div>
               <ul class="fmt-sub">
                 <li class="fmt-group">
-                  <div class="fmt-head">Margin Top</div>
+                  <div class="fmt-head">Top</div>
                   <ul class="fmt-sub">
-                    <li class="fmt-item" data-act="css" data-prop="marginTop" data-val="0" data-ctl="Space before" data-short="Space before: None" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">None</li>
                     <li class="fmt-item" data-act="css" data-prop="marginTop" data-val="6" data-ctl="Space before" data-short="Space before: 6 px" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">6 px</li>
                     <li class="fmt-item" data-act="css" data-prop="marginTop" data-val="12" data-ctl="Space before" data-short="Space before: 12 px" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">12 px</li>
                     <li class="fmt-item" data-act="css" data-prop="marginTop" data-val="18" data-ctl="Space before" data-short="Space before: 18 px" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">18 px</li>
@@ -490,9 +441,8 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Margin Bottom</div>
+                  <div class="fmt-head">Bottom</div>
                   <ul class="fmt-sub">
-                    <li class="fmt-item" data-act="css" data-prop="marginBottom" data-val="0" data-ctl="Space after" data-short="Space after: None" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">None</li>
                     <li class="fmt-item" data-act="css" data-prop="marginBottom" data-val="6" data-ctl="Space after" data-short="Space after: 6 px" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">6 px</li>
                     <li class="fmt-item" data-act="css" data-prop="marginBottom" data-val="12" data-ctl="Space after" data-short="Space after: 12 px" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">12 px</li>
                     <li class="fmt-item" data-act="css" data-prop="marginBottom" data-val="18" data-ctl="Space after" data-short="Space after: 18 px" data-scope="block" data-unit="px" data-min="0" data-max="100" data-inc="1">18 px</li>
@@ -536,42 +486,58 @@
               </ul>
             </li>
             <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Checkbox</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-cmd="checkbox" data-label="Checkboxes">Checkboxes</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">All</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="clear-text" data-val="" data-nostep="1">Clear</li>
-                <li class="fmt-item" data-act="clear" data-val="" data-nostep="1">Clear formatting</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Quotes</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="style" data-val="blockquote" data-short="Quote" data-nostep="1">Quote</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Line Break</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="line-break" data-val="" data-nostep="1">Line break (same paragraph)</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Paragraph</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="para-break" data-val="" data-nostep="1">New paragraph</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
               <div class="fmt-head">Clipboard</div>
               <ul class="fmt-sub">
                 <li class="fmt-item" data-act="clip-copy" data-val="" data-nostep="1">Copy</li>
                 <li class="fmt-item" data-act="clip-cut" data-val="" data-nostep="1">Cut</li>
                 <li class="fmt-item" data-act="clip-paste" data-val="" data-nostep="1">Paste</li>
+              </ul>
+            </li>
+            <li class="fmt-group fmt-subcat">
+              <div class="fmt-head">Edit</div>
+              <ul class="fmt-sub">
+                <li class="fmt-item" data-act="clear" data-val="" data-nostep="1">Clear formatting</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li class="fmt-cat" data-cat="HTML">
+          <div class="fmt-head">HTML</div>
+          <ul class="fmt-sub">
+            <li class="fmt-group fmt-subcat">
+              <div class="fmt-head">Forms</div>
+              <ul class="fmt-sub">
+                <li class="fmt-item" data-cmd="checkbox" data-label="Checkboxes">Checkboxes</li>
+              </ul>
+            </li>
+            <li class="fmt-group fmt-subcat">
+              <div class="fmt-head">Horizontal Rule</div>
+              <ul class="fmt-sub">
+                <li class="fmt-item" data-act="html-hr" data-val="" data-nostep="1">Horizontal rule</li>
+              </ul>
+            </li>
+            <li class="fmt-group fmt-subcat">
+              <div class="fmt-head">Link</div>
+              <ul class="fmt-sub">
+                <li class="fmt-item" data-act="html-link" data-val="" data-nostep="1">Insert link</li>
+              </ul>
+            </li>
+            <li class="fmt-group fmt-subcat">
+              <div class="fmt-head">Table</div>
+              <ul class="fmt-sub">
+                <li class="fmt-item" data-act="html-table" data-val="" data-nostep="1">Insert table</li>
+              </ul>
+            </li>
+            <li class="fmt-group fmt-subcat">
+              <div class="fmt-head">Code</div>
+              <ul class="fmt-sub">
+                <li class="fmt-item" data-act="html-code" data-val="" data-nostep="1">Code block</li>
+              </ul>
+            </li>
+            <li class="fmt-group fmt-subcat">
+              <div class="fmt-head">Collapsible Section</div>
+              <ul class="fmt-sub">
+                <li class="fmt-item" data-act="html-details" data-val="" data-nostep="1">Collapsible section</li>
               </ul>
             </li>
           </ul>
@@ -750,7 +716,7 @@
               <div class="fmt-head">Border</div>
               <ul class="fmt-sub">
                 <li class="fmt-group">
-                  <div class="fmt-head">Border Color</div>
+                  <div class="fmt-head">Color</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="borderColor" data-val="black" data-ctl="Border color" data-short="Border color: Black"><span class="fmt-swatch" style="background:black"></span>Black</li>
                     <li class="fmt-item" data-act="photo" data-prop="borderColor" data-val="blue" data-ctl="Border color" data-short="Border color: Blue"><span class="fmt-swatch" style="background:blue"></span>Blue</li>
@@ -771,7 +737,7 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Border Style</div>
+                  <div class="fmt-head">Style</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="borderStyle" data-val="dashed" data-ctl="Border style" data-short="Border style: Dashed">Dashed</li>
                     <li class="fmt-item" data-act="photo" data-prop="borderStyle" data-val="dotted" data-ctl="Border style" data-short="Border style: Dotted">Dotted</li>
@@ -783,7 +749,7 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Border Width</div>
+                  <div class="fmt-head">Width</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="borderWidth" data-val="0" data-unit="px" data-ctl="Border width" data-min="0" data-max="30" data-inc="1" data-short="Border width: None">None</li>
                     <li class="fmt-item" data-act="photo" data-prop="borderWidth" data-val="1" data-unit="px" data-ctl="Border width" data-min="0" data-max="30" data-inc="1" data-short="Border width: 1 px">1 px</li>
@@ -795,7 +761,7 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Border Radius</div>
+                  <div class="fmt-head">Radius</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="borderRadius" data-val="0" data-unit="px" data-ctl="Border radius" data-min="0" data-max="200" data-inc="2" data-short="Border radius: None">None</li>
                     <li class="fmt-item" data-act="photo" data-prop="borderRadius" data-val="4" data-unit="px" data-ctl="Border radius" data-min="0" data-max="200" data-inc="2" data-short="Border radius: 4 px">4 px</li>
@@ -843,7 +809,7 @@
               <div class="fmt-head">Margin</div>
               <ul class="fmt-sub">
                 <li class="fmt-group">
-                  <div class="fmt-head">Margin Top</div>
+                  <div class="fmt-head">Top</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="marginTop" data-val="0" data-unit="px" data-ctl="Margin top" data-min="0" data-max="100" data-inc="2" data-short="Margin top: 0 px">0 px</li>
                     <li class="fmt-item" data-act="photo" data-prop="marginTop" data-val="4" data-unit="px" data-ctl="Margin top" data-min="0" data-max="100" data-inc="2" data-short="Margin top: 4 px">4 px</li>
@@ -854,7 +820,7 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Margin Bottom</div>
+                  <div class="fmt-head">Bottom</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="marginBottom" data-val="0" data-unit="px" data-ctl="Margin bottom" data-min="0" data-max="100" data-inc="2" data-short="Margin bottom: 0 px">0 px</li>
                     <li class="fmt-item" data-act="photo" data-prop="marginBottom" data-val="4" data-unit="px" data-ctl="Margin bottom" data-min="0" data-max="100" data-inc="2" data-short="Margin bottom: 4 px">4 px</li>
@@ -865,7 +831,7 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Margin Left</div>
+                  <div class="fmt-head">Left</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="marginLeft" data-val="0" data-unit="px" data-ctl="Margin left" data-min="0" data-max="200" data-inc="2" data-short="Margin left: 0 px">0 px</li>
                     <li class="fmt-item" data-act="photo" data-prop="marginLeft" data-val="4" data-unit="px" data-ctl="Margin left" data-min="0" data-max="200" data-inc="2" data-short="Margin left: 4 px">4 px</li>
@@ -876,7 +842,7 @@
                   </ul>
                 </li>
                 <li class="fmt-group">
-                  <div class="fmt-head">Margin Right</div>
+                  <div class="fmt-head">Right</div>
                   <ul class="fmt-sub">
                     <li class="fmt-item" data-act="photo" data-prop="marginRight" data-val="0" data-unit="px" data-ctl="Margin right" data-min="0" data-max="200" data-inc="2" data-short="Margin right: 0 px">0 px</li>
                     <li class="fmt-item" data-act="photo" data-prop="marginRight" data-val="4" data-unit="px" data-ctl="Margin right" data-min="0" data-max="200" data-inc="2" data-short="Margin right: 4 px">4 px</li>
@@ -912,7 +878,7 @@
               </ul>
             </li>
             <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">All</div>
+              <div class="fmt-head">Edit</div>
               <ul class="fmt-sub">
                 <li class="fmt-item" data-act="photo-op" data-val="reset" data-nostep="1">Reset image</li>
               </ul>
