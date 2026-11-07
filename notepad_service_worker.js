@@ -2,7 +2,7 @@
 // Keeps the whole app on the phone so it opens with no internet.
 // Change CACHE_NAME (v4 -> v5 ...) whenever you upload new files so phones pick them up.
 
-const CACHE_NAME = 'notepad-v4';
+const CACHE_NAME = 'notepad-v5';
 
 // Every file the app needs, all stored the first time the app is opened online.
 const ASSETS = [
@@ -52,7 +52,12 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.hostname.endsWith('firestore.googleapis.com') || url.hostname.endsWith('identitytoolkit.googleapis.com') || url.hostname.endsWith('securetoken.googleapis.com')) return;
+  // Only the app's own files, the Firebase libraries and the fonts are kept. Sign-in and the
+  // database talk straight to Google, untouched.
+  const own = url.origin === self.location.origin;
+  const library = url.hostname === 'www.gstatic.com' && url.pathname.startsWith('/firebasejs/');
+  const fonts = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
+  if (!own && !library && !fonts) return;
 
   e.respondWith(
     caches.open(CACHE_NAME).then((cache) =>

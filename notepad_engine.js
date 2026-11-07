@@ -39,6 +39,91 @@ let saved_range = null; // last known text selection inside the note editor
 let local_notes_dirty = false;
 
 
+// Called by Firebase with the notes stored under this device's sync code. Newest wins:
+// a newer local edit is sent up, a newer cloud copy replaces the local one.
+function on_cloud_notes(cloud_notes) {
+
+  const incoming = Array.isArray(cloud_notes)
+    ? cloud_notes
+    : [];
+
+  const local_latest = get_latest_note_update(notes);
+  const cloud_latest = get_latest_note_update(incoming);
+
+  // A local note is newer than the cloud copy.
+  // Keep the local copy and push it back to Firebase instead of allowing
+  // an older cloud snapshot to overwrite it.
+  if (local_latest > cloud_latest) {
+    if (typeof saveNotesToCloud === 'function') {
+      saveNotesToCloud(notes);
+    }
+    return;
+  }
+
+  // A cloud note is newer than the local copy.
+  // Accept the cloud version normally.
+  if (cloud_latest > local_latest) {
+    notes = incoming;
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(notes)
+    );
+
+    local_notes_dirty = false;
+
+    redraw_list();
+    return;
+  }
+
+  // Both versions have the same newest timestamp.
+  // If they are identical, the local change has successfully reached
+  // the cloud and the dirty flag can be cleared.
+  if (local_latest === cloud_latest) {
+
+    const local_json = JSON.stringify(notes);
+    const cloud_json = JSON.stringify(incoming);
+
+    if (local_json === cloud_json) {
+      local_notes_dirty = false;
+      return;
+    }
+
+    // If this device has a known unsynced local edit, preserve it.
+    if (local_notes_dirty) {
+      if (typeof saveNotesToCloud === 'function') {
+        saveNotesToCloud(notes);
+      }
+      return;
+    }
+
+    // No known local edit is pending, so accept the cloud copy.
+    notes = incoming;
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(notes)
+    );
+
+    redraw_list();
+  }
+}
+
+// First time a device is linked: keep everything from both sides instead of letting one replace the other.
+function merge_cloud_notes(local, cloud) {
+  const out = JSON.parse(JSON.stringify(cloud || []));
+  const time = (x) => Date.parse((x && x.updated) || '') || 0;
+  (local || []).forEach((lc) => {
+    const cc = out.find((c) => c.id === lc.id);
+    if (!cc) { out.push(lc); return; }
+    if (!cc.items) cc.items = [];
+    (lc.items || []).forEach((li) => {
+      const ci = cc.items.find((i) => i.id === li.id);
+      if (!ci) cc.items.push(li);
+      else if (time(li) > time(ci)) Object.assign(ci, li);
+    });
+  });
+  return out;
+}
+
 // ── SECTION 2: INIT ─────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,73 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   redraw_list();
 
   // Start listening for changes pushed from other linked devices.
-  if (typeof subscribeToNotes === 'function') {
-    subscribeToNotes((cloud_notes) => {
-
-      const incoming = Array.isArray(cloud_notes)
-        ? cloud_notes
-        : [];
-
-      const local_latest = get_latest_note_update(notes);
-      const cloud_latest = get_latest_note_update(incoming);
-
-      // A local note is newer than the cloud copy.
-      // Keep the local copy and push it back to Firebase instead of allowing
-      // an older cloud snapshot to overwrite it.
-      if (local_latest > cloud_latest) {
-        if (typeof saveNotesToCloud === 'function') {
-          saveNotesToCloud(notes);
-        }
-        return;
-      }
-
-      // A cloud note is newer than the local copy.
-      // Accept the cloud version normally.
-      if (cloud_latest > local_latest) {
-        notes = incoming;
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(notes)
-        );
-
-        local_notes_dirty = false;
-
-        redraw_list();
-        return;
-      }
-
-      // Both versions have the same newest timestamp.
-      // If they are identical, the local change has successfully reached
-      // the cloud and the dirty flag can be cleared.
-      if (local_latest === cloud_latest) {
-
-        const local_json = JSON.stringify(notes);
-        const cloud_json = JSON.stringify(incoming);
-
-        if (local_json === cloud_json) {
-          local_notes_dirty = false;
-          return;
-        }
-
-        // If this device has a known unsynced local edit, preserve it.
-        if (local_notes_dirty) {
-          if (typeof saveNotesToCloud === 'function') {
-            saveNotesToCloud(notes);
-          }
-          return;
-        }
-
-        // No known local edit is pending, so accept the cloud copy.
-        notes = incoming;
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(notes)
-        );
-
-        redraw_list();
-      }
-    });
-  }
+  if (typeof subscribeToNotes === 'function') subscribeToNotes(on_cloud_notes);
 
   document.getElementById('newListInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') add_category();
