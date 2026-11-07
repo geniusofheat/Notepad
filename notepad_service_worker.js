@@ -2,7 +2,7 @@
 // Keeps the whole app on the phone so it opens with no internet.
 // Change CACHE_NAME (v4 -> v5 ...) whenever you upload new files so phones pick them up.
 
-const CACHE_NAME = 'notepad-v5';
+const CACHE_NAME = 'notepad-v6';
 
 // Every file the app needs, all stored the first time the app is opened online.
 const ASSETS = [

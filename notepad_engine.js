@@ -1887,7 +1887,8 @@ function page_guard_start() {
     if (ev.target && ev.target.closest && ev.target.closest('#note-editor-view .notepad-body')) return;
     page_finger_down = true;
   }, { capture: true, passive: true }));
-  ['touchend', 'touchcancel', 'pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, () => {
+  // pointercancel is left out on purpose: the browser sends it the moment a drag turns into a scroll, which would end the drag early.
+  ['touchend', 'touchcancel', 'pointerup'].forEach((t) => document.addEventListener(t, () => {
     if (page_finger_down) { page_finger_down = false; page_free_until = Date.now() + 700; }
   }, { capture: true, passive: true }));
   window.addEventListener('scroll', () => {
