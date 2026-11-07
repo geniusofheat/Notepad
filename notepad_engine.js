@@ -4234,13 +4234,13 @@ const HELP_TOPICS_NOTE = [
     'Edit: Clear formatting takes all the formatting off the selected text.'
   ]},
   { title: 'HTML', items: [
-    'HTML holds things a note can use that are not text formatting.',
+    'HTML holds things a note can use that are not text formatting; one tap on an item adds it, and the select list shows its name.',
     'Forms: Checkboxes puts a tick box at the cursor, and ticks are saved with the note.',
-    'Horizontal Rule: Horizontal rule puts a divider line under the line you are on.',
-    'Link: Insert link asks for a web address; the selected words (or the address) become a link, and tapping it opens the page.',
-    'Table: Insert table asks for rows x columns, such as 3x2.',
-    'Code: Code block puts the selected words, or a new empty block, in grey monospace.',
-    'Collapsible Section: Collapsible section adds a title line that folds its text open and shut.'
+    'Horizontal Rule: puts a divider line under the line you are on.',
+    'Link: asks for a web address; the selected words (or the address) become a link, and tapping it opens the page.',
+    'Table: asks for rows x columns, such as 3x2.',
+    'Code: puts the selected words, or a new empty block, in grey monospace.',
+    'Collapsible Section: adds a title line that folds its text open and shut.'
   ]},
   { title: 'Image (formatting a photo)', items: [
     'Tap a photo in the note: it gets a blue border and the Formatting list shows Image.',

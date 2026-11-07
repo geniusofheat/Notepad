@@ -504,42 +504,17 @@
         <li class="fmt-cat" data-cat="HTML">
           <div class="fmt-head">HTML</div>
           <ul class="fmt-sub">
+            <li class="fmt-item" data-act="html-code" data-val="" data-nostep="1">Code</li>
+            <li class="fmt-item" data-act="html-details" data-val="" data-nostep="1">Collapsible Section</li>
             <li class="fmt-group fmt-subcat">
               <div class="fmt-head">Forms</div>
               <ul class="fmt-sub">
                 <li class="fmt-item" data-cmd="checkbox" data-label="Checkboxes">Checkboxes</li>
               </ul>
             </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Horizontal Rule</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="html-hr" data-val="" data-nostep="1">Horizontal rule</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Link</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="html-link" data-val="" data-nostep="1">Insert link</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Table</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="html-table" data-val="" data-nostep="1">Insert table</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Code</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="html-code" data-val="" data-nostep="1">Code block</li>
-              </ul>
-            </li>
-            <li class="fmt-group fmt-subcat">
-              <div class="fmt-head">Collapsible Section</div>
-              <ul class="fmt-sub">
-                <li class="fmt-item" data-act="html-details" data-val="" data-nostep="1">Collapsible section</li>
-              </ul>
-            </li>
+            <li class="fmt-item" data-act="html-hr" data-val="" data-nostep="1">Horizontal Rule</li>
+            <li class="fmt-item" data-act="html-link" data-val="" data-nostep="1">Link</li>
+            <li class="fmt-item" data-act="html-table" data-val="" data-nostep="1">Table</li>
           </ul>
         </li>
         <li class="fmt-cat" data-cat="Image">
@@ -1006,7 +981,7 @@
 
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('notepad_service_worker.js');
+    navigator.serviceWorker.register('notepad_service_worker.js').catch(() => {});
   }
 </script>
 <script src="//cdn.jsdelivr.net/npm/eruda"></script>
@@ -1028,7 +1003,7 @@
 </div>
 <!-- ═══ END HELP MODAL ═══ -->
 
-
+<script>if (typeof eruda !== 'undefined') eruda.init();</script>
 
 </body>
 </html>

@@ -80,7 +80,9 @@
     if (!l) return;
     const item = browsing ? null : value_item();
     const li = item && value_list_of(item);
-    l.textContent = (li && title_of(li)) || last_cat_name || idle_name();
+    // A single action that sits straight under a main category (Horizontal Rule under HTML) names itself.
+    const direct = item && li && li.classList.contains('fmt-cat') ? own_text(item) : '';
+    l.textContent = direct || (li && title_of(li)) || last_cat_name || idle_name();
 
     // Active list open and the highlighted word has no formatting: say so ("None" if it does not fit).
     const mm = menu_el();

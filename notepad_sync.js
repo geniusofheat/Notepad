@@ -13,9 +13,18 @@
   appId: "1:570988410605:web:a70688966f8c6035cc3ee4"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
+// Offline, the Firebase libraries may not have loaded: the notes still work from this phone's
+// own storage, and syncing simply waits until the internet is back.
+const firebase_ready = typeof firebase !== 'undefined';
+let db = null, auth = null;
+if (firebase_ready) {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    auth = firebase.auth();
+  } catch (err) { console.error('Sync could not start:', err); }
+}
+const sync_available = () => !!(db && auth);
 
 // ---- 2. SYNC CODE HANDLING ----
 const SYNC_CODE_KEY = "notepad_sync_code";
@@ -55,6 +64,7 @@ function linkExistingSyncCode(code) {
 // Runs silently in the background, no UI needed.
 function ensureSignedIn() {
   return new Promise((resolve, reject) => {
+    if (!sync_available()) { reject(new Error('offline')); return; }
     auth.onAuthStateChanged(user => {
       if (user) {
         resolve(user);
@@ -70,9 +80,9 @@ function ensureSignedIn() {
 // every time notes change, right after your existing localStorage save.
 async function saveNotesToCloud(notesData) {
   const code = getSyncCode();
-  if (!code) return; // no sync set up yet, skip silently
+  if (!code || !sync_available()) return; // no sync set up yet, or no internet libraries: skip silently
 
-  await ensureSignedIn();
+  try { await ensureSignedIn(); } catch (err) { return; }
 
   await db.collection("notepads").doc(code).set({
     notes: notesData,
@@ -87,9 +97,9 @@ let unsubscribeListener = null;
 
 async function subscribeToNotes(onNotesChanged) {
   const code = getSyncCode();
-  if (!code) return;
+  if (!code || !sync_available()) return;
 
-  await ensureSignedIn();
+  try { await ensureSignedIn(); } catch (err) { return; }
 
   if (unsubscribeListener) unsubscribeListener(); // avoid duplicate listeners
 
@@ -107,9 +117,9 @@ async function subscribeToNotes(onNotesChanged) {
 // ---- 6. ONE-TIME PULL (useful right after linking a new device) ----
 async function pullNotesOnce() {
   const code = getSyncCode();
-  if (!code) return null;
+  if (!code || !sync_available()) return null;
 
-  await ensureSignedIn();
+  try { await ensureSignedIn(); } catch (err) { return null; }
 
   const doc = await db.collection("notepads").doc(code).get();
   return doc.exists ? doc.data().notes : null;
@@ -153,3 +163,8 @@ function handle_sync_click() {
   }
 }
 window.handle_sync_click = handle_sync_click;
+
+// When the internet comes back, send up anything saved while offline and listen again.
+window.addEventListener('online', () => {
+  if (typeof notes !== 'undefined' && getSyncCode()) { saveNotesToCloud(notes).catch(() => {}); }
+});
