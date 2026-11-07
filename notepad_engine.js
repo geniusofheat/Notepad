@@ -1884,7 +1884,7 @@ function page_guard_start() {
   ['touchstart', 'pointerdown'].forEach((t) => document.addEventListener(t, (ev) => {
     const ed = get_editor();
     if (ed && ev.target && ed.contains(ev.target)) return;      // a tap in the note never counts as a page drag
-    if (ev.target && ev.target.closest && ev.target.closest('.notepad-body')) return;
+    if (ev.target && ev.target.closest && ev.target.closest('#note-editor-view .notepad-body')) return;
     page_finger_down = true;
   }, { capture: true, passive: true }));
   ['touchend', 'touchcancel', 'pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, () => {

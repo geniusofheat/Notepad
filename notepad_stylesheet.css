@@ -1438,3 +1438,6 @@ p {
 #note-textarea a[href] { color: #1a5fb4; text-decoration: underline; }
 
 .fmt-reset-row { font-weight: 700; color: #b00020; }
+
+/* The notes list is part of the page, not a scrolling box of its own, so the whole list can be reached by dragging the page. */
+#notes-list-view .notepad-body { max-height: none; overflow-y: visible; }
