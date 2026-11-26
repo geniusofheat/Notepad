@@ -13,7 +13,7 @@
   <link rel="manifest" href="notepad_manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Playfair+Display:wght@400;600&family=Space+Mono&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&family=Geologica:wght@400&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="notepad_stylesheet.css?v=20">
+  <link rel="stylesheet" href="notepad_stylesheet.css?v=21">
 
   <!-- Critical toolbar rules, kept here on purpose: even if the browser serves
        an old cached notepad_stylesheet.css, the formatting menu stays closed,
@@ -67,7 +67,6 @@
 ═══════════════════════════════════════════════════════════════════════ -->
 <div class="toolbar-row" id="listToolbarRow">
   <div class="orange-btn" style="margin: 0px;" id="newListBtn" onclick="show_list_toolbar()">new list +</div>
-  <div class="orange-btn" style="margin: 0px;" id="syncBtn" onclick="handle_sync_click()">sign in</div>
   <div class="orange-btn" style="margin: 0px;" id="editBtn" role="button" aria-pressed="false" onclick="toggle_edit_mode()">edit</div>
 </div>
 <!-- ═══ END TOOLBAR ROW ═══ -->
@@ -974,7 +973,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="notepad_sync.js?v=3"></script>
+<script src="notepad_sync.js?v=4"></script>
 <script src="notepad_fonts.js?v=3"></script>
 <script src="notepad_engine.js?v=8"></script>
 <script src="notepad_photos.js?v=3"></script>

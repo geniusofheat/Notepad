@@ -60,17 +60,15 @@ function linkExistingSyncCode(code) {
   setSyncCode(code.trim().toLowerCase());
 }
 
-// ---- 3. ANONYMOUS AUTH ----
-// Runs silently in the background, no UI needed.
+// ---- 3. SIGNED-IN CHECK ----
+// Notes are only read and written for a user signed in with Google (login.html).
 function ensureSignedIn() {
   return new Promise((resolve, reject) => {
     if (!sync_available()) { reject(new Error('offline')); return; }
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        resolve(user);
-      } else {
-        auth.signInAnonymously().catch(reject);
-      }
+    const stop = auth.onAuthStateChanged(user => {
+      stop();
+      if (user && !user.isAnonymous) resolve(user);
+      else reject(new Error('not signed in'));
     });
   });
 }
@@ -125,26 +123,12 @@ async function pullNotesOnce() {
   return doc.exists ? doc.data().notes : null;
 }
 
-// ---- 7. GOOGLE SIGN-IN ----
-// Signing in with the same Google account on every device is the whole link between them:
-// the account's id becomes the sync code, so there is no code to type and no pop-up message.
-// The sync button itself shows what is happening.
-const sync_btn = () => document.getElementById('syncBtn');
-let sync_label_timer = null;
-
-function sync_label(text, back_after) {
-  const btn = sync_btn();
-  if (!btn) return;
-  btn.textContent = text;
-  if (sync_label_timer) clearTimeout(sync_label_timer);
-  if (back_after) sync_label_timer = setTimeout(sync_label_refresh, back_after);
-}
-
-// "synced" when this device is signed in with Google, "sign in" when it is not.
-function sync_label_refresh() {
-  const user = sync_available() ? auth.currentUser : null;
-  sync_label(user && !user.isAnonymous ? 'synced' : 'sign in');
-}
+// ---- 7. SIGN-IN GATE + PER-ACCOUNT NOTES ----
+// login.html signs the user in with Google. Here the account's id becomes this device's
+// sync code, so every device signed in to the same account sees the same notes, and each
+// person's notes stay separate in Firestore.
+const SIGNED_IN_KEY = "notepad_signed_in";
+const go_to_login = () => location.replace('login.html');
 
 // Makes the Google account's id this device's sync code and brings the notes together.
 async function sync_after_google_sign_in(user) {
@@ -168,44 +152,19 @@ async function sync_after_google_sign_in(user) {
   redraw_list();
   await saveNotesToCloud(notes).catch(() => {});
   subscribeToNotes(on_cloud_notes);
-  sync_label_refresh();
 }
 
-async function handle_sync_click() {
-  if (!sync_available()) { sync_label("offline", 2500); return; }
-
-  const user = auth.currentUser;
-  if (user && !user.isAnonymous) {          // already signed in: send and fetch now
-    sync_label("syncing...");
-    try {
-      await saveNotesToCloud(notes);
-      sync_label("synced", 0);
-    } catch (err) { sync_label("offline", 2500); }
-    return;
-  }
-
-  sync_label("signing in...");
-  try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-    const result = await auth.signInWithPopup(provider);
-    await sync_after_google_sign_in(result.user);
-  } catch (err) {
-    const code = err && err.code;
-    if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") {
-      try { await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); return; } catch (e) { /* fall through */ }
+if (sync_available()) {
+  let started = false;
+  auth.onAuthStateChanged(user => {
+    if (user && !user.isAnonymous) {
+      try { localStorage.setItem(SIGNED_IN_KEY, "1"); } catch (e) {}
+      if (!started) { started = true; sync_after_google_sign_in(user); }
+    } else {
+      try { localStorage.removeItem(SIGNED_IN_KEY); } catch (e) {}
+      go_to_login();
     }
-    if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") sync_label_refresh();
-    else sync_label(code === "auth/network-request-failed" ? "offline" : "sign-in failed", 3000);
-  }
+  });
+} else if (!localStorage.getItem(SIGNED_IN_KEY)) {
+  go_to_login();   // offline on a first visit: nothing to show until the user has signed in once
 }
-window.handle_sync_click = handle_sync_click;
-
-// Keep the button label right, and finish a sign-in that came back from a redirect.
-if (sync_available() && typeof auth.getRedirectResult === 'function') {
-  auth.getRedirectResult().then((result) => {
-    if (result && result.user && !result.user.isAnonymous) return sync_after_google_sign_in(result.user);
-  }).catch(() => {});
-  if (typeof auth.onAuthStateChanged === 'function') auth.onAuthStateChanged(() => sync_label_refresh());
-}
-sync_label_refresh();

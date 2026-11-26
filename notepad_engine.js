@@ -4139,17 +4139,15 @@ const HELP_TOPICS_MAIN = [
     'The ✕ next to a note deletes only that note, right away, with no confirmation.',
     'Deleted lists and notes cannot be brought back.'
   ]},
-  { title: 'Syncing devices', items: [
-    'Tap [ sync + ] on a new device and choose OK to create a new sync code.',
-    'Choose Cancel instead to type in a code from another device and link to it.',
-    'Once a device is linked, tapping [ sync + ] just shows its existing code.',
-    'Anyone who has your code can link to your notes, so keep it private.'
+  { title: 'Signing in', items: [
+    'You sign in once with your Google account on the sign-in page, and the app opens to this list screen.',
+    'Your notes are kept under your own account, so other people never see them.',
+    'Sign in with the same Google account on another device to see the same notes there.'
   ]},
   { title: 'Saving and offline use', items: [
     'Every change is saved on this device automatically as you go.',
-    'With a sync code, your notes are also copied to the cloud and to your linked devices.',
-    'Without a sync code, your notes stay on this device only.',
-    'Clearing your browser or site data can erase notes that were never synced.'
+    'Your notes are also copied to your account in the cloud whenever the internet is available.',
+    'Without internet the app still works, and the changes are copied up the next time you are online.'
   ]}
 ];
 
