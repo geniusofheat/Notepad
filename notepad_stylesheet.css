@@ -1578,3 +1578,5 @@ header { flex-direction: row; align-items: center; justify-content: space-betwee
 /* horizontal rules stop 10px short of the inner border on both sides */
 #notes-list .np-cat + .np-cat { border-top: 0; background-image: linear-gradient(var(--line), var(--line)); background-size: calc(100% - 20px) 1px; background-repeat: no-repeat; background-position: center top; }
 #notes-list .np-note-row, #notes-list .np-add-row, #notes-list .np-empty { border-top: 0; background-image: linear-gradient(#EEE9DD, #EEE9DD); background-size: calc(100% - 20px) 1px; background-repeat: no-repeat; background-position: center top; }
+/* darker beige in the 10px space; list box 10px from the screen edges (page padding is 20px) */
+#notes-list { background: #D2C6AB; margin-left: -10px; margin-right: -10px; }
