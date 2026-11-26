@@ -1551,3 +1551,5 @@ header { align-items: stretch; text-align: left; }
 .help-modal-header { background: var(--ink) !important; }
 .help-modal-header h3, .help-modal-body, .help-topic-head, .help-list li { font-family: 'DM Sans', sans-serif !important; }
 .help-topic-head { color: var(--ink); }
+.np-head .note-list-title { font-family: 'Abril Fatface', serif; font-weight: 400; font-size: 22px; letter-spacing: 0; text-transform: none; }
+.np-head .np-mark { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; }
