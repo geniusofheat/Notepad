@@ -2,7 +2,7 @@
 // Keeps the whole app on the phone so it opens with no internet.
 // Change CACHE_NAME (v4 -> v5 ...) whenever you upload new files so phones pick them up.
 
-const CACHE_NAME = 'notepad-v6';
+const CACHE_NAME = 'notepad-v7';
 
 // Every file the app needs, all stored the first time the app is opened online.
 const ASSETS = [
@@ -21,7 +21,7 @@ const ASSETS = [
   'https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js',
-  'https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Playfair+Display:wght@400;600&family=Space+Mono&display=swap'
+  'https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Playfair+Display:wght@400;600&family=Space+Mono&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap'
 ];
 
 self.addEventListener('install', (e) => {

@@ -8,12 +8,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <title>Notepad</title>
 
-  <meta name="theme-color" content="#c8a96e">
+  <meta name="theme-color" content="#F6F3EC">
 
   <link rel="manifest" href="notepad_manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Playfair+Display:wght@400;600&family=Space+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Playfair+Display:wght@400;600&family=Space+Mono&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="notepad_stylesheet.css?v=4">
+  <link rel="stylesheet" href="notepad_stylesheet.css?v=7">
 
   <!-- Critical toolbar rules, kept here on purpose: even if the browser serves
        an old cached notepad_stylesheet.css, the formatting menu stays closed,
@@ -45,12 +45,14 @@
      PAGE HEADER — title, date display, help button
 ═══════════════════════════════════════════════════════════════════════ -->
 <header>
-  <h3 id="pageTitle">📋  &nbsp;&nbsp;Notepad :</h3>
-  <div class="notepad-date" id="dateDisplay"></div>
-  <div class="help-btn-wrap">
-    <div class="help-btn" id="helpBtn" onclick="show_help_modal()">?</div>
-    <div class="help-btn-label">help</div>
-  </div>
+  <nav class="nav-row">
+    <button class="nav-btn" id="navBackBtn" onclick="handleBack()" style="visibility:hidden;">← Back</button>
+    <div class="nav-right">
+      <div class="notepad-date" id="dateDisplay"></div>
+      <button class="help-btn" id="helpBtn" onclick="show_help_modal()" aria-label="Help">?</button>
+    </div>
+  </nav>
+  <h1 class="page-title" id="pageTitle">Notepad</h1>
 </header>
 <!-- ═══ END PAGE HEADER ═══ -->
 
@@ -975,7 +977,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="notepad_sync.js?v=3"></script>
 <script src="notepad_fonts.js?v=3"></script>
-<script src="notepad_engine.js?v=4"></script>
+<script src="notepad_engine.js?v=5"></script>
 <script src="notepad_photos.js?v=3"></script>
 <script src="notepad_menu.js?v=3"></script>
 

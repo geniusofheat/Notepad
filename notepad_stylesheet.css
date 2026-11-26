@@ -1441,3 +1441,113 @@ p {
 
 /* The notes list is part of the page, not a scrolling box of its own, so the whole list can be reached by dragging the page. */
 #notes-list-view .notepad-body { max-height: none; overflow-y: visible; }
+
+
+/* =====================================================================
+   GROCERY LIST LOOK — cream paper, green + ink pills, white cards.
+   (Appended last so it restyles everything above; the layout rules
+   that make the toolbar and menus work are untouched.)
+===================== */
+
+:root {
+  --ink: #1F2A24; --muted: #5B655F; --green: #2F6B4F; --paper: #F6F3EC; --line: #DDD6C8;
+  --header-bg: #1F2A24;
+}
+html { background: var(--paper); min-height: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif;
+  max-width: 480px; width: 100%; margin: 0 auto; padding: 12px 20px 32px; }
+button { font-family: inherit; cursor: pointer; }
+
+/* nav row + title */
+header { display: flex; flex-direction: column; gap: 20px; width: auto; padding: 0; }
+.nav-row { display: flex; align-items: center; justify-content: space-between; }
+.nav-btn { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid var(--ink);
+  background: transparent; color: var(--ink); font-size: 15px; font-weight: 500; }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.notepad-date { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); margin: 0; }
+.help-btn { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--ink); background: transparent;
+  color: var(--ink); font: 700 15px 'Space Mono', monospace; padding: 0; }
+.page-title { font-family: 'Fraunces', serif; font-size: 34px; font-weight: 600; line-height: 1.1; }
+#breadcrumb { display: none; }
+
+main { background: transparent; box-shadow: none; border-radius: 0; padding: 0; margin: 20px 0 0; }
+p { text-indent: 0; padding: 0; }
+
+/* description card */
+#mainPageDescription { background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  padding: 18px 20px; font-size: 16px; line-height: 1.5; margin-top: 20px; }
+
+/* buttons */
+.orange-btn { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid var(--green);
+  background: #fff; color: var(--green); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; margin: 0; }
+.orange-btn::first-letter { text-transform: uppercase; }
+.orange-btn-44 { height: 52px; width: auto; padding: 0 22px; border-radius: 999px; border: 0; background: var(--ink);
+  color: #fff; font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 700; margin: 0; }
+.toolbar-row { display: flex; gap: 10px; background: transparent; border: 0; padding: 0; margin: 20px 0 0; }
+#listToolbarRow .orange-btn { flex: 1 1 0; height: 52px; font-size: 17px; margin: 0 !important; }
+#newListBtn { background: var(--green); color: #fff; }
+#editBtn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* inputs */
+.text-input { flex: 1; min-width: 0; height: 52px; border-radius: 999px; border: 1.5px solid var(--ink); background: #fff;
+  padding: 0 20px; margin: 0; font-family: inherit; font-size: 17px; color: var(--ink); text-align: left; outline: none; width: auto; }
+.text-input::placeholder { color: var(--muted); }
+#listAddFields { gap: 8px; align-items: center; margin-top: 12px; }
+
+/* the lists */
+.notepad-body { min-height: 0; max-height: none; overflow: visible; margin-top: 16px; }
+#notes-list { display: flex; flex-direction: column; gap: 14px; }
+.notepad-placeholder { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px;
+  font-family: 'DM Sans', sans-serif; font-size: 17px; line-height: 1.5; text-align: left; margin: 0; }
+.np-cat { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.np-head { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 8px 0 16px; }
+.np-head .note-list-title { flex: 1; min-width: 0; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; padding: 0; word-break: break-word; }
+.np-mark { margin-left: 8px; color: var(--muted); letter-spacing: 0; }
+.np-add { height: 36px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--ink); color: #fff;
+  font-size: 14px; font-weight: 700; white-space: nowrap; }
+.np-x { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 0;
+  background: transparent; color: var(--muted); font-size: 16px; flex: 0 0 auto; }
+.np-note-row { display: flex; align-items: center; gap: 4px; min-height: 52px; padding: 0 6px 0 32px; border-top: 1px solid #EEE9DD; }
+.np-note-row .note-list-title { flex: 1; min-width: 0; font-family: 'DM Sans', sans-serif; font-size: 18px; padding: 0; word-break: break-word; }
+.np-add-row { display: flex; align-items: center; gap: 8px; padding: 8px 6px 8px 32px; border-top: 1px solid #EEE9DD; }
+.np-add-row .text-input { height: 46px; }
+.np-add-row .orange-btn-44 { height: 46px; padding: 0 18px; }
+.np-empty { padding: 14px 16px 14px 32px; border-top: 1px solid #EEE9DD; font-size: 15px; color: var(--muted); line-height: 1.4; }
+.np-head .rename-input, .np-note-row .rename-input { height: 44px; }
+.np-head .orange-btn, .np-note-row .orange-btn { min-height: 40px; padding: 0 14px; }
+
+/* the note screen */
+#note-editor-view { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 12px; }
+.note-title-row { padding: 0 4px; }
+.note-title-row h3 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; color: var(--ink); }
+.note-editor-description { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--muted); text-align: left; padding: 6px 4px 12px; }
+.note-editor-sticky-toolbar { background: #fff; }
+.note-button-row { padding: 4px 0 !important; margin: 0 !important; }
+#headerBackBtn { display: none !important; }
+.format-toolbar-single { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 6px; }
+.fmt-btn { background: #fff; border: 1.5px solid var(--ink); color: var(--ink); border-radius: 999px; font-family: 'DM Sans', sans-serif; }
+.fmt-btn.active { background: var(--ink); color: #fff; }
+.fmt-btn.fmt-big { height: 40px; padding: 0 16px; }
+.fmt-cat-btn { background: var(--ink); color: #fff; }
+.fmt-select { background: #fff; border: 1.5px solid var(--ink); color: var(--ink); border-radius: 999px; }
+.fmt-row-label { color: var(--ink); }
+.fmt-notice { background: #fff; color: var(--ink); font-family: 'DM Sans', sans-serif; border-radius: 8px; }
+.fmt-menu { border: 1.5px solid var(--ink); border-radius: 14px; background: #fff; }
+.fmt-head, .fmt-item { font-family: 'DM Sans', sans-serif; color: var(--ink); border-bottom: 1px solid #EEE9DD; }
+.note-action-line { background: transparent; }
+.note-action-title { color: var(--ink); font-family: 'DM Sans', sans-serif; }
+.note-action-title.pressable { border-color: var(--ink); border-radius: 999px; }
+.note-action-btn { border: 1.5px solid var(--ink); color: var(--ink); border-radius: 10px; }
+#note-textarea { border-left: 4px solid var(--green); font-family: 'Crimson Pro', serif; }
+::highlight(fmt-select) { background-color: var(--green); color: #fff; }
+
+/* help window */
+.help-modal { border-radius: 16px; border: 1px solid var(--line); font-family: 'DM Sans', sans-serif; }
+header { align-items: stretch; text-align: left; }
+.page-title { text-align: left; margin: 0; padding: 0; }
+.orange-btn { display: flex; align-items: center; justify-content: center; white-space: nowrap; line-height: 1.1; }
+#listToolbarRow .orange-btn { font-size: 16px; padding: 0 8px; }
+.help-modal-header { background: var(--ink) !important; }
+.help-modal-header h3, .help-modal-body, .help-topic-head, .help-list li { font-family: 'DM Sans', sans-serif !important; }
+.help-topic-head { color: var(--ink); }

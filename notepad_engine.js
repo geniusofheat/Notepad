@@ -264,6 +264,9 @@ function set_date_display() {
 function set_header_title(text) {
   const el = document.getElementById('pageTitle');
   if (el) el.textContent = text;
+  // The top Back button only shows inside a note (the list screen has nothing to go back to).
+  const back = document.getElementById('navBackBtn');
+  if (back) back.style.visibility = (text === 'Note') ? 'visible' : 'hidden';
 }
 
 
@@ -641,66 +644,50 @@ function redraw_list() {
     return;
   }
 
-  let html = '<ol class="notes-ol">';
+  let html = '';
 
   notes.forEach((cat) => {
     const is_open = expanded.has(cat.id);
     const is_adding = adding_to === cat.id;
     const has_items = cat.items && cat.items.length > 0;
 
-    html += `
-      <li class="note-list-item">
-        <div class="row-content">
-          ${rename_target && rename_target.cat_id === cat.id && !rename_target.item_id
-            ? rename_row_html()
-            : `<span class="note-list-title" onclick="title_tap('${cat.id}')">${cat.title}</span>`}
-          <span class="bracket-action" onclick="show_add_note_row('${cat.id}')">[ add note + ]</span>
-          <button class="orange-btn" onclick="delete_category('${cat.id}')">✕</button>
-        </div>
-      </li>
-    `;
+    html += `<div class="np-cat">
+      <div class="np-head">
+        ${rename_target && rename_target.cat_id === cat.id && !rename_target.item_id
+          ? rename_row_html()
+          : `<span class="note-list-title" onclick="title_tap('${cat.id}')">${cat.title}<span class="np-mark">${is_open ? '[–]' : '[+]'}</span></span>`}
+        <button class="np-add" onclick="show_add_note_row('${cat.id}')">Add note +</button>
+        <button class="np-x" onclick="delete_category('${cat.id}')" aria-label="Delete list">✕</button>
+      </div>`;
 
     if (is_adding) {
       html += `
-        <li class="sub-content-row add-note-row">
-          <div class="row-content">
-            <input class="text-input" id="newNoteInput" placeholder="Enter note title..." onkeydown="if(event.key==='Enter') add_note_item()">
-            <button class="orange-btn-44" onclick="add_note_item()">＋</button>
-            <button class="orange-btn" onclick="cancel_add_note()">✕</button>
-          </div>
-        </li>
-      `;
+        <div class="np-add-row">
+          <input class="text-input" id="newNoteInput" placeholder="Enter note title..." onkeydown="if(event.key==='Enter') add_note_item()">
+          <button class="orange-btn-44" onclick="add_note_item()">＋</button>
+          <button class="np-x" onclick="cancel_add_note()" aria-label="Cancel">✕</button>
+        </div>`;
     }
 
     if (is_open) {
-      html += `<li class="sub-content-row">`;
-
       if (has_items) {
-        html += '<ul class="note-items-list">';
         cat.items.forEach((item) => {
           html += `
-            <li class="note-item-row">
-              <div class="row-content">
-                ${rename_target && rename_target.item_id === item.id
-                  ? rename_row_html()
-                  : `<span class="note-list-title" onclick="title_tap('${cat.id}', '${item.id}')">${item.title}</span>`}
-                <button class="orange-btn" onclick="delete_note_item('${cat.id}', '${item.id}')">✕</button>
-              </div>
-            </li>
-          `;
+            <div class="np-note-row">
+              ${rename_target && rename_target.item_id === item.id
+                ? rename_row_html()
+                : `<span class="note-list-title" onclick="title_tap('${cat.id}', '${item.id}')">${item.title}</span>`}
+              <button class="np-x" onclick="delete_note_item('${cat.id}', '${item.id}')" aria-label="Delete note">✕</button>
+            </div>`;
         });
-        html += '</ul>';
       } else {
-        html += `<div class="notepad-placeholder" id="description-paragraph">
-          Tap [ add note + ] beside the list title to create your first note.
-        </div>`;
+        html += `<div class="np-empty" id="description-paragraph">Tap [ add note + ] beside the list title to create your first note.</div>`;
       }
-
-      html += `</li>`;
     }
+
+    html += `</div>`;
   });
 
-  html += '</ol>';
   list.innerHTML = html;
   list.classList.toggle('editing-titles', edit_mode);
 
@@ -723,7 +710,7 @@ function go_home() {
   adding_to = null;
   cancel_add_note();
   hide_list_toolbar();
-  set_header_title('📋  Notepad :');
+  set_header_title('Notepad');
   redraw_list();
 }
 window.go_home = go_home;
@@ -780,7 +767,7 @@ function open_note(cat_id, item_id) {
   if (mainDesc) mainDesc.style.display = 'none';
 
   document.getElementById('note-title-display').textContent = item.title;
-  set_header_title('📝  Note :');
+  set_header_title('Note');
   render_breadcrumb();
   reset_fmt_toolbar();
   document.getElementById('note-textarea').innerHTML = item.content || '';
@@ -845,7 +832,7 @@ function back_one_level() {
     nav.level = 1;
     nav.item_id = null;
     expanded.add(nav.category_id);
-    set_header_title('📋  Notepad :');
+    set_header_title('Notepad');
     redraw_list();
     show_back_btn();
   } else {
