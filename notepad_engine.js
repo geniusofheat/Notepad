@@ -3,7 +3,7 @@
 // Level 1 — Main list titles (expand/collapse inline)
 // Level 2 — Note titles (tap opens note writing view)
 // Toolbar row: [ new list + ] always visible, reveals input on tap
-// Add note row: hidden, shown only when [ add note + ] is tapped
+// Add note row: hidden, shown only when [ add + ] is tapped
 //
 // CHANGES IN THIS VERSION:
 // - Storage is localStorage PLUS Firebase cloud sync (via notepad_sync.js).
@@ -655,8 +655,8 @@ function redraw_list() {
       <div class="np-head">
         ${rename_target && rename_target.cat_id === cat.id && !rename_target.item_id
           ? rename_row_html()
-          : `<span class="note-list-title" onclick="title_tap('${cat.id}')">${cat.title}<span class="np-mark">${is_open ? '[–]' : '[+]'}</span></span>`}
-        <button class="np-add" onclick="show_add_note_row('${cat.id}')">Add note +</button>
+          : `<span class="note-list-title" onclick="title_tap('${cat.id}')">${cat.title}</span>`}
+        <button class="np-add" onclick="show_add_note_row('${cat.id}')">Add +</button>
         <button class="np-x" onclick="delete_category('${cat.id}')" aria-label="Delete list">✕</button>
       </div>`;
 
@@ -681,7 +681,7 @@ function redraw_list() {
             </div>`;
         });
       } else {
-        html += `<div class="np-empty" id="description-paragraph">Tap [ add note + ] beside the list title to create your first note.</div>`;
+        html += `<div class="np-empty" id="description-paragraph">Tap [ add + ] beside the list title to create your first note.</div>`;
       }
     }
 
@@ -4122,7 +4122,7 @@ const HELP_TOPICS_MAIN = [
     'The new list appears in alphabetical order with the other lists.'
   ]},
   { title: 'Adding and opening notes', items: [
-    'Open a list, then tap [ add note + ] inside it.',
+    'Open a list, then tap [ add + ] inside it.',
     'Type a title for the note and confirm to add it.',
     'Tap the note title to open the writing screen.',
     'Use the ← Back button on the note screen to return here.'
