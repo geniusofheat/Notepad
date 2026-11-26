@@ -1582,3 +1582,7 @@ header { flex-direction: row; align-items: center; justify-content: space-betwee
 #notes-list { background: #D2C6AB; margin-left: -10px; margin-right: -10px; }
 /* note rows inside an opened list use the page's beige */
 #notes-list .np-note-row, #notes-list .np-add-row, #notes-list .np-empty { background-color: var(--paper); background-image: linear-gradient(var(--line), var(--line)); }
+/* opened-list rows: slightly lighter than the page, inset 10px so white shows beside them */
+#notes-list .np-note-row, #notes-list .np-add-row, #notes-list .np-empty { background-color: #FAF8F3; margin: 0 10px; background-size: 100% 1px; }
+#notes-list .np-note-row, #notes-list .np-empty { padding-left: 22px; }
+#notes-list .np-add-row { padding-left: 22px; }
