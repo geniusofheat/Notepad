@@ -1575,3 +1575,6 @@ header { flex-direction: row; align-items: center; justify-content: space-betwee
 /* two borders: outer box, 10px of in-between colour, then the inner white box the rules touch */
 #notes-list { background: #FAF9F5; border: 1px solid var(--line); border-radius: 16px; padding: 10px; overflow: visible; }
 #notes-list .np-inner { background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+/* horizontal rules stop 10px short of the inner border on both sides */
+#notes-list .np-cat + .np-cat { border-top: 0; background-image: linear-gradient(var(--line), var(--line)); background-size: calc(100% - 20px) 1px; background-repeat: no-repeat; background-position: center top; }
+#notes-list .np-note-row, #notes-list .np-add-row, #notes-list .np-empty { border-top: 0; background-image: linear-gradient(#EEE9DD, #EEE9DD); background-size: calc(100% - 20px) 1px; background-repeat: no-repeat; background-position: center top; }
