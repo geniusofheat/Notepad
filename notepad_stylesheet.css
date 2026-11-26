@@ -1571,3 +1571,7 @@ header { flex-direction: row; align-items: center; justify-content: space-betwee
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; flex: 0 0 auto; }
 .help-q { font: 700 17px 'Space Mono', monospace; line-height: 1; }
 .help-word { font: 400 10px 'Space Mono', monospace; line-height: 1; }
+
+/* two borders: outer box, 10px of in-between colour, then the inner white box the rules touch */
+#notes-list { background: #FAF9F5; border: 1px solid var(--line); border-radius: 16px; padding: 10px; overflow: visible; }
+#notes-list .np-inner { background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }

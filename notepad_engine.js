@@ -640,7 +640,7 @@ function redraw_list() {
   if (!list) return;
 
   if (notes.length === 0) {
-    list.innerHTML = '<div class="notepad-placeholder">Tap [ new list + ] above to create your first list.</div>';
+    list.innerHTML = '<div class="np-inner"><div class="notepad-placeholder">Tap [ new list + ] above to create your first list.</div></div>';
     return;
   }
 
@@ -688,7 +688,7 @@ function redraw_list() {
     html += `</div>`;
   });
 
-  list.innerHTML = html;
+  list.innerHTML = '<div class="np-inner">' + html + '</div>';
   list.classList.toggle('editing-titles', edit_mode);
 
   // A title being renamed gets the cursor right away.
