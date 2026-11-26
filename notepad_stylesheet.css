@@ -1562,3 +1562,12 @@ header { align-items: stretch; text-align: left; }
 #notes-list .np-cat { border: 0; border-radius: 0; }
 #notes-list .np-cat + .np-cat { border-top: 1px solid var(--line); }
 #notes-list .notepad-placeholder { border: 0; border-radius: 0; }
+
+/* title, date and help all on one row */
+header { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.top-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nav-btn { display: inline-flex; align-items: center; }
+.help-btn { width: 46px; height: 46px; border-radius: 4px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; flex: 0 0 auto; }
+.help-q { font: 700 17px 'Space Mono', monospace; line-height: 1; }
+.help-word { font: 400 10px 'Space Mono', monospace; line-height: 1; }

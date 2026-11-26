@@ -266,7 +266,7 @@ function set_header_title(text) {
   if (el) el.textContent = text;
   // The top Back button only shows inside a note (the list screen has nothing to go back to).
   const back = document.getElementById('navBackBtn');
-  if (back) back.style.visibility = (text === 'Note') ? 'visible' : 'hidden';
+  if (back) back.style.display = (text === 'Note') ? 'inline-flex' : 'none';
 }
 
 
