@@ -1556,3 +1556,4 @@ header { align-items: stretch; text-align: left; }
 .np-head .note-list-title::first-letter { text-transform: uppercase; }
 .np-head .note-list-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 18px; }
 .np-head .note-list-title { font-weight: 400; }
+.np-head .note-list-title { font-family: 'Geologica', sans-serif; font-weight: 400; font-size: 20px; }
