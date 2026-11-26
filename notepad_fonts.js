@@ -25,7 +25,7 @@ const FONT_STYLES = [
   ['serif', 'Serif']
 ];
 
-// Already loaded by index.html, so never requested twice.
+// Already loaded by notepad.html, so never requested twice.
 const FONTS_PRELOADED = ['Crimson Pro', 'Playfair Display', 'Space Mono'];
 
 // Names that are not Google families.

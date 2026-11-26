@@ -128,7 +128,7 @@ async function pullNotesOnce() {
 // sync code, so every device signed in to the same account sees the same notes, and each
 // person's notes stay separate in Firestore.
 const SIGNED_IN_KEY = "notepad_signed_in";
-const go_to_login = () => location.replace('login.html');
+const go_to_login = () => location.replace('index.html');   // the features page, which has the Sign in button on its top row
 
 // Makes the Google account's id this device's sync code and brings the notes together.
 async function sync_after_google_sign_in(user) {
