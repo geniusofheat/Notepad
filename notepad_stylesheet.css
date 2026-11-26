@@ -1555,3 +1555,4 @@ header { align-items: stretch; text-align: left; }
 .np-head .np-mark { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; }
 .np-head .note-list-title::first-letter { text-transform: uppercase; }
 .np-head .note-list-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 18px; }
+.np-head .note-list-title { font-weight: 400; }
